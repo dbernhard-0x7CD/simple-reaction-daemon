@@ -1,0 +1,10 @@
+[Unit]
+Description=Periodically checks if some IP is reachable and if it is not will restart systemd-networkd after 
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/srd
+
+[Install]
+WantedBy=basic.target
