@@ -1,5 +1,5 @@
 [Unit]
-Description=Periodically checks if some IP is reachable and if it is not will restart systemd-networkd after 
+Description=Simple Reconnect Daemon 
 After=network.target
 
 [Service]
