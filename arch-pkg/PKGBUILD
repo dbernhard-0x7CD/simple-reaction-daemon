@@ -1,0 +1,59 @@
+# Maintainer: David Bernhard <dbernhard@ethz.ch>
+pkgname=simple-reconnect-daemon
+pkgver=0.0.1
+pkgrel=1
+pkgdesc="Simple Reconnect Daemon"
+arch=(x86_64)
+url="https://n.ethz.ch/~dbernhard"
+license=('GPL2')
+groups=()
+depends=()
+makedepends=(
+  systemd
+)
+checkdepends=()
+optdepends=()
+provides=()
+conflicts=()
+replaces=()
+backup=('etc/srd/srd.conf')
+options=('!strip')
+install=
+changelog=
+source=('srd.conf')
+noextract=()
+sha256sums=('42a8bb596fa16ae938afdd1ce8e4d472481e6e1d71cf8899994cb9768b3de3ed')
+validpgpkeys=()
+
+
+prepare() {
+    echo "preparing.. $(pwd)"
+
+    cp ../../* . || true
+
+    # check if folder exists
+
+    # cd "$_filename" || echo "unable to find $_filename" || exit
+}
+
+build() {
+    echo "building.. in $(pwd)"
+
+    make
+}
+
+check() {
+    echo "checking.."
+}
+
+package() {
+    echo "packaging in $(pwd)..pkgdir: ${pkgdir}"
+
+    install -Dm750 ./srd "${pkgdir}/usr/bin/srd"
+    
+    install -Dm640 ./srd.conf "${pkgdir}/etc/srd/srd.conf"
+    install -Dm640 ./srd.service "${pkgdir}/usr/lib/systemd/system/srd.service"
+    
+    echo "i'm in $(pwd) and vmlinuz is from: $srcdir/$_filename/$bzimage_path"
+}
+
