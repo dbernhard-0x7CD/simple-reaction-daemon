@@ -294,7 +294,7 @@ int main()
 
                 if (strcmp(actions[i].name, "service-restart") == 0) {
                     restart_service(actions[i].object);
-                } else if (strcmp(actions[i].name, "reboot")) {
+                } else if (strcmp(actions[i].name, "reboot") == 0) {
                     restart_system();
                 }
             }
