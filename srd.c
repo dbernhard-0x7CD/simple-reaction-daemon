@@ -27,7 +27,7 @@ const char version[] = "0.0.1";
 typedef struct action_t {
     const char*   name;
     const char*   object;
-    const int     delay;
+    int     delay;
 } action_t;
 
 int running = 1;
@@ -40,6 +40,7 @@ void signal_handler(int s)
 }
 
 int restart_system() {
+    printf("Sending restart signal\n");
     sd_bus_error error = SD_BUS_ERROR_NULL;
     sd_bus_message *m = NULL;
     sd_bus *bus = NULL;
@@ -201,7 +202,7 @@ int main()
     action_t actions[count];
 
     for (int i = 0; i < count; i++) {
-        config_setting_t *action = config_setting_get_elem(setting, i);
+        const config_setting_t *action = config_setting_get_elem(setting, i);
 
         const char* action_name;
         if (!config_setting_lookup_string(action, "action", &action_name)) {
@@ -209,7 +210,7 @@ int main()
             config_destroy(&cfg);
             return EXIT_FAILURE;
         }
-        actions[i].name = action_name;
+        actions[i].name = (char *)action_name;
 
         if (strcmp(action_name, "reboot") == 0) {
             if (!config_setting_lookup_int(action, "delay", &actions[i].delay)) {
@@ -294,7 +295,7 @@ int main()
                 if (strcmp(actions[i].name, "service-restart") == 0) {
                     restart_service(actions[i].object);
                 } else if (strcmp(actions[i].name, "reboot")) {
-                    // restart_system(); TODO
+                    restart_system();
                 }
             }
         }
