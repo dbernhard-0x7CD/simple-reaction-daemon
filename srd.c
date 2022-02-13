@@ -63,8 +63,7 @@ int restart_system() {
         "Reboot",                          /* method name */
         &error,                             /* object to return error in */
         &m,                                 /* return message on success */
-        "s",                                /* input signature */
-        "fail");
+        "");
     if (r < 0)
     {
         fprintf(stderr, "Failed to issue method call: %s\n", error.message);
