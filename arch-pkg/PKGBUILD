@@ -9,7 +9,7 @@ license=('GPL2')
 groups=()
 depends=()
 makedepends=(
-  systemd
+  systemd libconfig
 )
 checkdepends=()
 optdepends=()
@@ -30,10 +30,6 @@ prepare() {
     echo "preparing.. $(pwd)"
 
     cp ../../* . || true
-
-    # check if folder exists
-
-    # cd "$_filename" || echo "unable to find $_filename" || exit
 }
 
 build() {
@@ -56,4 +52,3 @@ package() {
     
     echo "i'm in $(pwd) and vmlinuz is from: $srcdir/$_filename/$bzimage_path"
 }
-
