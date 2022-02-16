@@ -14,15 +14,25 @@
 #include "srd.h"
 
 char config_fpath[] = "/etc/srd/srd.conf";
-const char version[] = "0.0.1";
+const char version[] = "0.0.1-dev";
 
 #define DEBUG 1
 
 #define LOGLEVEL_DEBUG 1
-#define LOGLEVEL_INFO 0
+#define LOGLEVEL_INFO 2
 
 #define CLOCKID CLOCK_REALTIME
 #define SIG SIGRTMIN
+
+#define print_debug(...) \
+if (loglevel <= LOGLEVEL_DEBUG) { \
+    printf(__VA_ARGS__); \
+}
+
+#define print_info(...) \
+if (loglevel <= LOGLEVEL_INFO) { \
+    printf(__VA_ARGS__); \
+}
 
 typedef struct action_t {
     const char*   name;
@@ -31,12 +41,16 @@ typedef struct action_t {
 } action_t;
 
 int running = 1;
+int loglevel = 1;
 
 void signal_handler(int s)
 {
-    printf("i received signal %d\n", s);
+    if (s == SIGTERM || s == SIGABRT || s == SIGKILL || s == SIGSTOP) {
+        running = 0;
+        return;
+    }
+    printf("Unhandled signal %d\n", s);
     fflush(stdout);
-    // TODO for shutting down, restarting
 }
 
 int restart_system() {
@@ -116,18 +130,16 @@ int check_connectivity(const char* ip, int timeout)
     }
     else if (f < 0)
     {
-        printf("forking did not work\n");
+        printf("Forking did not work\n");
         fflush(stdout);
-        exit(1);
+        running = 0;
     }
     else
     {
         int status;
         int res = wait(&status);
 
-#if DEBUG
-        printf("finished child process %d with status %d\n", res, status);
-#endif
+        print_debug("finished child process %d with status %d\n", res, status);
 
         close(pipefd[1]);
         close(pipefd[0]);
@@ -137,23 +149,106 @@ int check_connectivity(const char* ip, int timeout)
     return 1;
 }
 
+// loads the configuration in ip, freq, timeout and global loglevel
+int load_config(config_t *cfg, const char **ip, int *freq, int *timeout, int* count, action_t **actions) {
+    const char* setting_loglevel;
+    config_setting_t *setting;
+
+    if (!config_lookup_string(cfg, "destination", ip)) {
+        printf("missing setting: destination\n");
+        config_destroy(cfg);
+        return EXIT_FAILURE;
+    }
+
+    if (!config_lookup_int(cfg, "frequency", freq)) {
+        printf("missing setting: freq\n");
+        config_destroy(cfg);
+        return EXIT_FAILURE;
+    }
+
+    if (!config_lookup_int(cfg, "timeout", timeout)) {
+        printf("missing setting: timeout\n");
+        config_destroy(cfg);
+        return EXIT_FAILURE;
+    }
+
+    if (!config_lookup_string(cfg, "loglevel", &setting_loglevel)) {
+        printf("missing setting: loglevel\n");
+        config_destroy(cfg);
+        return EXIT_FAILURE;
+    }
+
+    if (strcmp("INFO", setting_loglevel) == 0) {
+        loglevel = LOGLEVEL_INFO;
+    } else if (strcmp("DEBUG", setting_loglevel) == 0) {
+        loglevel = LOGLEVEL_DEBUG;
+    } else {
+        printf("Unknown loglevel: %s\n", setting_loglevel);
+        return EXIT_FAILURE;
+    }
+
+    // load the actions
+    setting = config_lookup(cfg, "actions");
+    if (setting == NULL) {
+        printf("Missing actions in config file.\n");
+        config_destroy(cfg);
+        return EXIT_FAILURE;
+    }
+    *count = config_setting_length(setting);
+    *actions = malloc(*count * sizeof(action_t));
+    action_t *action_arr = *actions;
+
+    for (int i = 0; i < *count; i++) {
+        const config_setting_t *action = config_setting_get_elem(setting, i);
+
+        const char* action_name;
+        if (!config_setting_lookup_string(action, "action", &action_name)) {
+            printf("Element is missing the action\n");
+            config_destroy(cfg);
+            return EXIT_FAILURE;
+        }
+        action_arr[i].name = (char *)action_name;
+
+        if (strcmp(action_name, "reboot") == 0) {
+            if (!config_setting_lookup_int(action, "delay", &(*actions)[i].delay)) {
+                printf("Element is missing the delay\n");
+                config_destroy(cfg);
+                return EXIT_FAILURE;
+            }
+        } else if (strcmp(action_name, "service-restart") == 0) {
+            if (!config_setting_lookup_int(action, "delay", &action_arr[i].delay)) {
+                printf("Element is missing the delay\n");
+                config_destroy(cfg);
+                return EXIT_FAILURE;
+            }
+            if (!config_setting_lookup_string(action, "name", &action_arr[i].object)) {
+                printf("Element is missing the name\n");
+                config_destroy(cfg);
+                return EXIT_FAILURE;
+            }
+        } else {
+            printf("Unknown element in configuration on line %d\n", action->line);
+            return EXIT_FAILURE;
+        }
+    }
+
+    return EXIT_SUCCESS;
+}
+
 int main()
 {
-    signal(SIGHUP, signal_handler);
+    // for stopping the service
+    signal(SIGTERM, signal_handler);
     signal(SIGABRT, signal_handler);
-    signal(SIGINT, signal_handler);
-    signal(SIGALRM, signal_handler);
-    signal(SIGILL, signal_handler);
     signal(SIGKILL, signal_handler);
+    signal(SIGSTOP, signal_handler);
 
     // load configuration
-    int count;
     config_t cfg;
-    config_setting_t *setting;
     config_init(&cfg);
 
     if (access(config_fpath, F_OK)) {
-        printf("missing config file at %s", config_fpath);
+        printf("Missing config file at %s", config_fpath);
         fflush(stdout);
         config_destroy(&cfg);
         return EXIT_FAILURE;
@@ -166,76 +261,22 @@ int main()
         return EXIT_FAILURE;
     }
 
+    int count;
     const char *ip;
     int timeout;
     int freq;
-    const char *loglevel;
+    action_t *actions;
 
-    if (!config_lookup_string(&cfg, "destination", &ip)) {
-        printf("missing setting: destination\n");
-        config_destroy(&cfg);
+    if(load_config(&cfg, &ip, &freq, &timeout, &count, &actions)) {
         return EXIT_FAILURE;
     }
 
-    if (!config_lookup_int(&cfg, "frequency", &freq)) {
-        printf("missing setting: freq\n");
-        config_destroy(&cfg);
-        return EXIT_FAILURE;
-    }
-
-    if (!config_lookup_int(&cfg, "timeout", &timeout)) {
-        printf("missing setting: timeout\n");
-        config_destroy(&cfg);
-        return EXIT_FAILURE;
-    }
-
-    // load the actions
-    setting = config_lookup(&cfg, "actions");
-    if (setting == NULL) {
-        printf("missing actions in config file.\n");
-        config_destroy(&cfg);
-        return EXIT_FAILURE;
-    }
-    count = config_setting_length(setting);
-    printf("amount of actions: %d\n", count);
-    action_t actions[count];
-
-    for (int i = 0; i < count; i++) {
-        const config_setting_t *action = config_setting_get_elem(setting, i);
-
-        const char* action_name;
-        if (!config_setting_lookup_string(action, "action", &action_name)) {
-            printf("Element is missing the action\n");
-            config_destroy(&cfg);
-            return EXIT_FAILURE;
-        }
-        actions[i].name = (char *)action_name;
-
-        if (strcmp(action_name, "reboot") == 0) {
-            if (!config_setting_lookup_int(action, "delay", &actions[i].delay)) {
-                printf("Element is missing the delay\n");
-                config_destroy(&cfg);
-                return EXIT_FAILURE;
-            }
-        } else { // must be service-restart
-            if (!config_setting_lookup_int(action, "delay", &actions[i].delay)) {
-                printf("Element is missing the delay\n");
-                config_destroy(&cfg);
-                return EXIT_FAILURE;
-            }
-            if (!config_setting_lookup_string(action, "name", &actions[i].object)) {
-                printf("Element is missing the name\n");
-                config_destroy(&cfg);
-                return EXIT_FAILURE;
-            }
-        }
-    }
-
+    print_debug("Amount of actions: %d\n", count);
+    
     // data
     int ms_since_last_reply = 0;
 
     sd_bus *bus = NULL;
-    const char *path;
     int r;
 
     /* Connect to the system bus */
@@ -252,6 +293,7 @@ int main()
     printf("Target IP: %s\n", ip);
     printf("Frequency: %d\n", freq);
     printf("Ping timeout: %d\n", timeout);
+    printf("Loglevel: %d\n", loglevel);
 
     fflush(stdout);
 
@@ -271,9 +313,7 @@ int main()
         
         if (connected == 1)
         {
-#if DEBUG
-            printf("still reachable %.*s\n\n\n", len -1, p);
-#endif
+            print_info("Still reachable %.*s\n\n\n", len -1, p);
             ms_since_last_reply = 0;
         }
         else
@@ -283,18 +323,20 @@ int main()
             uint64_t delta_us = (stop.tv_sec - start.tv_sec) * 1000 + (stop.tv_nsec - start.tv_nsec) / 1000000;
             ms_since_last_reply += delta_us;
 
-            printf("disconnected at %.*s; now for %dms\n\n", len -1, p, ms_since_last_reply);
+            print_info("Disconnected at %.*s; now for %dms\n\n", len -1, p, ms_since_last_reply);
         }
 
         // check if any action is required
         for (int i = 0; i < count; i++) {
             if (actions[i].delay * 1000 <= ms_since_last_reply) {
-                printf("should do action: %s\n", actions[i].name);
+                print_debug("Should do action: %s\n", actions[i].name);
 
                 if (strcmp(actions[i].name, "service-restart") == 0) {
                     restart_service(actions[i].object);
                 } else if (strcmp(actions[i].name, "reboot") == 0) {
                     restart_system();
+                } else {
+                    printf("This action is NOT yet implemented: %s\n", actions[i].name);
                 }
             }
         }
@@ -305,13 +347,16 @@ int main()
         ms_since_last_reply += freq * 1000;
     }
 
-    return 0;
+    print_info("Shutting down Simple Reconnect Daemon\n");
+    fflush(stdout);
+
+    return EXIT_SUCCESS;
 }
 
 int restart_service(char* name)
 {
 #if DEBUG
-    printf("restart_service %s\n", name);
+    print_debug("Restart service %s\n", name);
 #endif
     sd_bus_error error = SD_BUS_ERROR_NULL;
     sd_bus_message *m = NULL;
@@ -332,8 +377,7 @@ int restart_service(char* name)
     strcpy(service_name, prefix);
     strcpy(service_name + len, name);
 
-    printf("object path: %s\n", service_name);
-    
+    print_debug("Object path: %s\n", service_name);
 
     r = sd_bus_call_method(
         bus,
@@ -359,7 +403,7 @@ int restart_service(char* name)
         goto finish;
     }
 
-    printf("Queued service job as %s.\n", path);
+    print_debug("Queued service job as %s.\n", path);
 
 finish:
     sd_bus_error_free(&error);
