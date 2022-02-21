@@ -8,7 +8,7 @@ all: srd
 	$(C) $< $(CFLAGS) -o $@
 
 clean:
-	rm -f *.o *~ $(targets) *.txt
+	rm -f *.o *~ $(targets)
 
 .PHONY: all
 .PHONY: clean
