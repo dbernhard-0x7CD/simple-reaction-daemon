@@ -12,6 +12,7 @@ int main();
 int has_root_access();
 int restart_service();
 int restart_system();
+int run_command(const char* cmd, const char* user);
 int check_connectivity(const char* ip, int timeout);
 int load_config(config_t *cfg, const char **ip, int *freq, int *timeout, int* count, action_t **actions);
 

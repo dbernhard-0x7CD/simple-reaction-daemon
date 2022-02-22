@@ -147,6 +147,8 @@ int main()
                     restart_service(actions[i].object);
                 } else if (strcmp(actions[i].name, "reboot") == 0) {
                     restart_system();
+                } else if (strcmp(actions[i].name, "command") == 0) {
+                    run_command("echo 1 >> /home/david/test", "");
                 } else {
                     printf("This action is NOT yet implemented: %s\n", actions[i].name);
                 }
@@ -281,6 +283,25 @@ finish:
     return r < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
+int run_command(const char* cmd, const char* user) {
+    FILE *fp;
+    char buf[1024];
+
+    fp = popen(cmd, "r");
+    if (fp == NULL) {
+        printf("Failed to run command\n" );
+        return EXIT_FAILURE;
+    }
+
+    while (fgets(buf, sizeof(buf), fp) != NULL) {
+        print_info("%s", buf);
+    }
+
+    pclose(fp);
+        
+    return 0;
+}
+
 int check_connectivity(const char* ip, int timeout)
 {
     int pipefd[2];
@@ -388,20 +409,25 @@ int load_config(config_t *cfg, const char **ip, int *freq, int *timeout, int* co
         }
         action_arr[i].name = (char *)action_name;
 
+        if (!config_setting_lookup_int(action, "delay", &action_arr[i].delay)) {
+            printf("Element is missing the delay\n");
+            config_destroy(cfg);
+            return EXIT_FAILURE;
+        }
+
         if (strcmp(action_name, "reboot") == 0) {
-            if (!config_setting_lookup_int(action, "delay", &(*actions)[i].delay)) {
-                printf("Element is missing the delay\n");
-                config_destroy(cfg);
-                return EXIT_FAILURE;
-            }
+            // all done
         } else if (strcmp(action_name, "service-restart") == 0) {
-            if (!config_setting_lookup_int(action, "delay", &action_arr[i].delay)) {
-                printf("Element is missing the delay\n");
-                config_destroy(cfg);
-                return EXIT_FAILURE;
-            }
+            
             if (!config_setting_lookup_string(action, "name", &action_arr[i].object)) {
                 printf("Element is missing the name\n");
+                config_destroy(cfg);
+                return EXIT_FAILURE;
+            }
+        } else if (strcmp(action_name, "command") == 0) {
+            // accept. TODO user, cmd
+            if (!config_setting_lookup_string(action, "cmd", &action_arr[i].object)) {
+                printf("Element is missing the cmd\n");
                 config_destroy(cfg);
                 return EXIT_FAILURE;
             }
