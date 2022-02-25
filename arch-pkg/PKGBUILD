@@ -46,8 +46,8 @@ check() {
 package() {
     echo "packaging in $(pwd)..pkgdir: ${pkgdir}"
 
-    install -Dm750 ./srd "${pkgdir}/usr/bin/srd"
+    install -Dm755 ./srd "${pkgdir}/usr/bin/srd"
     
-    install -Dm640 ./srd.conf "${pkgdir}/etc/srd/srd.conf"
-    install -Dm640 ./srd.service "${pkgdir}/usr/lib/systemd/system/srd.service"
+    install -Dm644 ./srd.conf "${pkgdir}/etc/srd/srd.conf"
+    install -Dm644 ./srd.service "${pkgdir}/usr/lib/systemd/system/srd.service"
 }
