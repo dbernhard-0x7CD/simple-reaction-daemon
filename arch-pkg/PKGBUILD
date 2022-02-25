@@ -27,7 +27,10 @@ validpgpkeys=()
 prepare() {
     echo "preparing.. $(pwd)"
 
-    cp ../../* . || true
+    cp ../../srd.c .
+    cp ../../srd.h .
+    cp ../../srd.service .
+    cp ../../Makefile .
 }
 
 build() {
