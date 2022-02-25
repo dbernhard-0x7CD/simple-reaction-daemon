@@ -50,6 +50,4 @@ package() {
     
     install -Dm640 ./srd.conf "${pkgdir}/etc/srd/srd.conf"
     install -Dm640 ./srd.service "${pkgdir}/usr/lib/systemd/system/srd.service"
-    
-    echo "i'm in $(pwd) and vmlinuz is from: $srcdir/$_filename/$bzimage_path"
 }
