@@ -17,8 +17,6 @@
 char config_fpath[] = "/etc/srd/srd.conf";
 const char version[] = "0.0.1";
 
-#define DEBUG 1
-
 #define LOGLEVEL_DEBUG 1
 #define LOGLEVEL_INFO 2
 
