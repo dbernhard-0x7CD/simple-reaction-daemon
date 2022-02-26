@@ -25,8 +25,6 @@ validpgpkeys=()
 
 
 prepare() {
-    echo "preparing.. $(pwd)"
-
     cp ../../srd.c .
     cp ../../srd.h .
     cp ../../srd.service .
@@ -34,20 +32,12 @@ prepare() {
 }
 
 build() {
-    echo "building.. in $(pwd)"
-
     make
 }
 
-check() {
-    echo "checking.."
-}
-
 package() {
-    echo "packaging in $(pwd)..pkgdir: ${pkgdir}"
-
     install -Dm755 ./srd "${pkgdir}/usr/bin/srd"
-    
+
     install -Dm644 ./srd.conf "${pkgdir}/etc/srd/srd.conf"
     install -Dm644 ./srd.service "${pkgdir}/usr/lib/systemd/system/srd.service"
 }
