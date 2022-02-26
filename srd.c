@@ -8,6 +8,7 @@
 #include <sys/wait.h>
 #include <systemd/sd-bus.h>
 #include <libconfig.h>
+#include <pwd.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 
@@ -35,19 +36,11 @@ if (loglevel <= LOGLEVEL_INFO) { \
 }
 
 int running = 1;
-int loglevel = 1;
-
-void signal_handler(int);
+int loglevel = LOGLEVEL_DEBUG;
 
 int main()
 {
     print_debug("Starting Simple Reconnect Daemon\n");
-    
-    // ensure we have the rights to restart services (or the machine)
-    if (has_root_access() == 0) {
-        printf("I do not have root access to restart the machine\n");
-        return EXIT_FAILURE;
-    }
 
     // for stopping the service
     signal(SIGTERM, signal_handler);
@@ -135,7 +128,7 @@ int main()
             uint64_t delta_us = (stop.tv_sec - start.tv_sec) * 1000 + (stop.tv_nsec - start.tv_nsec) / 1000000;
             ms_since_last_reply += delta_us;
 
-            print_info("Disconnected at %.*s; now for %dms\n\n", len -1, p, ms_since_last_reply);
+            print_info("Disconnected at %.*s; now for %dms\n", len -1, p, ms_since_last_reply);
         }
 
         // check if any action is required
@@ -148,7 +141,7 @@ int main()
                 } else if (strcmp(actions[i].name, "reboot") == 0) {
                     restart_system();
                 } else if (strcmp(actions[i].name, "command") == 0) {
-                    run_command("echo 1 >> /home/david/test", "");
+                    run_command(actions[i].object);
                 } else {
                     printf("This action is NOT yet implemented: %s\n", actions[i].name);
                 }
@@ -165,63 +158,6 @@ int main()
     fflush(stdout);
 
     return EXIT_SUCCESS;
-}
-
-int has_root_access() {
-    int me = getegid();
-    int effective_gid = getegid();
-    print_debug("my gid: %d; effective gid: %d\n", me, effective_gid);
-
-    FILE * fp;
-    char * line = NULL;
-    size_t len = 0;
-    ssize_t read;
-
-    fp = fopen("/etc/group", "r");
-    if (fp == NULL) {
-        printf("Unable to read /etc/group");
-        fflush(stdout);
-        exit(EXIT_FAILURE);
-    }
-    char buf[10]; // log_10(2^32)
-    sprintf(buf, "%d", effective_gid);
-    printf("buf: %s\n", buf);
-
-    while ((read = getline(&line, &len, fp)) != -1) {
-        int gname = 0; // starts at beginning of the line
-        int pwd = strcspn(line, ":");
-        int gid = pwd + 1 + strcspn(line + pwd + 1, ":");
-        int thrd = gid + 1 + strcspn(line + gid + 1, ":");
-
-        *(line + thrd) = '\0';
-
-        if (strcmp(line + gid + 1, buf) == 0) {
-            // printf("found line: %s\n", line);
-            if (strstr(line + thrd + 1, "root") == NULL) {
-                print_debug("not root\n");
-                fclose(fp);
-                if (line) {
-                    free(line);
-                }
-                return 0;
-            }
-
-            fclose(fp);
-            if (line) {
-                free(line);
-            }
-            return 1;
-        }
-
-        print_debug("first: %d; second %d; third: %d\n", pwd, gid, thrd);
-    }
-
-    fclose(fp);
-    if (line) {
-        free(line);
-    }
-
-    return 0;
 }
 
 void signal_handler(int s)
@@ -283,11 +219,19 @@ finish:
     return r < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
-int run_command(const char* cmd, const char* user) {
+int run_command(const action_cmd_t* cmd) {
     FILE *fp;
     char buf[1024];
+    int old_id = getuid();
 
-    fp = popen(cmd, "r");
+    // switch to user
+    if (cmd->user != NULL) {
+        struct passwd* a = getpwnam(cmd->user);
+        uid_t uid = a->pw_uid;
+        setuid(uid);
+    }
+
+    fp = popen(cmd->command, "r");
     if (fp == NULL) {
         printf("Failed to run command\n" );
         return EXIT_FAILURE;
@@ -298,10 +242,19 @@ int run_command(const char* cmd, const char* user) {
     }
 
     pclose(fp);
+
+    if (cmd->user != NULL) {
+        setuid(old_id);
+    }
         
     return 0;
 }
 
+/* 
+* Checks if this machine is still able to ping the given IP
+* Returns 1 if the IP is still reachable in the given timeout
+* Else 0
+*/
 int check_connectivity(const char* ip, int timeout)
 {
     int pipefd[2];
@@ -311,7 +264,7 @@ int check_connectivity(const char* ip, int timeout)
     if (f == 0) // I'm the child
     {
         int mypid = getpid();
-        printf("I'm the child with pid %d\n", mypid);
+        print_debug("I'm the child with pid %d\n", mypid);
 
         // close my stdout
         close(1);
@@ -337,9 +290,7 @@ int check_connectivity(const char* ip, int timeout)
     else
     {
         int status;
-        int res = wait(&status);
-
-        print_debug("finished child process %d with status %d\n", res, status);
+        wait(&status);
 
         close(pipefd[1]);
         close(pipefd[0]);
@@ -350,6 +301,7 @@ int check_connectivity(const char* ip, int timeout)
 }
 
 // loads the configuration in ip, freq, timeout and global loglevel
+// cfg 
 int load_config(config_t *cfg, const char **ip, int *freq, int *timeout, int* count, action_t **actions) {
     const char* setting_loglevel;
     config_setting_t *setting;
@@ -416,21 +368,27 @@ int load_config(config_t *cfg, const char **ip, int *freq, int *timeout, int* co
         }
 
         if (strcmp(action_name, "reboot") == 0) {
-            // all done
+            // nothing to do
         } else if (strcmp(action_name, "service-restart") == 0) {
-            
-            if (!config_setting_lookup_string(action, "name", &action_arr[i].object)) {
+            if (!config_setting_lookup_string(action, "name", (const char**) &action_arr[i].object)) {
                 printf("Element is missing the name\n");
                 config_destroy(cfg);
                 return EXIT_FAILURE;
             }
         } else if (strcmp(action_name, "command") == 0) {
-            // accept. TODO user, cmd
-            if (!config_setting_lookup_string(action, "cmd", &action_arr[i].object)) {
+            action_cmd_t* cmd = malloc(sizeof(action_cmd_t));
+            
+            if (!config_setting_lookup_string(action, "cmd", (const char**) &cmd->command)) {
                 printf("Element is missing the cmd\n");
                 config_destroy(cfg);
                 return EXIT_FAILURE;
             }
+            
+            if (!config_setting_lookup_string(action, "user", (const char**) &cmd->user)) {
+                cmd->user = NULL;
+            }
+
+            action_arr[i].object = cmd;
         } else {
             printf("Unknown element in configuration on line %d\n", action->line);
             return EXIT_FAILURE;
