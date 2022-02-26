@@ -219,32 +219,41 @@ finish:
     return r < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 
+/*
+* Runs the given command
+*/
 int run_command(const action_cmd_t* cmd) {
     FILE *fp;
     char buf[1024];
-    int old_id = getuid();
 
-    // switch to user
-    if (cmd->user != NULL) {
-        struct passwd* a = getpwnam(cmd->user);
-        uid_t uid = a->pw_uid;
-        setuid(uid);
+    int id = fork();
+
+    if (id < 0) {
+        printf("Unable to fork.\n");
+        return 0;
     }
+    else if (id == 0) {
+        // switch to user
+        if (cmd->user != NULL) {
+            struct passwd* a = getpwnam(cmd->user);
+            uid_t uid = a->pw_uid;
+            setuid(uid);
+        }
 
-    fp = popen(cmd->command, "r");
-    if (fp == NULL) {
-        printf("Failed to run command\n" );
-        return EXIT_FAILURE;
-    }
+        fp = popen(cmd->command, "r");
+        if (fp == NULL) {
+            printf("Failed to run command\n" );
+            return EXIT_FAILURE;
+        }
 
-    while (fgets(buf, sizeof(buf), fp) != NULL) {
-        print_info("%s", buf);
-    }
+        while (fgets(buf, sizeof(buf), fp) != NULL) {
+            print_info("%s", buf);
+        }
 
-    pclose(fp);
-
-    if (cmd->user != NULL) {
-        setuid(old_id);
+        pclose(fp);
+        exit(0);
+    } else {
+        wait(NULL);
     }
         
     return 0;
@@ -400,9 +409,8 @@ int load_config(config_t *cfg, const char **ip, int *freq, int *timeout, int* co
 
 int restart_service(char* name)
 {
-#if DEBUG
     print_debug("Restart service %s\n", name);
-#endif
+
     sd_bus_error error = SD_BUS_ERROR_NULL;
     sd_bus_message *m = NULL;
     sd_bus *bus = NULL;
