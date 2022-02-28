@@ -71,10 +71,10 @@ int main()
     int count;
     const char *ip;
     int timeout;
-    int freq;
+    int period;
     action_t *actions;
 
-    if (!load_config(&cfg, &ip, &freq, &timeout, &count, &actions))
+    if (!load_config(&cfg, &ip, &period, &timeout, &count, &actions))
     {
         return EXIT_FAILURE;
     }
@@ -99,7 +99,7 @@ int main()
     printf(version);
     printf("\n");
     printf("Target IP: %s\n", ip);
-    printf("Frequency: %d\n", freq);
+    printf("Period: %d\n", period);
     printf("Ping timeout: %d\n", timeout);
     printf("Loglevel: %d\n", loglevel);
 
@@ -165,8 +165,8 @@ int main()
 
         fflush(stdout);
 
-        sleep(freq);
-        ms_since_last_reply += freq * 1000;
+        sleep(period);
+        ms_since_last_reply += period * 1000;
     }
 
     print_info("Shutting down Simple Reconnect Daemon\n");
@@ -342,9 +342,9 @@ int check_connectivity(const char *ip, int timeout)
     }
 }
 
-// Loads the configuration in ip, freq, timeout and global loglevel
+// Loads the configuration in ip, period, timeout and global loglevel
 // Returns 1 on success, else 0.
-int load_config(config_t *cfg, const char **ip, int *freq, int *timeout, int *count, action_t **actions)
+int load_config(config_t *cfg, const char **ip, int *period, int *timeout, int *count, action_t **actions)
 {
     const char *setting_loglevel;
     config_setting_t *setting;
@@ -356,9 +356,9 @@ int load_config(config_t *cfg, const char **ip, int *freq, int *timeout, int *co
         return 0;
     }
 
-    if (!config_lookup_int(cfg, "frequency", freq))
+    if (!config_lookup_int(cfg, "period", period))
     {
-        printf("missing setting: freq\n");
+        printf("missing setting: period\n");
         config_destroy(cfg);
         return 0;
     }
