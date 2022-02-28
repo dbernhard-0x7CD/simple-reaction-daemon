@@ -1,13 +1,13 @@
-# Maintainer: David Bernhard <dbernhard@ethz.ch>
+# Maintainer: David Bernhard <davidbernhard.w@gmail.com>
 pkgname=simple-reconnect-daemon
 pkgver=0.0.1
 pkgrel=1
 pkgdesc="Simple Reconnect Daemon"
-arch=(x86_64)
-url="https://n.ethz.ch/~dbernhard"
+arch=('any')
+url=""
 license=('GPL2')
 groups=()
-depends=(systemd libconfig)
+depends=(libsystemd libconfig glibc)
 makedepends=()
 checkdepends=()
 optdepends=()
@@ -15,12 +15,12 @@ provides=()
 conflicts=()
 replaces=()
 backup=('etc/srd/srd.conf')
-options=('!strip')
+options=('strip')
 install=
 changelog=
 source=('srd.conf')
 noextract=()
-sha256sums=('42a8bb596fa16ae938afdd1ce8e4d472481e6e1d71cf8899994cb9768b3de3ed')
+sha256sums=('bd1226267a15c369dc010510004315de4a7a1b1b8a6ae3f2a07898efc647d62b')
 validpgpkeys=()
 
 
