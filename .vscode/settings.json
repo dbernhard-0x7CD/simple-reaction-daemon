@@ -26,5 +26,12 @@
     "**/.*/**",
     "**/.vscode",
     "**/.vscode/**"
-  ]
+  ],
+  "files.associations": {
+    "sd-bus.h": "c",
+    "unistd.h": "c",
+    "wait.h": "c",
+    "stdlib.h": "c",
+    "math.h": "c"
+  }
 }
