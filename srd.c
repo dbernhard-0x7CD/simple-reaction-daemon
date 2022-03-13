@@ -435,6 +435,10 @@ int load_config(config_t *cfg, const char **ip, int *period, int *timeout, int *
                 config_destroy(cfg);
                 return 0;
             }
+
+            char* escaped_servicename = escape_servicename((char *)action_arr[i].object);
+            print_debug("Escaped to %s\n", escaped_servicename);
+            action_arr[i].object = escaped_servicename;
         }
         else if (strcmp(action_name, "command") == 0)
         {
@@ -525,4 +529,61 @@ finish:
     sd_bus_unref(bus);
 
     return r < 0 ? 0 : 1;
+}
+
+int needs_escaping(char c) {
+    if (!(c >= 48 && c <= 57) && !(c >= 65 && c <= 90) && !(c >= 97 && c <= 122)) {
+        return 1;
+    }
+
+    return 0;
+}
+
+/*
+* Accepts a service name and returns the same service name escaped.
+* Each character not in [a-Z] or [0-9] will get escaped to '_HEX' where HEX is
+* the HEX value of the value
+*/
+char* escape_servicename(char* input_name) {
+    // count characters which need escaping
+    char* start = input_name;
+    int chars_need_escaping = 0;
+    int len = strlen(input_name);
+
+    while(*start != '\0') {
+        char v = *start;
+
+        if (needs_escaping(v)) {
+            chars_need_escaping++;
+        }
+        start++;
+    }
+
+    int new_len = len + 1 + chars_need_escaping*2;
+    char* escaped_str = (char*)malloc(new_len);
+
+    if (escaped_str == NULL) {
+        printf("Out of memory\n");
+        exit(1);
+    }
+
+    int new_i = 0;
+    for (int i = 0; i < len; i++) {
+        char old = input_name[i];
+
+        if (needs_escaping(old)) {
+            char buf[2];
+            sprintf(buf, "%x", old);
+            
+            escaped_str[new_i] = '_';
+            escaped_str[new_i+1] = buf[0];
+            escaped_str[new_i+2] = buf[1];
+            new_i += 3;
+        } else {
+            escaped_str[new_i] = old;
+            new_i++;
+        }
+    }
+
+    return escaped_str;
 }
