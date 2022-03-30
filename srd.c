@@ -11,17 +11,18 @@
 #include <pwd.h>
 #include <sys/stat.h>
 #include <sys/time.h>
+#include <fts.h>
+#include <pthread.h>
+#include <errno.h>
 
 #include "srd.h"
 
-char config_fpath[] = "/etc/srd/srd.conf";
-const char version[] = "0.0.1";
+const char* const configd_path = "/etc/srd/";
+const char* const config_main = "/etc/srd/main.conf";
+const char* const version = "0.0.1";
 
 #define LOGLEVEL_DEBUG 1
 #define LOGLEVEL_INFO 2
-
-#define CLOCKID CLOCK_REALTIME
-#define SIG SIGRTMIN
 
 #define print_debug(...)               \
     if (loglevel <= LOGLEVEL_DEBUG)    \
@@ -42,137 +43,176 @@ int main()
 {
     print_debug("Starting Simple Reconnect Daemon\n");
 
-    // for stopping the service
-    signal(SIGTERM, signal_handler);
-    signal(SIGABRT, signal_handler);
-    signal(SIGKILL, signal_handler);
-    signal(SIGSTOP, signal_handler);
-
-    // load configuration
-    config_t cfg;
-    config_init(&cfg);
-
-    if (access(config_fpath, F_OK))
-    {
-        printf("Missing config file at %s", config_fpath);
-        fflush(stdout);
-        config_destroy(&cfg);
-        return EXIT_FAILURE;
-    }
-
-    if (!config_read_file(&cfg, config_fpath))
-    {
-        fprintf(stderr, "%s:%d - %s\n", config_error_file(&cfg), config_error_line(&cfg), config_error_text(&cfg));
-        fflush(stdout);
-        config_destroy(&cfg);
-        return EXIT_FAILURE;
-    }
-
-    int count;
-    const char *ip;
-    int timeout;
-    int period;
-    action_t *actions;
-
-    if (!load_config(&cfg, &ip, &period, &timeout, &count, &actions))
+    // load configuration files for connectivity targets
+    int success = 1;
+    int connectivity_targets = 0;
+    connectivity_check_t **connectivity_checks = load(configd_path, &success, &connectivity_targets);
+    if (!success)
     {
         return EXIT_FAILURE;
     }
-
-    print_debug("Amount of actions: %d\n", count);
-
-    // data
-    int ms_since_last_reply = 0;
-
-    sd_bus *bus = NULL;
-    int r;
-
-    /* Connect to the system bus */
-    r = sd_bus_open_system(&bus);
-    if (r < 0)
+    if (connectivity_checks == NULL)
     {
-        fprintf(stderr, "Failed to connect to system bus: %s\n", strerror(-r));
+        printf("Unable to load\n");
         return EXIT_FAILURE;
     }
 
-    printf("Starting srd (Simple Reconnect Daemon) version ");
-    printf(version);
-    printf("\n");
-    printf("Target IP: %s\n", ip);
-    printf("Period: %d\n", period);
-    printf("Ping timeout: %d\n", timeout);
-    printf("Loglevel: %d\n", loglevel);
+    print_debug("Amount of actions: %d\n", connectivity_targets);
 
+    printf("Starting srd (Simple Reconnect Daemon) version %s\n", version);
+    printf("Connectivity Targets: %d\n", connectivity_targets);
     fflush(stdout);
 
-    struct timespec stop, start;
-
-    while (running)
+    pthread_t threads[connectivity_targets];
+    // for each target in `connectivity_checks` we create one thread
+    for (int i = 0; i < connectivity_targets; i++)
     {
-        clock_gettime(CLOCK_MONOTONIC_RAW, &start);
+        pthread_create(&threads[i], NULL, (void *)run_check, (void *)connectivity_checks[i]);
+    }
 
-        int connected = check_connectivity(ip, timeout);
-        char *p;
-        int len;
-        time_t t = time(NULL);
+    sigset_t waitset;
+    siginfo_t info;
 
-        p = ctime(&t);
-        len = strlen(p);
+    if (running)
+    {
+        sigemptyset(&waitset);
 
-        if (connected == 1)
-        {
-            print_info("Still reachable %.*s\n\n\n", len - 1, p);
-            ms_since_last_reply = 0;
-        }
+        sigaddset(&waitset, SIGALRM);
+        sigaddset(&waitset, SIGTERM);
+        sigaddset(&waitset, SIGABRT);
+        sigaddset(&waitset, SIGKILL);
+        sigaddset(&waitset, SIGSTOP);
+
+        sigprocmask(SIG_BLOCK, &waitset, NULL);
+
+        printf("Awaiting shutdown signal\n");
+
+        int result = sigwaitinfo(&waitset, &info);
+        running = 0;
+
+        if (result > 0) // returns caught signal
+            printf("got signal %d\n", info.si_signo);
         else
         {
-            clock_gettime(CLOCK_MONOTONIC_RAW, &stop);
-
-            uint64_t delta_us = (stop.tv_sec - start.tv_sec) * 1000 + (stop.tv_nsec - start.tv_nsec) / 1000000;
-            ms_since_last_reply += delta_us;
-
-            print_info("Disconnected at %.*s; now for %dms\n", len - 1, p, ms_since_last_reply);
+            printf("sigwaitinfo failed with errno: %d, result: %d\n", errno, result);
+            exit(-1);
         }
-
-        // check if any action is required
-        for (int i = 0; i < count; i++)
-        {
-            if (actions[i].delay * 1000 <= ms_since_last_reply)
-            {
-                print_debug("Should do action: %s\n", actions[i].name);
-
-                if (strcmp(actions[i].name, "service-restart") == 0)
-                {
-                    restart_service(actions[i].object);
-                }
-                else if (strcmp(actions[i].name, "reboot") == 0)
-                {
-                    restart_system();
-                }
-                else if (strcmp(actions[i].name, "command") == 0)
-                {
-                    int status = run_command(actions[i].object);
-                    if (status < 0) {
-                        break;
-                    }
-                }
-                else
-                {
-                    printf("This action is NOT yet implemented: %s\n", actions[i].name);
-                }
-            }
-        }
-
-        fflush(stdout);
-
-        sleep(period);
-        ms_since_last_reply += period * 1000;
     }
 
     print_info("Shutting down Simple Reconnect Daemon\n");
     fflush(stdout);
 
+    // kill and join all threads
+    for (int i = connectivity_targets - 1; i >= 0; i--)
+    {
+        printf("killing %d\n", i);
+        pthread_kill(threads[i], SIGALRM);
+    }
+
+    for (int i = connectivity_targets - 1; i >= 0; i--)
+    {
+        printf("joining %d\n", i);
+        pthread_join(threads[i], NULL);
+    }
+
+    print_info("Killed all threads\n");
+    fflush(stdout);
+
+    // free
+    // TODO with valgrind
+
     return EXIT_SUCCESS;
+}
+
+void run_check(connectivity_check_t *cc)
+{
+    // await alarm signal, then we stop
+    signal(SIGALRM, signal_handler);
+
+    sd_bus *bus = NULL;
+    int retval;
+
+    /* Connect to the system bus */
+    retval = sd_bus_open_system(&bus);
+    if (retval < 0)
+    {
+        fprintf(stderr, "Failed to connect to system bus: %s\n", strerror(-retval));
+        return;
+    }
+
+    connectivity_check_t check = *cc;
+
+    struct timespec now;
+
+    const char *ip = check.ip;
+    int timeout = check.timeout;
+
+    clock_gettime(CLOCK_MONOTONIC_RAW, &check.timestamp_last_reply);
+
+    // check connectivity repeatedly
+    while (running)
+    {
+        int connected = check_connectivity(ip, timeout);
+        char *p;
+        int len;
+        time_t t = time(NULL);
+        clock_gettime(CLOCK_MONOTONIC_RAW, &now);
+
+        p = ctime(&t);
+        len = strlen(p);
+
+        double diff; // in ms
+        if (connected == 1)
+        {
+            print_info("%s is still reachable %.*s\n", ip, len - 1, p);
+            check.timestamp_last_reply = now;
+            diff = 0;
+        }
+        else
+        {
+
+            double_t delta_ms = (now.tv_sec - check.timestamp_last_reply.tv_sec) + (now.tv_nsec - check.timestamp_last_reply.tv_nsec) / 1000000000.0;
+
+            print_info("Disconnected from %s at %.*s; now for %0.3fs\n", ip, len - 1, p, delta_ms);
+            diff = delta_ms;
+        }
+
+        // check if any action is required
+        for (int i = 0; i < check.count; i++)
+        {
+            if (check.actions[i].delay <= diff)
+            {
+                print_debug("Should do action: %s\n", check.actions[i].name);
+
+                if (strcmp(check.actions[i].name, "service-restart") == 0)
+                {
+                    restart_service(check.actions[i].object);
+                }
+                else if (strcmp(check.actions[i].name, "reboot") == 0)
+                {
+                    restart_system();
+                }
+                else if (strcmp(check.actions[i].name, "command") == 0)
+                {
+                    action_cmd_t* cmd = check.actions[i].object;
+                    print_debug("\tCommand: %s\n", cmd->command)
+
+                    int status = run_command(check.actions[i].object);
+                    if (status < 0)
+                    {
+                        continue;
+                    }
+                }
+                else
+                {
+                    printf("This action is NOT yet implemented: %s\n", check.actions[i].name);
+                }
+            }
+        } // end check if any action has to be taken
+
+        print_debug("Sleeping for %d seconds...\n\n", check.period);
+        sleep(check.period);
+    }
 }
 
 void signal_handler(int s)
@@ -186,10 +226,6 @@ void signal_handler(int s)
     fflush(stdout);
 }
 
-/*
-* Sends a signal to restart the machine.
-* Returns 1 on success else 0.
-*/
 int restart_system()
 {
     print_info("Sending restart signal\n");
@@ -240,10 +276,6 @@ finish:
     return r < 0 ? 0 : 1;
 }
 
-/*
- * Runs the given command.
- * Returns 1 if success, else 0.
- */
 int run_command(const action_cmd_t *cmd)
 {
     FILE *fp;
@@ -301,7 +333,7 @@ int check_connectivity(const char *ip, int timeout)
     pipe(pipefd);
 
     int f = fork();
-    if (f == 0) // I'm the child
+    if (f == 0) // child
     {
         int mypid = getpid();
         print_debug("I'm the child with pid %d\n", mypid);
@@ -340,6 +372,81 @@ int check_connectivity(const char *ip, int timeout)
 
         return status == 0;
     }
+}
+
+connectivity_check_t **load(char *const directory, int *success, int *count)
+{
+    FTS *fts_ptr;
+    FTSENT *p, *children_ptr;
+    int opt = FTS_COMFOLLOW | FTS_LOGICAL | FTS_NOCHDIR;
+    int children_count = 0;
+    connectivity_check_t **conns = malloc(10 * sizeof(connectivity_check_t *));
+
+    char *const *args = { directory, NULL };
+    if ((fts_ptr = fts_open(args, opt, NULL)) == NULL)
+    {
+        printf("Unable to read directory %s\n", directory);
+        *success = 0;
+        return NULL;
+    }
+
+    children_ptr = fts_children(fts_ptr, 0);
+    if (children_ptr == NULL)
+    {
+        printf("No config files at %s\n", configd_path);
+        fflush(stdout);
+        *success = 0;
+        return NULL;
+    }
+
+    while ((p = fts_read(fts_ptr)) != NULL)
+    {
+        if (p->fts_info == FTS_F)
+        {
+            config_t cfg;
+            config_init(&cfg);
+            printf("visiting path %s\n", p->fts_path);
+
+            // TODO: only accept if the path ends with '.conf'
+
+            if (!config_read_file(&cfg, p->fts_path))
+            {
+                fprintf(stderr, "%s:%d - %s\n", config_error_file(&cfg), config_error_line(&cfg), config_error_text(&cfg));
+                fflush(stderr);
+                config_destroy(&cfg);
+                *success = 0;
+                return NULL;
+            }
+
+            print_debug("Read config file %s\n", p->fts_path);
+
+            connectivity_check_t *check = malloc(sizeof(connectivity_check_t));
+
+            if (!load_config(&cfg, &check->ip, &check->period, &check->timeout, &check->count, &check->actions))
+            {
+                printf("Unable to load config %s\n", p->fts_path);
+                *success = 0;
+                return NULL;
+            }
+
+            conns[children_count] = check;
+
+            children_count++;
+        }
+    }
+    if (children_count == 0)
+    {
+        printf("Missing config file at %s\n", configd_path);
+        fflush(stdout);
+        *success = 0;
+        return NULL;
+    }
+    fts_close(fts_ptr);
+
+    *success = 1;
+    *count = children_count;
+
+    return conns;
 }
 
 // Loads the configuration in ip, period, timeout and global loglevel
@@ -401,7 +508,7 @@ int load_config(config_t *cfg, const char **ip, int *period, int *timeout, int *
     }
     *count = config_setting_length(setting);
     *actions = malloc(*count * sizeof(action_t));
-    action_t *action_arr = *actions;
+    action_t* const action_arr = *actions;
 
     for (int i = 0; i < *count; i++)
     {
@@ -436,7 +543,7 @@ int load_config(config_t *cfg, const char **ip, int *period, int *timeout, int *
                 return 0;
             }
 
-            char* escaped_servicename = escape_servicename((char *)action_arr[i].object);
+            char *escaped_servicename = escape_servicename((char *)action_arr[i].object);
             print_debug("Escaped to %s\n", escaped_servicename);
             action_arr[i].object = escaped_servicename;
         }
@@ -472,7 +579,7 @@ int load_config(config_t *cfg, const char **ip, int *period, int *timeout, int *
  * Restarts the service with the given name.
  * Returns 1 on success, else 0.
  */
-int restart_service(char *name)
+int restart_service(const char *name)
 {
     print_debug("Restart service %s\n", name);
 
@@ -531,8 +638,10 @@ finish:
     return r < 0 ? 0 : 1;
 }
 
-int needs_escaping(char c) {
-    if (!(c >= 48 && c <= 57) && !(c >= 65 && c <= 90) && !(c >= 97 && c <= 122)) {
+int needs_escaping(char c)
+{
+    if (!(c >= 48 && c <= 57) && !(c >= 65 && c <= 90) && !(c >= 97 && c <= 122))
+    {
         return 1;
     }
 
@@ -540,46 +649,54 @@ int needs_escaping(char c) {
 }
 
 /*
-* Accepts a service name and returns the same service name escaped.
-* Each character not in [a-Z] or [0-9] will get escaped to '_HEX' where HEX is
-* the HEX value of the value
-*/
-char* escape_servicename(char* input_name) {
+ * Accepts a service name and returns the same service name escaped.
+ * Each character not in [a-Z] or [0-9] will get escaped to '_HEX' where HEX is
+ * the HEX value of the value
+ */
+char *escape_servicename(char *input_name)
+{
     // count characters which need escaping
-    char* start = input_name;
+    char *start = input_name;
     int chars_need_escaping = 0;
     int len = strlen(input_name);
 
-    while(*start != '\0') {
+    while (*start != '\0')
+    {
         char v = *start;
 
-        if (needs_escaping(v)) {
+        if (needs_escaping(v))
+        {
             chars_need_escaping++;
         }
         start++;
     }
 
-    int new_len = len + 1 + chars_need_escaping*2;
-    char* escaped_str = (char*)malloc(new_len);
+    int new_len = len + 1 + chars_need_escaping * 2;
+    char *escaped_str = (char *)malloc(new_len);
 
-    if (escaped_str == NULL) {
+    if (escaped_str == NULL)
+    {
         printf("Out of memory\n");
         exit(1);
     }
 
     int new_i = 0;
-    for (int i = 0; i < len; i++) {
+    for (int i = 0; i < len; i++)
+    {
         char old = input_name[i];
 
-        if (needs_escaping(old)) {
+        if (needs_escaping(old))
+        {
             char buf[2];
             sprintf(buf, "%x", old);
-            
+
             escaped_str[new_i] = '_';
-            escaped_str[new_i+1] = buf[0];
-            escaped_str[new_i+2] = buf[1];
+            escaped_str[new_i + 1] = buf[0];
+            escaped_str[new_i + 2] = buf[1];
             new_i += 3;
-        } else {
+        }
+        else
+        {
             escaped_str[new_i] = old;
             new_i++;
         }
