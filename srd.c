@@ -374,7 +374,7 @@ int check_connectivity(const char *ip, int timeout)
     }
 }
 
-connectivity_check_t **load(char *const directory, int *success, int *count)
+connectivity_check_t **load(char* directory, int *success, int *count)
 {
     FTS *fts_ptr;
     FTSENT *p, *children_ptr;
@@ -382,7 +382,10 @@ connectivity_check_t **load(char *const directory, int *success, int *count)
     int children_count = 0;
     connectivity_check_t **conns = malloc(10 * sizeof(connectivity_check_t *));
 
-    char *const *args = { directory, NULL };
+    char* args[2];
+    args[0] = "/etc/srd";
+    args[1] = NULL;
+
     if ((fts_ptr = fts_open(args, opt, NULL)) == NULL)
     {
         printf("Unable to read directory %s\n", directory);
