@@ -105,13 +105,11 @@ int main()
     // kill and join all threads
     for (int i = connectivity_targets - 1; i >= 0; i--)
     {
-        printf("killing %d\n", i);
         pthread_kill(threads[i], SIGALRM);
     }
 
     for (int i = connectivity_targets - 1; i >= 0; i--)
     {
-        printf("joining %d\n", i);
         pthread_join(threads[i], NULL);
     }
 
@@ -213,7 +211,7 @@ void run_check(connectivity_check_t *cc)
 
         print_debug("Sleeping for %d seconds...\n\n", check.period);
         fflush(stdout);
-        
+
         sleep(check.period);
     }
 }
