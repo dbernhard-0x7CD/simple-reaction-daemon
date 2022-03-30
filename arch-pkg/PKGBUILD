@@ -20,7 +20,7 @@ install=
 changelog=
 source=('srd.conf')
 noextract=()
-sha256sums=('bd1226267a15c369dc010510004315de4a7a1b1b8a6ae3f2a07898efc647d62b')
+sha256sums=('b96840484ced981d203de18da82e2710e21335799aa3f5e910f5d749b4252245')
 validpgpkeys=()
 
 
