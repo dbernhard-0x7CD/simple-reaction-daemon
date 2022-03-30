@@ -176,6 +176,7 @@ void run_check(connectivity_check_t *cc)
             print_info("Disconnected from %s at %.*s; now for %0.3fs\n", ip, len - 1, p, delta_ms);
             diff = delta_ms;
         }
+        fflush(stdout);
 
         // check if any action is required
         for (int i = 0; i < check.count; i++)
@@ -211,6 +212,8 @@ void run_check(connectivity_check_t *cc)
         } // end check if any action has to be taken
 
         print_debug("Sleeping for %d seconds...\n\n", check.period);
+        fflush(stdout);
+        
         sleep(check.period);
     }
 }
