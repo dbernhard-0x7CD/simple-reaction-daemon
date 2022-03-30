@@ -371,7 +371,11 @@ int check_connectivity(const char *ip, int timeout)
         close(pipefd[1]);
         close(pipefd[0]);
 
-        return status == 0;
+        int success = status == 0;
+
+        print_debug("Ping to %s has success: %d\n", ip, success);
+
+        return success;
     }
 }
 
