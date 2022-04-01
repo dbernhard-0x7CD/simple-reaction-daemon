@@ -369,6 +369,25 @@ int check_connectivity(const char *ip, int timeout)
         wait(&status);
 
         close(pipefd[1]);
+
+        // print stdout of child (which pinged the target)
+        char buffer[4096];
+        while (1) {
+            ssize_t count = read(pipefd[0], buffer, sizeof(buffer));
+            if (count == -1) {
+                if (errno == EINTR) {
+                continue;
+                } else {
+                perror("read");
+                exit(1);
+                }
+            } else if (count == 0) {
+                break;
+            } else {
+                printf(buffer);
+            }
+        }
+
         close(pipefd[0]);
 
         int success = status == 0;
