@@ -17,31 +17,50 @@
 
 #include "srd.h"
 
-const char* const configd_path = "/etc/srd/";
-const char* const config_main = "/etc/srd/main.conf";
-const char* const version = "0.0.1";
+const char *const configd_path = "/etc/srd/";
+const char *const config_main = "/etc/srd/main.conf";
+const char *const version = "0.0.1";
 
 #define LOGLEVEL_DEBUG 1
 #define LOGLEVEL_INFO 2
+#define DEBUG 0
 
-#define print_debug(...)               \
-    if (loglevel <= LOGLEVEL_DEBUG)    \
-    {                                  \
-        printf("DEBUG: " __VA_ARGS__); \
+#define print(...)                            \
+    if (pthread_mutex_lock(&stdout_mut) != 0) \
+    {                                         \
+        perror("mutex_lock");                 \
+        exit(1);                              \
+    }                                         \
+    printf(__VA_ARGS__);                      \
+    pthread_mutex_unlock(&stdout_mut);
+
+#define print_debug(...)              \
+    if (loglevel <= LOGLEVEL_DEBUG)   \
+    {                                 \
+        print("DEBUG: " __VA_ARGS__); \
     }
 
-#define print_info(...)            \
-    if (loglevel <= LOGLEVEL_INFO) \
-    {                              \
-        printf(__VA_ARGS__);       \
+#define print_info(...)              \
+    if (loglevel <= LOGLEVEL_INFO)   \
+    {                                \
+        print("INFO: " __VA_ARGS__); \
     }
 
 int running = 1;
 int loglevel = LOGLEVEL_DEBUG;
 
+pthread_mutex_t stdout_mut;
+
 int main()
 {
     print_debug("Starting Simple Reconnect Daemon\n");
+
+    if (pthread_mutex_init(&stdout_mut, NULL) != 0)
+    {
+        fprintf(stderr, "Unable to initialize mutex\n");
+        fflush(stderr);
+        exit(1);
+    }
 
     // load configuration files for connectivity targets
     int success = 1;
@@ -53,14 +72,15 @@ int main()
     }
     if (connectivity_checks == NULL)
     {
-        printf("Unable to load\n");
+        fprintf(stderr, "Unable to load configuration\n");
+        fflush(stderr);
         return EXIT_FAILURE;
     }
 
     print_debug("Amount of actions: %d\n", connectivity_targets);
 
-    printf("Starting srd (Simple Reconnect Daemon) version %s\n", version);
-    printf("Connectivity Targets: %d\n", connectivity_targets);
+    print_info("Starting srd (Simple Reconnect Daemon) version %s\n", version);
+    print_info("Connectivity Targets: %d\n", connectivity_targets);
     fflush(stdout);
 
     pthread_t threads[connectivity_targets];
@@ -85,16 +105,19 @@ int main()
 
         sigprocmask(SIG_BLOCK, &waitset, NULL);
 
-        printf("Awaiting shutdown signal\n");
+        print_info("Awaiting shutdown signal\n");
 
+        // waits until a signal arrives
         int result = sigwaitinfo(&waitset, &info);
         running = 0;
 
         if (result > 0) // returns caught signal
-            printf("got signal %d\n", info.si_signo);
+        {
+            print_debug("Got signal %d\n", info.si_signo);
+        }
         else
         {
-            printf("sigwaitinfo failed with errno: %d, result: %d\n", errno, result);
+            print_info("Sigwaitinfo failed with errno: %d, result: %d\n", errno, result);
             exit(-1);
         }
     }
@@ -113,7 +136,9 @@ int main()
         pthread_join(threads[i], NULL);
     }
 
-    print_info("Killed all threads\n");
+    print_debug("Killed all threads\n");
+
+    print_info("Finished Simple Reconnect Daemon.\n");
     fflush(stdout);
 
     // free
@@ -134,7 +159,7 @@ void run_check(connectivity_check_t *cc)
     retval = sd_bus_open_system(&bus);
     if (retval < 0)
     {
-        fprintf(stderr, "Failed to connect to system bus: %s\n", strerror(-retval));
+        print("Failed to connect to system bus: %s\n", strerror(-retval));
         return;
     }
 
@@ -171,7 +196,7 @@ void run_check(connectivity_check_t *cc)
 
             double_t delta_ms = (now.tv_sec - check.timestamp_last_reply.tv_sec) + (now.tv_nsec - check.timestamp_last_reply.tv_nsec) / 1000000000.0;
 
-            print_info("Disconnected from %s at %.*s; now for %0.3fs\n", ip, len - 1, p, delta_ms);
+            print_info("%s NOT reachable at %.*s; now for %0.3fs\n", ip, len - 1, p, delta_ms);
             diff = delta_ms;
         }
         fflush(stdout);
@@ -193,10 +218,10 @@ void run_check(connectivity_check_t *cc)
                 }
                 else if (strcmp(check.actions[i].name, "command") == 0)
                 {
-                    action_cmd_t* cmd = check.actions[i].object;
+                    action_cmd_t *cmd = check.actions[i].object;
                     print_debug("\tCommand: %s\n", cmd->command)
 
-                    int status = run_command(check.actions[i].object);
+                        int status = run_command(check.actions[i].object);
                     if (status < 0)
                     {
                         continue;
@@ -204,7 +229,7 @@ void run_check(connectivity_check_t *cc)
                 }
                 else
                 {
-                    printf("This action is NOT yet implemented: %s\n", check.actions[i].name);
+                    print_info("This action is NOT yet implemented: %s\n", check.actions[i].name);
                 }
             }
         } // end check if any action has to be taken
@@ -282,14 +307,14 @@ int run_command(const action_cmd_t *cmd)
     FILE *fp;
     char buf[1024];
 
-    int id = fork();
+    int pid = fork();
 
-    if (id < 0)
+    if (pid < 0)
     {
         printf("Unable to fork.\n");
         return 0;
     }
-    else if (id == 0)
+    else if (pid == 0)
     {
         // switch to user
         if (cmd->user != NULL)
@@ -333,8 +358,8 @@ int check_connectivity(const char *ip, int timeout)
     int pipefd[2];
     pipe(pipefd);
 
-    int f = fork();
-    if (f == 0) // child
+    int pid = fork();
+    if (pid == 0) // child
     {
         int mypid = getpid();
         print_debug("I'm the child with pid %d\n", mypid);
@@ -351,11 +376,11 @@ int check_connectivity(const char *ip, int timeout)
 
         execlp("ping", "ping",
                "-c", "1",
-               "-w", str,
+               "-W", str,
                ip, (char *)0);
         return 0;
     }
-    else if (f < 0)
+    else if (pid < 0) // failed
     {
         printf("Forking did not work\n");
         fflush(stdout);
@@ -363,30 +388,58 @@ int check_connectivity(const char *ip, int timeout)
 
         return -1;
     }
-    else
+    else // i'm the parent
     {
-        int status;
-        wait(&status);
-
+        int status, ret, err;
+        do
+        {
+            ret = waitpid(pid, &status, NULL);
+            err = errno;
+        } while ((ret == -1) && (err == EINTR));
+        
         close(pipefd[1]);
 
+        if (ret == -1)
+        {
+            print_debug("Unable to ping. errno is %d\n", err);
+        }
+
+#if DEBUG
         // print stdout of child (which pinged the target)
+
+        if (pthread_mutex_lock(&stdout_mut) != 0)
+        {
+            perror("mutex_lock");
+            return -1;
+        }
+
         char buffer[4096];
-        while (1) {
+        while (1)
+        {
             ssize_t count = read(pipefd[0], buffer, sizeof(buffer));
-            if (count == -1) {
-                if (errno == EINTR) {
-                continue;
-                } else {
-                perror("read");
-                exit(1);
+            if (count == -1)
+            {
+                if (errno == EINTR)
+                {
+                    continue;
                 }
-            } else if (count == 0) {
+                else
+                {
+                    perror("read");
+                    return -1;
+                }
+            }
+            else if (count == 0)
+            {
                 break;
-            } else {
+            }
+            else
+            {
                 printf(buffer);
             }
         }
+        pthread_mutex_unlock(&stdout_mut);
+#endif
 
         close(pipefd[0]);
 
@@ -398,7 +451,7 @@ int check_connectivity(const char *ip, int timeout)
     }
 }
 
-connectivity_check_t **load(char* directory, int *success, int *count)
+connectivity_check_t **load(char *directory, int *success, int *count)
 {
     FTS *fts_ptr;
     FTSENT *p, *children_ptr;
@@ -406,7 +459,7 @@ connectivity_check_t **load(char* directory, int *success, int *count)
     int children_count = 0;
     connectivity_check_t **conns = malloc(10 * sizeof(connectivity_check_t *));
 
-    char* args[2];
+    char *args[2];
     args[0] = "/etc/srd";
     args[1] = NULL;
 
@@ -529,13 +582,13 @@ int load_config(config_t *cfg, const char **ip, int *period, int *timeout, int *
     setting = config_lookup(cfg, "actions");
     if (setting == NULL)
     {
-        printf("Missing actions in config file.\n");
+        print_info("Missing actions in config file.\n");
         config_destroy(cfg);
         return 0;
     }
     *count = config_setting_length(setting);
     *actions = malloc(*count * sizeof(action_t));
-    action_t* const action_arr = *actions;
+    action_t *const action_arr = *actions;
 
     for (int i = 0; i < *count; i++)
     {
