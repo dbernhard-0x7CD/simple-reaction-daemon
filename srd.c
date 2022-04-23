@@ -494,9 +494,12 @@ connectivity_check_t **load(char *directory, int *success, int *count)
         {
             config_t cfg;
             config_init(&cfg);
-            printf("visiting path %s\n", p->fts_path);
+            printf("visiting file %s\n", p->fts_path);
 
-            // TODO: only accept if the path ends with '.conf'
+            // only accept if the path ends with '.conf'
+            if (!ends_with(p->fts_path, ".conf")) {
+                continue;
+            }
 
             if (!config_read_file(&cfg, p->fts_path))
             {
@@ -781,4 +784,16 @@ char *escape_servicename(char *input_name)
     }
 
     return escaped_str;
+}
+
+int ends_with(char* str, char* end) {
+    if (!str || !end) {
+        return 0;
+    }
+    
+    int len_str = strlen(str);
+    int len_end = strlen(end);
+    if (len_str > len_str)
+        return 0;
+    return strncmp(str + len_str - len_end, end, len_end) == 0;
 }

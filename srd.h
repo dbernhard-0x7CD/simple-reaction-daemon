@@ -96,4 +96,9 @@ void signal_handler(int);
  */
 char* escape_servicename(char*);
 
+/*
+* Checks if the string 'str' ends with 'end'
+*/
+int ends_with(char* str, char* end);
+
 #endif
