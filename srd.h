@@ -20,6 +20,11 @@ typedef struct action_cmd_t {
 } action_cmd_t;
 
 
+/*
+* Connectivity status for a target
+*/
+enum conn_status { STATUS_SUCCESS, STATUS_FAILED, STATUS_NONE };
+
 /* A connectivity check is one target to which we do connectivity checks.
 * Each config file represents one such check. As Each target can have its
 * own IP, timeout, period and actions.
@@ -29,6 +34,7 @@ typedef struct connectivity_check_t {
     const char *ip;
     int timeout;
     int period;
+    enum conn_status status;
     struct timespec timestamp_last_reply;
     action_t* actions;
 } connectivity_check_t;

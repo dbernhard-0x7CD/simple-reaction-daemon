@@ -187,17 +187,23 @@ void run_check(connectivity_check_t *cc)
         len = strlen(p);
 
         double diff; // in ms
-        if (connected == 1)
+        if (connected == 1 && check.status != STATUS_SUCCESS)
         {
-            print_info("[%s]: Still reachable %.*s\n", ip, len - 1, p);
+            print_info("[%s]: Reachable %.*s\n", ip, len - 1, p);
             check.timestamp_last_reply = now;
             diff = 0;
+
+            check.status = STATUS_SUCCESS;
         }
         else
         {
             double_t delta_ms = (now.tv_sec - check.timestamp_last_reply.tv_sec) + (now.tv_nsec - check.timestamp_last_reply.tv_nsec) / 1000000000.0;
 
-            print_info("[%s]: NOT reachable at %.*s; now for %0.3fs\n", ip, len - 1, p, delta_ms);
+            if (check.status != STATUS_FAILED) {
+                print_info("[%s]: NOT reachable at %.*s; now for %0.3fs\n", ip, len - 1, p, delta_ms);
+                check.status = STATUS_FAILED;
+            }
+            
             diff = delta_ms;
         }
         fflush(stdout);
@@ -522,6 +528,9 @@ connectivity_check_t **load(char *directory, int *success, int *count)
                 *success = 0;
                 return NULL;
             }
+
+            // initial connectivity_check values
+            check->status = STATUS_NONE;
 
             conns[children_count] = check;
 
