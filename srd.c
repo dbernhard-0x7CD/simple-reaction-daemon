@@ -341,7 +341,7 @@ int run_command(const action_cmd_t *cmd)
 
         while (fgets(buf, sizeof(buf), fp) != NULL)
         {
-            print_info("%s", buf);
+            print_info("Command output: %s", buf);
         }
 
         pclose(fp);
