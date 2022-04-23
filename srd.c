@@ -238,7 +238,9 @@ void run_check(connectivity_check_t *cc)
         print_debug("[%s]: Sleeping for %d seconds...\n\n", check.ip, check.period);
         fflush(stdout);
 
-        sleep(check.period);
+        if (running) {
+            sleep(check.period);
+        }
     }
 }
 
