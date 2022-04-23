@@ -17,9 +17,9 @@
 
 #include "srd.h"
 
-const char *const configd_path = "/etc/srd/";
-const char *const config_main = "/etc/srd/main.conf";
-const char *const version = "0.0.1";
+char *const configd_path = "/etc/srd/";
+char *const config_main = "/etc/srd/main.conf";
+char *const version = "0.0.1";
 
 #define LOGLEVEL_DEBUG 1
 #define LOGLEVEL_INFO 2
@@ -49,6 +49,7 @@ const char *const version = "0.0.1";
 int running = 1;
 int loglevel = LOGLEVEL_DEBUG;
 
+// used to lock stdout as all threads write to it
 pthread_mutex_t stdout_mut;
 
 int main()
@@ -84,6 +85,7 @@ int main()
     fflush(stdout);
 
     pthread_t threads[connectivity_targets];
+
     // for each target in `connectivity_checks` we create one thread
     for (int i = 0; i < connectivity_targets; i++)
     {
@@ -187,16 +189,15 @@ void run_check(connectivity_check_t *cc)
         double diff; // in ms
         if (connected == 1)
         {
-            print_info("%s is still reachable %.*s\n", ip, len - 1, p);
+            print_info("[%s]: Still reachable %.*s\n", ip, len - 1, p);
             check.timestamp_last_reply = now;
             diff = 0;
         }
         else
         {
-
             double_t delta_ms = (now.tv_sec - check.timestamp_last_reply.tv_sec) + (now.tv_nsec - check.timestamp_last_reply.tv_nsec) / 1000000000.0;
 
-            print_info("%s NOT reachable at %.*s; now for %0.3fs\n", ip, len - 1, p, delta_ms);
+            print_info("[%s]: NOT reachable at %.*s; now for %0.3fs\n", ip, len - 1, p, delta_ms);
             diff = delta_ms;
         }
         fflush(stdout);
@@ -206,15 +207,15 @@ void run_check(connectivity_check_t *cc)
         {
             if (check.actions[i].delay <= diff)
             {
-                print_debug("Should do action: %s\n", check.actions[i].name);
+                print_debug("[%s]: Should do action: %s\n", check.ip, check.actions[i].name);
 
                 if (strcmp(check.actions[i].name, "service-restart") == 0)
                 {
-                    restart_service(check.actions[i].object);
+                    restart_service(check.actions[i].object, check.ip);
                 }
                 else if (strcmp(check.actions[i].name, "reboot") == 0)
                 {
-                    restart_system();
+                    restart_system(check.ip);
                 }
                 else if (strcmp(check.actions[i].name, "command") == 0)
                 {
@@ -234,7 +235,7 @@ void run_check(connectivity_check_t *cc)
             }
         } // end check if any action has to be taken
 
-        print_debug("Sleeping for %d seconds...\n\n", check.period);
+        print_debug("[%s]: Sleeping for %d seconds...\n\n", check.ip, check.period);
         fflush(stdout);
 
         sleep(check.period);
@@ -243,7 +244,7 @@ void run_check(connectivity_check_t *cc)
 
 void signal_handler(int s)
 {
-    if (s == SIGTERM || s == SIGABRT || s == SIGKILL || s == SIGSTOP)
+    if (s == SIGTERM || s == SIGABRT || s == SIGKILL || s == SIGSTOP || s == SIGALRM)
     {
         running = 0;
         return;
@@ -252,9 +253,9 @@ void signal_handler(int s)
     fflush(stdout);
 }
 
-int restart_system()
+int restart_system(const char *ip)
 {
-    print_info("Sending restart signal\n");
+    print_info("[%s]: Sending restart signal\n", ip);
     sd_bus_error error = SD_BUS_ERROR_NULL;
     sd_bus_message *m = NULL;
     sd_bus *bus = NULL;
@@ -292,7 +293,7 @@ int restart_system()
         goto finish;
     }
 
-    print_info("Reboot scheduled. Service job: %s.\n", path);
+    print_info("[%s]: Reboot scheduled. Service job: %s.\n", ip, path);
 
 finish:
     sd_bus_error_free(&error);
@@ -358,6 +359,8 @@ int check_connectivity(const char *ip, int timeout)
     int pipefd[2];
     pipe(pipefd);
 
+    print_debug("[%s]: Checking connectivity\n", ip);
+
     int pid = fork();
     if (pid == 0) // child
     {
@@ -401,7 +404,7 @@ int check_connectivity(const char *ip, int timeout)
 
         if (ret == -1)
         {
-            print_debug("Unable to ping. errno is %d\n", err);
+            print_debug("Unable to ping. errno is %d\n", errno);
         }
 
 #if DEBUG
@@ -445,7 +448,7 @@ int check_connectivity(const char *ip, int timeout)
 
         int success = status == 0;
 
-        print_debug("Ping to %s has success: %d\n", ip, success);
+        print_debug("[%s] Ping has success: %d\n", ip, success);
 
         return success;
     }
@@ -529,8 +532,6 @@ connectivity_check_t **load(char *directory, int *success, int *count)
     return conns;
 }
 
-// Loads the configuration in ip, period, timeout and global loglevel
-// Returns 1 on success, else 0.
 int load_config(config_t *cfg, const char **ip, int *period, int *timeout, int *count, action_t **actions)
 {
     const char *setting_loglevel;
@@ -655,13 +656,9 @@ int load_config(config_t *cfg, const char **ip, int *period, int *timeout, int *
     return 1;
 }
 
-/*
- * Restarts the service with the given name.
- * Returns 1 on success, else 0.
- */
-int restart_service(const char *name)
+int restart_service(const char *name, const char *ip)
 {
-    print_debug("Restart service %s\n", name);
+    print_debug("[%s]: Restart service %s\n", ip, name);
 
     sd_bus_error error = SD_BUS_ERROR_NULL;
     sd_bus_message *m = NULL;
@@ -708,7 +705,7 @@ int restart_service(const char *name)
         goto finish;
     }
 
-    print_debug("Queued service job as %s.\n", path);
+    print_debug("[%s]: Queued service job as %s.\n", ip, path);
 
 finish:
     sd_bus_error_free(&error);
@@ -728,11 +725,6 @@ int needs_escaping(char c)
     return 0;
 }
 
-/*
- * Accepts a service name and returns the same service name escaped.
- * Each character not in [a-Z] or [0-9] will get escaped to '_HEX' where HEX is
- * the HEX value of the value
- */
 char *escape_servicename(char *input_name)
 {
     // count characters which need escaping
