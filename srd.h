@@ -2,8 +2,9 @@
 #ifndef SRD_H
 #define SRD_H
 
-/* An action which will be performed for one target
-* if down for delay seconds
+/* 
+* An action which will be performed for one target
+* if down for delay seconds.
 */
 typedef struct action_t {
     const char* name;
@@ -11,8 +12,9 @@ typedef struct action_t {
     int         delay;
 } action_t;
 
-/* A command action which will be performed for one target
-* if down for a specific duration
+/* 
+* A command action which will be performed for one target
+* if down for a specific duration.
 */
 typedef struct action_cmd_t {
     const char* command;
@@ -21,7 +23,12 @@ typedef struct action_cmd_t {
 
 
 /*
-* Connectivity status for a target
+* Log level of each target.
+*/
+enum loglevel { LOGLEVEL_DEBUG, LOGLEVEL_INFO };
+
+/*
+* Connectivity status for a target.
 */
 enum conn_status { STATUS_SUCCESS, STATUS_FAILED, STATUS_NONE };
 
@@ -81,17 +88,21 @@ connectivity_check_t** load(char *const directory, int* success, int* count);
 int run_command(const action_cmd_t* cmd);
 
 /*
-*
-*/
+ * Checks if this machine is still able to ping the given IP.
+ * Returns 1 if the IP is still reachable in the given timeout,
+ * else 0. If we cannot determine connectivity a negative value
+ * is returned
+ */
 int check_connectivity(const char* ip, int timeout);
 
-/* Loads the configuration in ip, period, timeout and global loglevel
+/* Loads the configuration file at the given path in 
+* ip, period, timeout, count of actions and global loglevel.
 * Returns 1 on success, else 0.
 */
-int load_config(config_t *cfg, const char **ip, int *freq, int *timeout, int* count, action_t **actions);
+int load_config(char *cfg_path, const char **ip, int *freq, int *timeout, int* count, action_t **actions);
 
 /*
-*
+* Handle signals like SIGTERM to stop this program.
 */
 void signal_handler(int);
 

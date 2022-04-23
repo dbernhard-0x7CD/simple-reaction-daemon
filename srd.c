@@ -21,9 +21,7 @@ char *const configd_path = "/etc/srd/";
 char *const config_main = "/etc/srd/main.conf";
 char *const version = "0.0.1";
 
-#define LOGLEVEL_DEBUG 1
-#define LOGLEVEL_INFO 2
-#define DEBUG 0
+int loglevel = LOGLEVEL_DEBUG;
 
 #define print(...)                            \
     if (pthread_mutex_lock(&stdout_mut) != 0) \
@@ -46,8 +44,8 @@ char *const version = "0.0.1";
         print("INFO: " __VA_ARGS__); \
     }
 
+// used to exit loop and stop all threads
 int running = 1;
-int loglevel = LOGLEVEL_DEBUG;
 
 // used to lock stdout as all threads write to it
 pthread_mutex_t stdout_mut;
@@ -357,12 +355,6 @@ int run_command(const action_cmd_t *cmd)
     return 1;
 }
 
-/*
- * Checks if this machine is still able to ping the given IP.
- * Returns 1 if the IP is still reachable in the given timeout,
- * else 0. If we cannot determine connectivity a negative value
- * is returned
- */
 int check_connectivity(const char *ip, int timeout)
 {
     int pipefd[2];
@@ -422,7 +414,6 @@ int check_connectivity(const char *ip, int timeout)
             print_debug("Unable to ping. errno is %d\n", errno);
         }
 
-#if DEBUG
         // print stdout of child (which pinged the target)
 
         if (pthread_mutex_lock(&stdout_mut) != 0)
@@ -453,17 +444,16 @@ int check_connectivity(const char *ip, int timeout)
             }
             else
             {
-                printf(buffer);
+                print_debug("%s", buffer);
             }
         }
         pthread_mutex_unlock(&stdout_mut);
-#endif
 
         close(pipefd[0]);
 
         int success = status == 0;
 
-        print_debug("[%s] Ping has success: %d\n", ip, success);
+        print_debug("[%s]: Ping has success: %d\n", ip, success);
 
         return success;
     }
@@ -501,29 +491,16 @@ connectivity_check_t **load(char *directory, int *success, int *count)
     {
         if (p->fts_info == FTS_F)
         {
-            config_t cfg;
-            config_init(&cfg);
-            printf("visiting file %s\n", p->fts_path);
+            print_debug("Read config file %s\n", p->fts_path);
 
             // only accept if the path ends with '.conf'
             if (!ends_with(p->fts_path, ".conf")) {
                 continue;
             }
 
-            if (!config_read_file(&cfg, p->fts_path))
-            {
-                fprintf(stderr, "%s:%d - %s\n", config_error_file(&cfg), config_error_line(&cfg), config_error_text(&cfg));
-                fflush(stderr);
-                config_destroy(&cfg);
-                *success = 0;
-                return NULL;
-            }
-
-            print_debug("Read config file %s\n", p->fts_path);
-
             connectivity_check_t *check = malloc(sizeof(connectivity_check_t));
 
-            if (!load_config(&cfg, &check->ip, &check->period, &check->timeout, &check->count, &check->actions))
+            if (!load_config(p->fts_path, &check->ip, &check->period, &check->timeout, &check->count, &check->actions))
             {
                 printf("Unable to load config %s\n", p->fts_path);
                 *success = 0;
@@ -538,11 +515,15 @@ connectivity_check_t **load(char *directory, int *success, int *count)
             children_count++;
         }
     }
+
+    // if no configuration files were found
     if (children_count == 0)
     {
         printf("Missing config file at %s\n", configd_path);
         fflush(stdout);
         *success = 0;
+
+        fts_close(fts_ptr);
         return NULL;
     }
     fts_close(fts_ptr);
@@ -553,59 +534,71 @@ connectivity_check_t **load(char *directory, int *success, int *count)
     return conns;
 }
 
-int load_config(config_t *cfg, const char **ip, int *period, int *timeout, int *count, action_t **actions)
+int load_config(char *cfg_path, const char **ip, int *period, int *timeout, int *count, action_t **actions)
 {
+    config_t cfg;
+    config_init(&cfg);
+    printf("visiting file %s\n", cfg_path);
+
+    if (!config_read_file(&cfg, cfg_path))
+    {
+        fprintf(stderr, "%s:%d - %s\n", config_error_file(&cfg), config_error_line(&cfg), config_error_text(&cfg));
+        fflush(stderr);
+        config_destroy(&cfg);
+        return 0;
+    }
+    
     const char *setting_loglevel;
     config_setting_t *setting;
 
-    if (!config_lookup_string(cfg, "destination", ip))
+    if (!config_lookup_string(&cfg, "destination", ip))
     {
-        printf("missing setting: destination\n");
-        config_destroy(cfg);
+        print_info("%s is missing setting: destination\n", cfg_path);
+        config_destroy(&cfg);
         return 0;
     }
 
-    if (!config_lookup_int(cfg, "period", period))
+    if (!config_lookup_int(&cfg, "period", period))
     {
-        printf("missing setting: period\n");
-        config_destroy(cfg);
+        print_info("%s is missing setting: period\n", cfg_path);
+        config_destroy(&cfg);
         return 0;
     }
 
-    if (!config_lookup_int(cfg, "timeout", timeout))
+    if (!config_lookup_int(&cfg, "timeout", timeout))
     {
-        printf("missing setting: timeout\n");
-        config_destroy(cfg);
+        print_info("%s is missing setting: timeout\n", cfg_path);
+        config_destroy(&cfg);
         return 0;
     }
 
-    if (!config_lookup_string(cfg, "loglevel", &setting_loglevel))
-    {
-        printf("missing setting: loglevel\n");
-        config_destroy(cfg);
-        return 0;
-    }
-
-    if (strcmp("INFO", setting_loglevel) == 0)
-    {
-        loglevel = LOGLEVEL_INFO;
-    }
-    else if (strcmp("DEBUG", setting_loglevel) == 0)
-    {
-        loglevel = LOGLEVEL_DEBUG;
-    }
-    else
-    {
-        printf("Unknown loglevel: %s\n", setting_loglevel);
-        return 0;
-    }
+    if (ends_with(cfg_path, "/srd.conf")) {
+        if (!config_lookup_string(&cfg, "loglevel", &setting_loglevel))
+        {
+            if (strcmp("INFO", setting_loglevel) == 0)
+            {
+                loglevel = LOGLEVEL_INFO;
+            }
+            else if (strcmp("DEBUG", setting_loglevel) == 0)
+            {
+                loglevel = LOGLEVEL_DEBUG;
+            }
+            else
+            {
+                printf("%s contains unknown loglevel: %s\n", cfg_path, setting_loglevel);
+                return 0;
+            }
+        } else {
+            print_info("No loglevel defined in %s.\n", cfg_path);
+        }
+    } // end if for "srd.conf"
 
     // load the actions
-    setting = config_lookup(cfg, "actions");
+    setting = config_lookup(&cfg, "actions");
     if (setting == NULL)
     {
         print_info("Missing actions in config file.\n");
-        config_destroy(cfg);
+        config_destroy(&cfg);
         return 0;
     }
     *count = config_setting_length(setting);
@@ -619,16 +612,16 @@ int load_config(config_t *cfg, const char **ip, int *period, int *timeout, int *
         const char *action_name;
         if (!config_setting_lookup_string(action, "action", &action_name))
         {
-            printf("Element is missing the action\n");
-            config_destroy(cfg);
+            print_info("%s: element is missing the action\n", cfg_path);
+            config_destroy(&cfg);
             return 0;
         }
         action_arr[i].name = (char *)action_name;
 
         if (!config_setting_lookup_int(action, "delay", &action_arr[i].delay))
         {
-            printf("Element is missing the delay\n");
-            config_destroy(cfg);
+            print_info("%s: element is missing the delay\n", cfg_path);
+            config_destroy(&cfg);
             return 0;
         }
 
@@ -640,8 +633,8 @@ int load_config(config_t *cfg, const char **ip, int *period, int *timeout, int *
         {
             if (!config_setting_lookup_string(action, "name", (const char **)&action_arr[i].object))
             {
-                printf("Element is missing the name\n");
-                config_destroy(cfg);
+                print_info("%s: element is missing the name\n", cfg_path);
+                config_destroy(&cfg);
                 return 0;
             }
 
@@ -655,8 +648,8 @@ int load_config(config_t *cfg, const char **ip, int *period, int *timeout, int *
 
             if (!config_setting_lookup_string(action, "cmd", (const char **)&cmd->command))
             {
-                printf("Element is missing the cmd\n");
-                config_destroy(cfg);
+                print_info("%s: element is missing the cmd\n", cfg_path);
+                config_destroy(&cfg);
                 return 0;
             }
 
@@ -669,7 +662,7 @@ int load_config(config_t *cfg, const char **ip, int *period, int *timeout, int *
         }
         else
         {
-            printf("Unknown element in configuration on line %d\n", action->line);
+            printf("%s: unknown element in configuration on line %d\n", cfg_path, action->line);
             return 0;
         }
     }
