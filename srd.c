@@ -227,7 +227,7 @@ void run_check(connectivity_check_t *cc)
                     action_cmd_t *cmd = check.actions[i].object;
                     print_debug("\tCommand: %s\n", cmd->command)
 
-                        int status = run_command(check.actions[i].object);
+                    int status = run_command(check.actions[i].object);
                     if (status < 0)
                     {
                         continue;
