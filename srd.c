@@ -456,7 +456,7 @@ connectivity_check_t **load(char *directory, int *success, int *count)
     {
         if (p->fts_info == FTS_F)
         {
-            print_debug("Read config file %s\n", p->fts_path);
+            print_info("Read config file %s\n", p->fts_path);
 
             // only accept if the path ends with '.conf'
             if (!ends_with(p->fts_path, ".conf")) {
@@ -503,7 +503,7 @@ int load_config(char *cfg_path, const char **ip, int *period, int *timeout, int 
 {
     config_t cfg;
     config_init(&cfg);
-    printf("visiting file %s\n", cfg_path);
+    print_debug("visiting file %s\n", cfg_path);
 
     if (!config_read_file(&cfg, cfg_path))
     {
