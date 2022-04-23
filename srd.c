@@ -393,12 +393,18 @@ int check_connectivity(const char *ip, int timeout)
     }
     else // i'm the parent
     {
-        int status, ret, err;
-        do
-        {
-            ret = waitpid(pid, &status, NULL);
-            err = errno;
-        } while ((ret == -1) && (err == EINTR));
+        // await my child
+        int status, ret;
+        while ((ret = waitpid(pid, &status, WUNTRACED)) == -1) {
+            if (errno == EINTR) {
+                printf("Got interrupted\n");
+                sleep(1);
+                continue;
+            } else {
+                printf("error %d\n", errno);
+                break;
+            }
+        } ;
         
         close(pipefd[1]);
 
