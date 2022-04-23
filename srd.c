@@ -631,7 +631,7 @@ int load_config(config_t *cfg, const char **ip, int *period, int *timeout, int *
             }
 
             char *escaped_servicename = escape_servicename((char *)action_arr[i].object);
-            print_debug("Escaped to %s\n", escaped_servicename);
+            print_debug("Escaped \"%s\" to %s\n", (char *)action_arr[i].object, escaped_servicename);
             action_arr[i].object = escaped_servicename;
         }
         else if (strcmp(action_name, "command") == 0)
