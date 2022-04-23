@@ -795,7 +795,7 @@ int ends_with(char* str, char* end) {
     
     int len_str = strlen(str);
     int len_end = strlen(end);
-    if (len_str > len_str)
+    if (len_end > len_str)
         return 0;
     return strncmp(str + len_str - len_end, end, len_end) == 0;
 }
