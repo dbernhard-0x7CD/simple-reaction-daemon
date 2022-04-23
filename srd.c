@@ -573,7 +573,7 @@ int load_config(char *cfg_path, const char **ip, int *period, int *timeout, int 
     }
 
     if (ends_with(cfg_path, "/srd.conf")) {
-        if (!config_lookup_string(&cfg, "loglevel", &setting_loglevel))
+        if (config_lookup_string(&cfg, "loglevel", &setting_loglevel))
         {
             if (strcmp("INFO", setting_loglevel) == 0)
             {
