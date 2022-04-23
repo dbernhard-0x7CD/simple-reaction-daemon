@@ -433,7 +433,7 @@ connectivity_check_t **load(char *directory, int *success, int *count)
     connectivity_check_t **conns = malloc(10 * sizeof(connectivity_check_t *));
 
     char *args[2];
-    args[0] = "/etc/srd";
+    args[0] = directory;
     args[1] = NULL;
 
     if ((fts_ptr = fts_open(args, opt, NULL)) == NULL)
