@@ -187,13 +187,14 @@ void run_check(connectivity_check_t *cc)
         len = strlen(p);
 
         double diff; // in ms
-        if (connected == 1 && check.status != STATUS_SUCCESS)
+        if (connected == 1)
         {
-            print_info("[%s]: Reachable %.*s\n", ip, len - 1, p);
+            if (check.status != STATUS_SUCCESS) {
+                print_info("[%s]: Reachable %.*s\n", ip, len - 1, p);
+                check.status = STATUS_SUCCESS;
+            }
             check.timestamp_last_reply = now;
             diff = 0;
-
-            check.status = STATUS_SUCCESS;
         }
         else
         {
