@@ -23,6 +23,7 @@ char *const version = "0.0.1";
 
 int loglevel = LOGLEVEL_DEBUG;
 
+/* Define some macros to print inside a mutex */
 #define print(...)                            \
     if (pthread_mutex_lock(&stdout_mut) != 0) \
     {                                         \
@@ -44,16 +45,17 @@ int loglevel = LOGLEVEL_DEBUG;
         print("INFO: " __VA_ARGS__); \
     }
 
-// used to exit loop and stop all threads
+/* used to exit the main loop and stop all threads */
 int running = 1;
 
-// used to lock stdout as all threads write to it
+/* used to lock stdout as all threads write to it */
 pthread_mutex_t stdout_mut;
 
 int main()
 {
     print_debug("Starting Simple Reconnect Daemon\n");
 
+    // create a mutex; if unsuccessful we stop
     if (pthread_mutex_init(&stdout_mut, NULL) != 0)
     {
         fprintf(stderr, "Unable to initialize mutex\n");
@@ -62,14 +64,10 @@ int main()
     }
 
     // load configuration files for connectivity targets
-    int success = 1;
+    int success = 0;
     int connectivity_targets = 0;
     connectivity_check_t **connectivity_checks = load(configd_path, &success, &connectivity_targets);
-    if (!success)
-    {
-        return EXIT_FAILURE;
-    }
-    if (connectivity_checks == NULL)
+    if (!success || connectivity_checks == NULL)
     {
         fprintf(stderr, "Unable to load configuration\n");
         fflush(stderr);
@@ -84,12 +82,14 @@ int main()
 
     pthread_t threads[connectivity_targets];
 
+    // Start threads for each connectivity target
     // for each target in `connectivity_checks` we create one thread
     for (int i = 0; i < connectivity_targets; i++)
     {
         pthread_create(&threads[i], NULL, (void *)run_check, (void *)connectivity_checks[i]);
     }
 
+    // used to await only specific signals
     sigset_t waitset;
     siginfo_t info;
 
@@ -172,7 +172,7 @@ void run_check(connectivity_check_t *cc)
 
     clock_gettime(CLOCK_MONOTONIC_RAW, &check.timestamp_last_reply);
 
-    // check connectivity repeatedly
+    // main loop: check connectivity repeatedly
     while (running)
     {
         int connected = check_connectivity(ip, timeout);
