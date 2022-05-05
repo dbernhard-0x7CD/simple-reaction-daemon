@@ -81,12 +81,14 @@ int main()
     fflush(stdout);
 
     pthread_t threads[connectivity_targets];
+    check_arguments_t args[connectivity_targets];
 
     // Start threads for each connectivity target
     // for each target in `connectivity_checks` we create one thread
     for (int i = 0; i < connectivity_targets; i++)
     {
-        pthread_create(&threads[i], NULL, (void *)run_check, (void *)connectivity_checks[i]);
+        args[i] = (check_arguments_t) { connectivity_checks, i, connectivity_targets };
+        pthread_create(&threads[i], NULL, (void *)run_check, (void *)&args[i]);
     }
 
     // used to await only specific signals
@@ -147,7 +149,28 @@ int main()
     return EXIT_SUCCESS;
 }
 
-void run_check(connectivity_check_t *cc)
+int is_available(connectivity_check_t **ccs, const int n, char const *ip, int strict) {
+    for (int i = 0; i < n; i++) {
+        connectivity_check_t* ptr = ccs[i];
+
+        if (strcmp(ip, ptr->ip) == 0) {
+            if (ptr->status == STATUS_SUCCESS) {
+                return 1;
+            }
+            if (ptr->status == STATUS_NONE && strict == 0) {
+                return 1;
+            }
+
+            print_debug("Not available: %s %d\n", ptr->ip, ptr->status);
+            return 0;
+        }
+    }
+
+    print_info("This dependency does not have a check: %s\n", ip);
+    return 0;
+}
+
+void run_check(check_arguments_t *args)
 {
     // await alarm signal, then we stop
     signal(SIGALRM, signal_handler);
@@ -163,19 +186,30 @@ void run_check(connectivity_check_t *cc)
         return;
     }
 
-    connectivity_check_t check = *cc;
+    int idx = args->idx;
+    connectivity_check_t* check = args->connectivity_checks[idx];
 
+    // store time to calculate how long a ping took
     struct timespec now;
-
-    const char *ip = check.ip;
-    int timeout = check.timeout;
-
-    clock_gettime(CLOCK_MONOTONIC_RAW, &check.timestamp_last_reply);
+    clock_gettime(CLOCK_MONOTONIC_RAW, &check->timestamp_last_reply);
 
     // main loop: check connectivity repeatedly
     while (running)
     {
-        int connected = check_connectivity(ip, timeout);
+        // check if our dependency is available
+        if (check->depend_ip != NULL) {
+            print_debug("[%s]: Checking for dependency %s\n",check->ip, check->depend_ip);
+
+            int available = is_available(args->connectivity_checks, args->amount_targets, check->depend_ip, 1);
+
+            if (available == 0) {
+                print_info("[%s]: Awaiting dependency %s\n", check->ip, check->depend_ip);
+                sleep(check->period);
+                continue;
+            }
+        }
+
+        int connected = check_connectivity(check->ip, check->timeout);
         char *p;
         int len;
         time_t t = time(NULL);
@@ -187,20 +221,20 @@ void run_check(connectivity_check_t *cc)
         double diff; // in ms
         if (connected == 1)
         {
-            if (check.status != STATUS_SUCCESS) {
-                print_info("[%s]: Reachable %.*s\n", ip, len - 1, p);
-                check.status = STATUS_SUCCESS;
+            if (check->status != STATUS_SUCCESS) {
+                print_info("[%s]: Reachable %.*s\n", check->ip, len - 1, p);
+                check->status = STATUS_SUCCESS;
             }
-            check.timestamp_last_reply = now;
+            check->timestamp_last_reply = now;
             diff = 0;
         }
         else
         {
-            double_t delta_ms = (now.tv_sec - check.timestamp_last_reply.tv_sec) + (now.tv_nsec - check.timestamp_last_reply.tv_nsec) / 1000000000.0;
+            double_t delta_ms = (now.tv_sec - check->timestamp_last_reply.tv_sec) + (now.tv_nsec - check->timestamp_last_reply.tv_nsec) / 1000000000.0;
 
-            if (check.status != STATUS_FAILED) {
-                print_info("[%s]: NOT reachable at %.*s; now for %0.3fs\n", ip, len - 1, p, delta_ms);
-                check.status = STATUS_FAILED;
+            if (check->status != STATUS_FAILED) {
+                print_info("[%s]: NOT reachable at %.*s; now for %0.3fs\n", check->ip, len - 1, p, delta_ms);
+                check->status = STATUS_FAILED;
             }
             
             diff = delta_ms;
@@ -208,26 +242,26 @@ void run_check(connectivity_check_t *cc)
         fflush(stdout);
 
         // check if any action is required
-        for (int i = 0; i < check.count; i++)
+        for (int i = 0; i < check->count; i++)
         {
-            if (check.actions[i].delay <= diff)
+            if (check->actions[i].delay <= diff)
             {
-                print_debug("[%s]: Should do action: %s\n", check.ip, check.actions[i].name);
+                print_debug("[%s]: Should do action: %s\n", check->ip, check->actions[i].name);
 
-                if (strcmp(check.actions[i].name, "service-restart") == 0)
+                if (strcmp(check->actions[i].name, "service-restart") == 0)
                 {
-                    restart_service(check.actions[i].object, check.ip);
+                    restart_service(check->actions[i].object, check->ip);
                 }
-                else if (strcmp(check.actions[i].name, "reboot") == 0)
+                else if (strcmp(check->actions[i].name, "reboot") == 0)
                 {
-                    restart_system(check.ip);
+                    restart_system(check->ip);
                 }
-                else if (strcmp(check.actions[i].name, "command") == 0)
+                else if (strcmp(check->actions[i].name, "command") == 0)
                 {
-                    action_cmd_t *cmd = check.actions[i].object;
+                    action_cmd_t *cmd = check->actions[i].object;
                     print_debug("\tCommand: %s\n", cmd->command)
 
-                    int status = run_command(check.actions[i].object);
+                    int status = run_command(check->actions[i].object);
                     if (status < 0)
                     {
                         continue;
@@ -235,22 +269,23 @@ void run_check(connectivity_check_t *cc)
                 }
                 else
                 {
-                    print_info("This action is NOT yet implemented: %s\n", check.actions[i].name);
+                    print_info("This action is NOT yet implemented: %s\n", check->actions[i].name);
                 }
             }
         } // end check if any action has to be taken
 
-        print_debug("[%s]: Sleeping for %d seconds...\n\n", check.ip, check.period);
+        print_debug("[%s]: Sleeping for %d seconds...\n\n", check->ip, check->period);
         fflush(stdout);
 
         if (running) {
-            sleep(check.period);
+            sleep(check->period);
         }
     }
 }
 
 void signal_handler(int s)
 {
+    // stop if we receive one of those signals
     if (s == SIGTERM || s == SIGABRT || s == SIGKILL || s == SIGSTOP || s == SIGALRM)
     {
         running = 0;
@@ -366,7 +401,7 @@ int check_connectivity(const char *ip, int timeout)
     if (pid == 0) // child
     {
         int mypid = getpid();
-        print_debug("I'm the child with pid %d\n", mypid);
+        print_debug("[%s]: I'm the child with pid %d\n", ip, mypid);
 
         // close my stdout
         close(1);
@@ -465,9 +500,9 @@ connectivity_check_t **load(char *directory, int *success, int *count)
 
             connectivity_check_t *check = malloc(sizeof(connectivity_check_t));
 
-            if (!load_config(p->fts_path, &check->ip, &check->period, &check->timeout, &check->count, &check->actions))
+            if (!load_config(p->fts_path, check))
             {
-                printf("Unable to load config %s\n", p->fts_path);
+                print("Unable to load config %s\n", p->fts_path);
                 *success = 0;
                 return NULL;
             }
@@ -477,6 +512,7 @@ connectivity_check_t **load(char *directory, int *success, int *count)
 
             conns[children_count] = check;
 
+            print_debug("Just loaded connectivity check for target %s\n", conns[children_count]->ip);
             children_count++;
         }
     }
@@ -499,42 +535,47 @@ connectivity_check_t **load(char *directory, int *success, int *count)
     return conns;
 }
 
-int load_config(char *cfg_path, const char **ip, int *period, int *timeout, int *count, action_t **actions)
+int load_config(char *cfg_path, connectivity_check_t* cc)
 {
     config_t cfg;
     config_init(&cfg);
-    print_debug("visiting file %s\n", cfg_path);
+    print_debug("Visiting file %s\n", cfg_path);
 
     if (!config_read_file(&cfg, cfg_path))
     {
         fprintf(stderr, "%s:%d - %s\n", config_error_file(&cfg), config_error_line(&cfg), config_error_text(&cfg));
         fflush(stderr);
         config_destroy(&cfg);
+        
         return 0;
     }
     
     const char *setting_loglevel;
     config_setting_t *setting;
 
-    if (!config_lookup_string(&cfg, "destination", ip))
+    if (!config_lookup_string(&cfg, "destination", &cc->ip))
     {
         print_info("%s is missing setting: destination\n", cfg_path);
         config_destroy(&cfg);
         return 0;
     }
 
-    if (!config_lookup_int(&cfg, "period", period))
+    if (!config_lookup_int(&cfg, "period", &cc->period))
     {
         print_info("%s is missing setting: period\n", cfg_path);
         config_destroy(&cfg);
         return 0;
     }
 
-    if (!config_lookup_int(&cfg, "timeout", timeout))
+    if (!config_lookup_int(&cfg, "timeout", &cc->timeout))
     {
         print_info("%s is missing setting: timeout\n", cfg_path);
         config_destroy(&cfg);
         return 0;
+    }
+
+    if (!config_lookup_string(&cfg, "depends", &cc->depend_ip)) {
+        cc->depend_ip = NULL;
     }
 
     if (ends_with(cfg_path, "/srd.conf")) {
@@ -562,15 +603,13 @@ int load_config(char *cfg_path, const char **ip, int *period, int *timeout, int 
     setting = config_lookup(&cfg, "actions");
     if (setting == NULL)
     {
-        print_info("Missing actions in config file.\n");
-        config_destroy(&cfg);
-        return 0;
+        print_debug("%s: missing actions in config file.\n", cfg_path);
+        return 1;
     }
-    *count = config_setting_length(setting);
-    *actions = malloc(*count * sizeof(action_t));
-    action_t *const action_arr = *actions;
+    cc->count = config_setting_length(setting);
+    cc->actions = malloc(cc->count * sizeof(action_t)); // TODO: free
 
-    for (int i = 0; i < *count; i++)
+    for (int i = 0; i < cc->count; i++)
     {
         const config_setting_t *action = config_setting_get_elem(setting, i);
 
@@ -581,9 +620,9 @@ int load_config(char *cfg_path, const char **ip, int *period, int *timeout, int 
             config_destroy(&cfg);
             return 0;
         }
-        action_arr[i].name = (char *)action_name;
+        cc->actions[i].name = (char *)action_name;
 
-        if (!config_setting_lookup_int(action, "delay", &action_arr[i].delay))
+        if (!config_setting_lookup_int(action, "delay", &cc->actions[i].delay))
         {
             print_info("%s: element is missing the delay\n", cfg_path);
             config_destroy(&cfg);
@@ -596,16 +635,16 @@ int load_config(char *cfg_path, const char **ip, int *period, int *timeout, int 
         }
         else if (strcmp(action_name, "service-restart") == 0)
         {
-            if (!config_setting_lookup_string(action, "name", (const char **)&action_arr[i].object))
+            if (!config_setting_lookup_string(action, "name", (const char **)&cc->actions[i].object))
             {
                 print_info("%s: element is missing the name\n", cfg_path);
                 config_destroy(&cfg);
                 return 0;
             }
 
-            char *escaped_servicename = escape_servicename((char *)action_arr[i].object);
-            print_debug("Escaped \"%s\" to %s\n", (char *)action_arr[i].object, escaped_servicename);
-            action_arr[i].object = escaped_servicename;
+            char *escaped_servicename = escape_servicename((char *)cc->actions[i].object);
+            print_debug("Escaped \"%s\" to %s\n", (char *)cc->actions[i].object, escaped_servicename);
+            cc->actions[i].object = escaped_servicename;
         }
         else if (strcmp(action_name, "command") == 0)
         {
@@ -623,7 +662,7 @@ int load_config(char *cfg_path, const char **ip, int *period, int *timeout, int 
                 cmd->user = NULL;
             }
 
-            action_arr[i].object = cmd;
+            cc->actions[i].object = cmd;
         }
         else
         {

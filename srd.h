@@ -21,7 +21,6 @@ typedef struct action_cmd_t {
     const char* user;
 } action_cmd_t;
 
-
 /*
 * Log level of each target.
 */
@@ -39,12 +38,28 @@ enum conn_status { STATUS_SUCCESS, STATUS_FAILED, STATUS_NONE };
 typedef struct connectivity_check_t {
     int count;
     const char *ip;
+    const char *depend_ip;
     int timeout;
     int period;
     enum conn_status status;
     struct timespec timestamp_last_reply;
     action_t* actions;
 } connectivity_check_t;
+
+/*
+* Type of the arguments passed to each thread running for one
+* connectivity check.
+*/
+typedef struct check_arguments_t {
+    /* All connectivity checks */
+    connectivity_check_t **connectivity_checks;
+
+    /* Index of the check this thread is responsible for */
+    int idx;
+
+    /* Sum of all checks */
+    int amount_targets;
+} check_arguments_t;
 
 /*
 * Entry point into this service. Loads all configs and starts a thread for each
@@ -55,7 +70,13 @@ int main();
 /*
 * Periodically checks this target. 
 */
-void run_check(connectivity_check_t*);
+void run_check(check_arguments_t*);
+
+/*
+* Checks if the given ip is available. Returns 1 if it is.
+* If it's non strict we'll also return 1 if it's unknown.
+*/
+int is_available(connectivity_check_t** ccs, const int n, char const *ip, int strict);
 
 /*
 * Restarts the given service. The service-name must have
@@ -95,11 +116,11 @@ int run_command(const action_cmd_t* cmd);
  */
 int check_connectivity(const char* ip, int timeout);
 
-/* Loads the configuration file at the given path in 
-* ip, period, timeout, count of actions and global loglevel.
+/* Loads the configuration file at the given path into
+* the connectivity_check_t and global loglevel.
 * Returns 1 on success, else 0.
 */
-int load_config(char *cfg_path, const char **ip, int *freq, int *timeout, int* count, action_t **actions);
+int load_config(char *cfg_path, connectivity_check_t* cc);
 
 /*
 * Handle signals like SIGTERM to stop this program.
