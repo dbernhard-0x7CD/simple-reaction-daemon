@@ -675,8 +675,6 @@ int load_config(char *cfg_path, connectivity_check_t* cc)
         }
     }
 
-    config_destroy(&cfg);
-
     return 1;
 }
 
