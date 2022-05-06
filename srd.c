@@ -143,8 +143,21 @@ int main()
     print_info("Finished Simple Reconnect Daemon.\n");
     fflush(stdout);
 
-    // free
-    // TODO with valgrind
+    // free all memory
+    for (int i = 0; i < connectivity_targets; i++) {
+        connectivity_check_t* ptr = connectivity_checks[i];
+
+        // free cmd if it is a command (contains the command) or service-restart (contains service name)
+        for (int i = 0; i < ptr->count; i++) {
+            if (strcmp(ptr->actions[i].name, "command") == 0 ||
+                strcmp(ptr->actions[i].name, "service-restart") == 0) {
+                free(ptr->actions[i].object);
+            }
+        }
+        free(ptr->actions);
+        free(ptr);
+    }
+    free(connectivity_checks);
 
     return EXIT_SUCCESS;
 }
