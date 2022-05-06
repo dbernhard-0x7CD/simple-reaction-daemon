@@ -783,7 +783,7 @@ char *escape_servicename(char *input_name)
 
         if (needs_escaping(old))
         {
-            char buf[2];
+            char buf[3];
             sprintf(buf, "%x", old);
 
             escaped_str[new_i] = '_';
