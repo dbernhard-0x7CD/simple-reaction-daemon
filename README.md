@@ -37,7 +37,8 @@ Build with `make` and copy/install srd binary to custom location.
 
 ## Configuration of the systemd-service
 
-The service is configured by files in `/etc/srd/` (with arbitrary name) which follow the following format:
+The service is configured by so called **target files** in `/etc/srd/` (with arbitrary name) which follow the following format:
+They can be dependent on eachother by configuring *depends*.
 
 ```
 # destination IP
@@ -70,7 +71,7 @@ actions = (
 
 **timeout**: Time to wait for a ping response in seconds
 
-**depends**: IP of another target
+**depends**: IP of another target. If the ping to depends is not successful, then this target won't get checked and no actions performed.
 
 <br />
 
@@ -84,7 +85,7 @@ loglevel = "INFO"
 <br />
 
 ## Actions
-**actions**: Supported actions: <br /> **Note**: The delay denotes the amount of time passed since the last successful ping (`period + timeout`) until this action is performed.
+**Note**: The delay denotes the amount of time passed since the last successful ping (`period + timeout`) until this action is performed.
 
 * *reboot*:
 
@@ -114,4 +115,34 @@ loglevel = "INFO"
     user = "root";
     cmd = "echo \"down at `date`\" >> /var/log/srd.log";
 }
+```
+
+
+## Use case - wireguard VPN
+
+If you have a wireguard VPN with a dynamic IP it'll disconnect if the IP changes. Using srd you can mitigate this with the following *target file*:
+
+
+```
+# destination IP
+destination = "10.10.0.1"
+
+# Period of the pings in s
+period = 60
+
+# timeout for one ping in s
+timeout = 10
+
+actions = (
+    {
+        action = "service-restart";
+        name = "wg-quick@wg0.service";
+        delay = 300; # 5 minutes
+    },
+    { # maybe also restart iwd?
+        action = "service-restart";
+        name = "systemd-networkd.service";
+        delay = 1800; # 30 minutes
+    }
+)
 ```
