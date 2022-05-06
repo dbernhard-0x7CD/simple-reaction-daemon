@@ -128,12 +128,12 @@ int main()
     fflush(stdout);
 
     // kill and join all threads
-    for (int i = connectivity_targets - 1; i >= 0; i--)
+    for (int i = 0; i < connectivity_targets; i++)
     {
         pthread_kill(threads[i], SIGALRM);
     }
 
-    for (int i = connectivity_targets - 1; i >= 0; i--)
+    for (int i = 0; i < connectivity_targets; i++)
     {
         pthread_join(threads[i], NULL);
     }
