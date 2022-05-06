@@ -606,6 +606,7 @@ int load_config(char *cfg_path, connectivity_check_t* cc)
     if (setting == NULL)
     {
         print_debug("%s: missing actions in config file.\n", cfg_path);
+        config_destroy(&cfg);
         return 1;
     }
     cc->count = config_setting_length(setting);
@@ -669,9 +670,12 @@ int load_config(char *cfg_path, connectivity_check_t* cc)
         else
         {
             printf("%s: unknown element in configuration on line %d\n", cfg_path, action->line);
+            config_destroy(&cfg);
             return 0;
         }
     }
+
+    config_destroy(&cfg);
 
     return 1;
 }
