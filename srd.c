@@ -27,7 +27,7 @@ int loglevel = LOGLEVEL_DEBUG;
 #define print(...)                            \
     if (pthread_mutex_lock(&stdout_mut) != 0) \
     {                                         \
-        perror("mutex_lock");                 \
+        perror("Failed to lock mutex\n");     \
         exit(1);                              \
     }                                         \
     printf(__VA_ARGS__);                      \
@@ -299,7 +299,7 @@ int restart_system(const char *ip)
 {
     print_info("[%s]: Sending restart signal\n", ip);
     sd_bus_error error = SD_BUS_ERROR_NULL;
-    sd_bus_message *m = NULL;
+    sd_bus_message *msg = NULL;
     sd_bus *bus = NULL;
     const char *path;
     int r;
@@ -319,7 +319,7 @@ int restart_system(const char *ip)
         "org.freedesktop.systemd1.Manager", /* interface name */
         "Reboot",                           /* method name */
         &error,                             /* object to return error in */
-        &m,                                 /* return message on success */
+        &msg,                                 /* return message on success */
         "");
     if (r < 0)
     {
@@ -328,7 +328,7 @@ int restart_system(const char *ip)
     }
 
     /* Parse the response message */
-    r = sd_bus_message_read(m, "o", &path);
+    r = sd_bus_message_read(msg, "o", &path);
     if (r < 0)
     {
         fprintf(stderr, "Failed to parse response message: %s\n", strerror(-r));
@@ -339,7 +339,7 @@ int restart_system(const char *ip)
 
 finish:
     sd_bus_error_free(&error);
-    sd_bus_message_unref(m);
+    sd_bus_message_unref(msg);
     sd_bus_unref(bus);
 
     return r < 0 ? 0 : 1;
@@ -427,7 +427,7 @@ int check_connectivity(const char *ip, int timeout)
 
         return -1;
     }
-    else // i'm the parent
+    else
     {
         // await my child
         int status, ret;
