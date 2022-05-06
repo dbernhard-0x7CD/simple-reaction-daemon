@@ -188,17 +188,6 @@ void run_check(check_arguments_t *args)
     // await alarm signal, then we stop
     signal(SIGALRM, signal_handler);
 
-    sd_bus *bus = NULL;
-    int retval;
-
-    /* Connect to the system bus */
-    retval = sd_bus_open_system(&bus);
-    if (retval < 0)
-    {
-        print("Failed to connect to system bus: %s\n", strerror(-retval));
-        return;
-    }
-
     int idx = args->idx;
     connectivity_check_t* check = args->connectivity_checks[idx];
 
