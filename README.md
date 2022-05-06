@@ -7,17 +7,23 @@ This program allows to configure certain actions which will be executed if a pin
 * execute custom command as user
 
 It can be installed as a systemd service to run in the background (see Installation).
-Do not forget to enable (`systemctl enable srd`) and start (`systemctl start srd`) the service. The motivation for this service is to log disconnects and have some actions in place which may bring the device back online or act as a dead man's switch.
+Do not forget to enable and start ((`systemctl enable srd`, `systemctl start srd` respectively) the service. The motivation for this service is to log disconnects and have some actions in place which may bring the device back online or act as a dead man's switch.
+
+<br />
 
 ## Building
 
 Simply run `make` in the root folder of the project.
 
-You need glibc, headers for systemd and libconfig.
+You need glibc, libconfig and headers for systemd.
+
+<br />
 
 ## Installation
 
 There are two available installation methods:
+
+<br />
 
 ### Installation - ArchLinux
 
@@ -26,6 +32,8 @@ Enter the folder `arch-pkg` and run `makepkg` and then you can install the packa
 ### Installation - Manual
 
 Build with `make` and copy/install srd binary to custom location.
+
+<br />
 
 ## Configuration of the systemd-service
 
@@ -49,7 +57,7 @@ actions = (
     },
     {
         action = "service-restart";
-        name = "systemd_2dnetworkd_2eservice";
+        name = "systemd-networkd.service";
         delay = 60;
     }
 )
@@ -62,17 +70,21 @@ actions = (
 
 **timeout**: Time to wait for a ping response in seconds
 
-**loglevel**: "INFO" or "DEBUG"
+**depends**: IP of another target
 
-## srd.conf
+<br />
+
+### srd.conf
 This file may also contain the loglevel configuration:
 ```
 # available loglevels: DEBUG, INFO
 loglevel = "INFO"
 ```
 
+<br />
+
 ## Actions
-**actions**: Supported actions: <br /> **Note**: The delay denotes the amount of time passed since the last successful ping. The first time is after `period + timeout`.
+**actions**: Supported actions: <br /> **Note**: The delay denotes the amount of time passed since the last successful ping (`period + timeout`) until this action is performed.
 
 * *reboot*:
 
@@ -88,7 +100,7 @@ loglevel = "INFO"
 ```
 {
     action = "service-restart";
-    name = "systemd_2dnetworkd_2eservice";
+    name = "systemd-networkd.service";
     delay = 600; # 10 minutes
 }
 ```
