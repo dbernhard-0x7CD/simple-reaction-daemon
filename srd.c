@@ -541,7 +541,6 @@ int load_config(char *cfg_path, connectivity_check_t* cc)
 {
     config_t cfg;
     config_init(&cfg);
-    print_debug("Visiting file %s\n", cfg_path);
 
     if (!config_read_file(&cfg, cfg_path))
     {
