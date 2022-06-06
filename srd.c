@@ -493,12 +493,12 @@ connectivity_check_t **load(char *directory, int *success, int *count)
     {
         if (p->fts_info == FTS_F)
         {
-            print_info("Read config file %s\n", p->fts_path);
-
             // only accept if the path ends with '.conf'
             if (!ends_with(p->fts_path, ".conf")) {
                 continue;
             }
+
+            print_info("Read config file %s\n", p->fts_path);
 
             connectivity_check_t *check = malloc(sizeof(connectivity_check_t));
 
