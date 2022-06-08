@@ -386,7 +386,8 @@ int run_command(const action_cmd_t *cmd)
     }
     else
     {
-        wait(NULL);
+        // await child
+        waitpid(pid, NULL, WNOHANG);
     }
 
     return 1;
