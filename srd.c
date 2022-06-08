@@ -321,7 +321,7 @@ int restart_system(const char *ip)
         "org.freedesktop.systemd1.Manager", /* interface name */
         "Reboot",                           /* method name */
         &error,                             /* object to return error in */
-        &msg,                                 /* return message on success */
+        &msg,                               /* return message on success */
         "");
     if (r < 0)
     {
