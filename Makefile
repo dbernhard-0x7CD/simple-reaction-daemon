@@ -1,11 +1,11 @@
-C = gcc
+CC = gcc
 CFLAGS = -O3 -Wall -Wextra -pthread -lrt -lsystemd -lconfig -lm
 
 
 all: srd
 
 % : %.c
-	$(C) $< $(CFLAGS) -o $@
+	$(CC) $< $(CFLAGS) -o $@
 
 clean:
 	rm -f srd
