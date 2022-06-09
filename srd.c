@@ -445,7 +445,7 @@ int check_connectivity(const char *ip, int timeout)
                 printf("error %d\n", errno);
                 break;
             }
-        } ;
+        };
         
         close(pipefd[1]);
 
@@ -740,7 +740,9 @@ finish:
 
 int needs_escaping(char c)
 {
-    if (!(c >= 48 && c <= 57) && !(c >= 65 && c <= 90) && !(c >= 97 && c <= 122))
+    if (!(c >= 48 && c <= 57) &&
+        !(c >= 65 && c <= 90) && 
+        !(c >= 97 && c <= 122))
     {
         return 1;
     }
