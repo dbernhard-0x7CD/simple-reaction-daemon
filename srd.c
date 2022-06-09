@@ -18,7 +18,7 @@
 #include "srd.h"
 
 char *const configd_path = "/etc/srd/";
-char *const config_main = "/etc/srd/main.conf";
+char *const config_main = "/srd.conf";
 char *const version = "0.0.1-dev";
 
 int loglevel = LOGLEVEL_DEBUG;
@@ -598,7 +598,7 @@ int load_config(char *cfg_path, connectivity_check_t* cc, config_t* cfg)
         cc->depend_ip = NULL;
     }
 
-    if (ends_with(cfg_path, "/srd.conf")) {
+    if (ends_with(cfg_path, config_main)) {
         if (config_lookup_string(cfg, "loglevel", &setting_loglevel))
         {
             if (strcmp("INFO", setting_loglevel) == 0)
