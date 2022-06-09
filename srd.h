@@ -36,14 +36,29 @@ enum conn_status { STATUS_SUCCESS, STATUS_FAILED, STATUS_NONE };
 * own IP, timeout, period and actions.
 */
 typedef struct connectivity_check_t {
-    int count;
+    // target IP address
     const char *ip;
+
+    // IP address this check depends on
     const char *depend_ip;
+
+    // Timeout in seconds
     int timeout;
+
+    // Period in which this IP is pinged
     int period;
+
+    // Status of last ping
     enum conn_status status;
     struct timespec timestamp_last_reply;
+
+    // Count of actions if this target is not reachable
+    int count;
+
+    // Actions if the target is not reachable
     action_t* actions;
+
+    config_t config;
 } connectivity_check_t;
 
 /*
@@ -118,9 +133,11 @@ int check_connectivity(const char* ip, int timeout);
 
 /* Loads the configuration file at the given path into
 * the connectivity_check_t and global loglevel.
+* cfg will point to the config_t struct which will have to be
+* destroyed at the end.
 * Returns 1 on success, else 0.
 */
-int load_config(char *cfg_path, connectivity_check_t* cc);
+int load_config(char *cfg_path, connectivity_check_t* cc, config_t *cfg);
 
 /*
 * Handle signals like SIGTERM to stop this program.

@@ -147,6 +147,8 @@ int main()
     for (int i = 0; i < connectivity_targets; i++) {
         connectivity_check_t* ptr = connectivity_checks[i];
 
+        config_destroy(&ptr->config);
+
         // free cmd if it is a command (contains the command) or service-restart (contains service name)
         for (int i = 0; i < ptr->count; i++) {
             if (strcmp(ptr->actions[i].name, "command") == 0 ||
@@ -160,7 +162,7 @@ int main()
     free(connectivity_checks);
 
     return EXIT_SUCCESS;
-}
+} // main end
 
 int is_available(connectivity_check_t **ccs, const int n, char const *ip, int strict) {
     for (int i = 0; i < n; i++) {
@@ -503,7 +505,7 @@ connectivity_check_t **load(char *directory, int *success, int *count)
 
             connectivity_check_t *check = malloc(sizeof(connectivity_check_t));
 
-            if (!load_config(p->fts_path, check))
+            if (!load_config(p->fts_path, check, &check->config))
             {
                 print("Unable to load config %s\n", p->fts_path);
                 *success = 0;
@@ -538,16 +540,15 @@ connectivity_check_t **load(char *directory, int *success, int *count)
     return conns;
 }
 
-int load_config(char *cfg_path, connectivity_check_t* cc)
+int load_config(char *cfg_path, connectivity_check_t* cc, config_t* cfg)
 {
-    config_t cfg;
-    config_init(&cfg);
+    config_init(cfg);
 
-    if (!config_read_file(&cfg, cfg_path))
+    if (!config_read_file(cfg, cfg_path))
     {
-        fprintf(stderr, "%s:%d - %s\n", config_error_file(&cfg), config_error_line(&cfg), config_error_text(&cfg));
+        fprintf(stderr, "%s:%d - %s\n", config_error_file(cfg), config_error_line(cfg), config_error_text(cfg));
         fflush(stderr);
-        config_destroy(&cfg);
+        config_destroy(cfg);
         
         return 0;
     }
@@ -555,33 +556,33 @@ int load_config(char *cfg_path, connectivity_check_t* cc)
     const char *setting_loglevel;
     config_setting_t *setting;
 
-    if (!config_lookup_string(&cfg, "destination", &cc->ip))
+    if (!config_lookup_string(cfg, "destination", &cc->ip))
     {
         print_info("%s is missing setting: destination\n", cfg_path);
-        config_destroy(&cfg);
+        config_destroy(cfg);
         return 0;
     }
 
-    if (!config_lookup_int(&cfg, "period", &cc->period))
+    if (!config_lookup_int(cfg, "period", &cc->period))
     {
         print_info("%s is missing setting: period\n", cfg_path);
-        config_destroy(&cfg);
+        config_destroy(cfg);
         return 0;
     }
 
-    if (!config_lookup_int(&cfg, "timeout", &cc->timeout))
+    if (!config_lookup_int(cfg, "timeout", &cc->timeout))
     {
         print_info("%s is missing setting: timeout\n", cfg_path);
-        config_destroy(&cfg);
+        config_destroy(cfg);
         return 0;
     }
 
-    if (!config_lookup_string(&cfg, "depends", &cc->depend_ip)) {
+    if (!config_lookup_string(cfg, "depends", &cc->depend_ip)) {
         cc->depend_ip = NULL;
     }
 
     if (ends_with(cfg_path, "/srd.conf")) {
-        if (config_lookup_string(&cfg, "loglevel", &setting_loglevel))
+        if (config_lookup_string(cfg, "loglevel", &setting_loglevel))
         {
             if (strcmp("INFO", setting_loglevel) == 0)
             {
@@ -602,11 +603,11 @@ int load_config(char *cfg_path, connectivity_check_t* cc)
     } // end if for "srd.conf"
 
     // load the actions
-    setting = config_lookup(&cfg, "actions");
+    setting = config_lookup(cfg, "actions");
     if (setting == NULL)
     {
         print_debug("%s: missing actions in config file.\n", cfg_path);
-        config_destroy(&cfg);
+        config_destroy(cfg);
         return 1;
     }
     cc->count = config_setting_length(setting);
@@ -620,7 +621,7 @@ int load_config(char *cfg_path, connectivity_check_t* cc)
         if (!config_setting_lookup_string(action, "action", &action_name))
         {
             print_info("%s: element is missing the action\n", cfg_path);
-            config_destroy(&cfg);
+            config_destroy(cfg);
             return 0;
         }
         cc->actions[i].name = (char *)action_name;
@@ -628,7 +629,7 @@ int load_config(char *cfg_path, connectivity_check_t* cc)
         if (!config_setting_lookup_int(action, "delay", &cc->actions[i].delay))
         {
             print_info("%s: element is missing the delay\n", cfg_path);
-            config_destroy(&cfg);
+            config_destroy(cfg);
             return 0;
         }
 
@@ -641,7 +642,7 @@ int load_config(char *cfg_path, connectivity_check_t* cc)
             if (!config_setting_lookup_string(action, "name", (const char **)&cc->actions[i].object))
             {
                 print_info("%s: element is missing the name\n", cfg_path);
-                config_destroy(&cfg);
+                config_destroy(cfg);
                 return 0;
             }
 
@@ -656,7 +657,7 @@ int load_config(char *cfg_path, connectivity_check_t* cc)
             if (!config_setting_lookup_string(action, "cmd", (const char **)&cmd->command))
             {
                 print_info("%s: element is missing the cmd\n", cfg_path);
-                config_destroy(&cfg);
+                config_destroy(cfg);
                 return 0;
             }
 
@@ -670,7 +671,7 @@ int load_config(char *cfg_path, connectivity_check_t* cc)
         else
         {
             printf("%s: unknown element in configuration on line %d\n", cfg_path, action->line);
-            config_destroy(&cfg);
+            config_destroy(cfg);
             return 0;
         }
     }
