@@ -469,8 +469,10 @@ connectivity_check_t **load(char *directory, int *success, int *count)
     FTS *fts_ptr;
     FTSENT *p, *children_ptr;
     int opt = FTS_COMFOLLOW | FTS_LOGICAL | FTS_NOCHDIR;
-    int children_count = 0;
-    connectivity_check_t **conns = malloc(10 * sizeof(connectivity_check_t *));
+
+    int cur_size = 0;
+    int cur_max = 8;
+    connectivity_check_t **conns = malloc(cur_max * sizeof(connectivity_check_t *));
 
     char *args[2];
     args[0] = directory;
@@ -515,15 +517,30 @@ connectivity_check_t **load(char *directory, int *success, int *count)
             // initial connectivity_check values
             check->status = STATUS_NONE;
 
-            conns[children_count] = check;
+            // check if we need more space in conns
+            if (cur_size >= cur_max) {
+                cur_max += 8;
+                printf("increasing\n");
+                conns = realloc(conns, cur_max * sizeof(connectivity_check_t *));
 
-            print_debug("Just loaded connectivity check for target %s\n", conns[children_count]->ip);
-            children_count++;
+                if (conns == NULL) {
+                    printf("Out of memory\n");
+
+                    *success = 0;
+                    fts_close(fts_ptr);
+                    return NULL;
+                }
+            }
+
+            conns[cur_size] = check;
+
+            print_debug("Just loaded connectivity check for target %s\n", conns[cur_size]->ip);
+            cur_size++;
         }
     }
 
     // if no configuration files were found
-    if (children_count == 0)
+    if (cur_size == 0)
     {
         printf("Missing config file at %s\n", configd_path);
         fflush(stdout);
@@ -535,7 +552,7 @@ connectivity_check_t **load(char *directory, int *success, int *count)
     fts_close(fts_ptr);
 
     *success = 1;
-    *count = children_count;
+    *count = cur_size;
 
     return conns;
 }
