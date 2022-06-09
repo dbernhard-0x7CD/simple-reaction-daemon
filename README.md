@@ -2,12 +2,12 @@
 
 This program allows to configure certain actions which will be executed if a ping to a certain host fails for a given amount of time. Currently implemented actions are:
 
-* restart another systemd-service
+* restart another systemd-service (f.ex: systemd-networkd, iwd or wpa_supplicant)
 * restart the system
 * execute custom command as user
 
 It can be installed as a systemd service to run in the background (see Installation).
-Do not forget to enable and start ((`systemctl enable srd`, `systemctl start srd` respectively) the service. The motivation for this service is to log disconnects and have some actions in place which may bring the device back online or act as a dead man's switch.
+Do not forget to enable and start (`systemctl enable srd`, `systemctl start srd` respectively) the service. The motivation for this service is to log disconnects and have some actions in place which may bring the device back online or act as a dead man's switch.
 
 <br />
 
@@ -85,7 +85,7 @@ loglevel = "INFO"
 <br />
 
 ## Actions
-**Note**: The delay denotes the amount of time passed since the last successful ping (`period + timeout`) until this action is performed.
+**Note**: The delay denotes the amount of time passed (in seconds) since the last successful ping (`period + timeout`) until this action is performed.
 
 * *reboot*:
 
