@@ -15,7 +15,6 @@ http://0pointer.de/blog/the-new-sd-bus-api-of-systemd.html
 
 
 TODO
-* infinite amount of targets
 * dependency as config name (f.ex: gw.conf or just gw)
 * push to github
 * list of IPs as target?
@@ -27,4 +26,6 @@ mount guest additions:
             mkdir /mnt/guest_additions
             sudo mount /dev/cdrom /mnt/guest_additions
 
+* stopping when running with valgrind:
+    * kill -SIGALRM 276436 (obtained with ps -aux | grep "srd")
 
