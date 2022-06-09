@@ -15,7 +15,10 @@ http://0pointer.de/blog/the-new-sd-bus-api-of-systemd.html
 
 
 TODO
-* only .conf files (to avoid .pacnew)
+* infinite amount of targets
+* dependency as config name (f.ex: gw.conf or just gw)
+* push to github
+* list of IPs as target?
 
 
 VM (testing):
