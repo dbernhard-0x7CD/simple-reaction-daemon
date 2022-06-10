@@ -234,7 +234,7 @@ void run_check(check_arguments_t *args)
         }
         else
         {
-            double_t delta_ms = (now.tv_sec - check->timestamp_last_reply.tv_sec) + (now.tv_nsec - check->timestamp_last_reply.tv_nsec) / 1000000000.0;
+            double_t delta_ms = (now.tv_sec - check->timestamp_last_reply.tv_sec) + (now.tv_nsec - check->timestamp_last_reply.tv_nsec) / 1.0e9;
 
             if (check->status != STATUS_FAILED) {
                 print_info("[%s]: NOT reachable at %.*s; now for %0.3fs\n", check->ip, len - 1, p, delta_ms);
@@ -419,7 +419,8 @@ int check_connectivity(const char *ip, int timeout)
         sprintf(str, "%d", timeout);
 
         execlp("ping", "ping",
-               "-c", "1",
+               "-c", "3",
+               "-i", "0.002",
                "-W", str,
                ip, (char *)0);
         return 0;
