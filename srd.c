@@ -519,8 +519,8 @@ connectivity_check_t **load(char *directory, int *success, int *count)
 
             // check if we need more space in conns
             if (cur_size >= cur_max) {
+                // increase size of conns
                 cur_max += 8;
-                printf("increasing\n");
                 conns = realloc(conns, cur_max * sizeof(connectivity_check_t *));
 
                 if (conns == NULL) {
