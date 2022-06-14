@@ -235,6 +235,8 @@ void run_check(check_arguments_t *args)
         else
         {
             double_t delta_ms = (now.tv_sec - check->timestamp_last_reply.tv_sec) + (now.tv_nsec - check->timestamp_last_reply.tv_nsec) / 1.0e9;
+            
+            check->status = STATUS_FAILED;
 
             print_info("[%s]: NOT reachable at %.*s; now for %0.3fs\n", check->ip, len - 1, p, delta_ms);
 
