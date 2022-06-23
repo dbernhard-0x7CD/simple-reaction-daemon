@@ -131,13 +131,13 @@ int run_command(const action_cmd_t* cmd);
  */
 int check_connectivity(const char* ip, int timeout);
 
-/* Loads the configuration file at the given path into
-* the connectivity_check_t and global loglevel.
-* cfg will point to the config_t struct which will have to be
-* destroyed at the end.
+/* Loads the configuration file at the given path and appends
+* all found connectivity targets to conns.
+* conns_size is a pointer to the current size of the conns array
+* max_conns_size is the current maximum for conns
 * Returns 1 on success, else 0.
 */
-int load_config(char *cfg_path, connectivity_check_t* cc, config_t *cfg);
+int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, int* max_conns_size);
 
 /*
 * Handle signals like SIGTERM to stop this program.

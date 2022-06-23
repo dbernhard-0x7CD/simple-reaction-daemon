@@ -147,8 +147,6 @@ int main()
     for (int i = 0; i < connectivity_targets; i++) {
         connectivity_check_t* ptr = connectivity_checks[i];
 
-        config_destroy(&ptr->config);
-
         // free cmd if it is a command (contains the command) or service-restart (contains service name)
         for (int i = 0; i < ptr->count; i++) {
             if (strcmp(ptr->actions[i].name, "command") == 0 ||
@@ -505,37 +503,12 @@ connectivity_check_t **load(char *directory, int *success, int *count)
 
             print_info("Read config file %s\n", p->fts_path);
 
-            connectivity_check_t *check = malloc(sizeof(connectivity_check_t));
-
-            if (!load_config(p->fts_path, check, &check->config))
+            if (!load_config(p->fts_path, &conns, &cur_size, &cur_max))
             {
                 print("Unable to load config %s\n", p->fts_path);
                 *success = 0;
                 return NULL;
             }
-
-            // initial connectivity_check values
-            check->status = STATUS_NONE;
-
-            // check if we need more space in conns
-            if (cur_size >= cur_max) {
-                // increase size of conns
-                cur_max += 8;
-                conns = realloc(conns, cur_max * sizeof(connectivity_check_t *));
-
-                if (conns == NULL) {
-                    printf("Out of memory\n");
-
-                    *success = 0;
-                    fts_close(fts_ptr);
-                    return NULL;
-                }
-            }
-
-            conns[cur_size] = check;
-
-            print_debug("Just loaded connectivity check for target %s\n", conns[cur_size]->ip);
-            cur_size++;
         }
     }
 
@@ -557,141 +530,197 @@ connectivity_check_t **load(char *directory, int *success, int *count)
     return conns;
 }
 
-int load_config(char *cfg_path, connectivity_check_t* cc, config_t* cfg)
+int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, int* max_conns_size)
 {
-    config_init(cfg);
+    config_t cfg;
 
-    if (!config_read_file(cfg, cfg_path))
+    config_init(&cfg);
+
+    if (!config_read_file(&cfg, cfg_path))
     {
-        fprintf(stderr, "%s:%d - %s\n", config_error_file(cfg), config_error_line(cfg), config_error_text(cfg));
+        fprintf(stderr, "%s:%d - %s\n", config_error_file(&cfg), config_error_line(&cfg), config_error_text(&cfg));
         fflush(stderr);
-        config_destroy(cfg);
+        config_destroy(&cfg);
         
         return 0;
     }
     
     const char *setting_loglevel;
     config_setting_t *setting;
+    const char* ip_field;
 
-    if (!config_lookup_string(cfg, "destination", &cc->ip))
+    if (!config_lookup_string(&cfg, "destination", &ip_field))
     {
         print_info("%s is missing setting: destination\n", cfg_path);
-        config_destroy(cfg);
+        config_destroy(&cfg);
         return 0;
     }
 
-    if (!config_lookup_int(cfg, "period", &cc->period))
-    {
-        print_info("%s is missing setting: period\n", cfg_path);
-        config_destroy(cfg);
-        return 0;
-    }
+    // iterate over all IPs in the destination string
+    const char* cur_char = ip_field;
+    const char* end = ip_field + strlen(ip_field);
+    const char* cur_ip_start = ip_field;
+    printf("Read: %s\n", ip_field);
 
-    if (!config_lookup_int(cfg, "timeout", &cc->timeout))
-    {
-        print_info("%s is missing setting: timeout\n", cfg_path);
-        config_destroy(cfg);
-        return 0;
-    }
+    while (cur_char <= end) {
+        if (*(cur_char) == '\0' || *cur_char == ',') {
 
-    if (!config_lookup_string(cfg, "depends", &cc->depend_ip)) {
-        cc->depend_ip = NULL;
-    }
+            connectivity_check_t* cc = (connectivity_check_t* )malloc(sizeof(connectivity_check_t));
+            int length = cur_char - cur_ip_start;
 
-    if (ends_with(cfg_path, config_main)) {
-        if (config_lookup_string(cfg, "loglevel", &setting_loglevel))
-        {
-            if (strcmp("INFO", setting_loglevel) == 0)
+            // one more allocated, for null delimiter
+            char* ip = malloc((length + 1) * sizeof(char));
+
+            memcpy(ip, cur_ip_start, length);
+            *(ip + length) = '\0';
+
+            cc->ip = ip;
+
+            // initial connectivity_check values
+            cc->status = STATUS_NONE;
+
+            if (!config_lookup_int(&cfg, "period", &cc->period))
             {
-                loglevel = LOGLEVEL_INFO;
-            }
-            else if (strcmp("DEBUG", setting_loglevel) == 0)
-            {
-                loglevel = LOGLEVEL_DEBUG;
-            }
-            else
-            {
-                printf("%s contains unknown loglevel: %s\n", cfg_path, setting_loglevel);
-                return 0;
-            }
-        } else {
-            print_info("No loglevel defined in %s.\n", cfg_path);
-        }
-    } // end if for "srd.conf"
-
-    // load the actions
-    setting = config_lookup(cfg, "actions");
-    if (setting == NULL)
-    {
-        print_debug("%s: missing actions in config file.\n", cfg_path);
-        config_destroy(cfg);
-        return 1;
-    }
-    cc->count = config_setting_length(setting);
-    cc->actions = malloc(cc->count * sizeof(action_t)); // TODO: free
-
-    for (int i = 0; i < cc->count; i++)
-    {
-        const config_setting_t *action = config_setting_get_elem(setting, i);
-
-        const char *action_name;
-        if (!config_setting_lookup_string(action, "action", &action_name))
-        {
-            print_info("%s: element is missing the action\n", cfg_path);
-            config_destroy(cfg);
-            return 0;
-        }
-        cc->actions[i].name = (char *)action_name;
-
-        if (!config_setting_lookup_int(action, "delay", &cc->actions[i].delay))
-        {
-            print_info("%s: element is missing the delay\n", cfg_path);
-            config_destroy(cfg);
-            return 0;
-        }
-
-        if (strcmp(action_name, "reboot") == 0)
-        {
-            // nothing to do
-        }
-        else if (strcmp(action_name, "service-restart") == 0)
-        {
-            if (!config_setting_lookup_string(action, "name", (const char **)&cc->actions[i].object))
-            {
-                print_info("%s: element is missing the name\n", cfg_path);
-                config_destroy(cfg);
+                print_info("%s is missing setting: period\n", cfg_path);
+                config_destroy(&cfg);
                 return 0;
             }
 
-            char *escaped_servicename = escape_servicename((char *)cc->actions[i].object);
-            print_debug("Escaped \"%s\" to %s\n", (char *)cc->actions[i].object, escaped_servicename);
-            cc->actions[i].object = escaped_servicename;
-        }
-        else if (strcmp(action_name, "command") == 0)
-        {
-            action_cmd_t *cmd = malloc(sizeof(action_cmd_t));
-
-            if (!config_setting_lookup_string(action, "cmd", (const char **)&cmd->command))
+            if (!config_lookup_int(&cfg, "timeout", &cc->timeout))
             {
-                print_info("%s: element is missing the cmd\n", cfg_path);
-                config_destroy(cfg);
+                print_info("%s is missing setting: timeout\n", cfg_path);
+                config_destroy(&cfg);
                 return 0;
             }
 
-            if (!config_setting_lookup_string(action, "user", (const char **)&cmd->user))
-            {
-                cmd->user = NULL;
+            const char* depend_ip;
+            if (!config_lookup_string(&cfg, "depends", &depend_ip)) {
+                cc->depend_ip = NULL;
+            } else {
+                cc->depend_ip = malloc(strlen(depend_ip) * sizeof(char));
+                strcpy((char* )cc->depend_ip, depend_ip);
             }
 
-            cc->actions[i].object = cmd;
+            // check if this is "srd.conf"
+            if (ends_with(cfg_path, config_main)) {
+                if (config_lookup_string(&cfg, "loglevel", &setting_loglevel))
+                {
+                    if (strcmp("INFO", setting_loglevel) == 0)
+                    {
+                        loglevel = LOGLEVEL_INFO;
+                    }
+                    else if (strcmp("DEBUG", setting_loglevel) == 0)
+                    {
+                        loglevel = LOGLEVEL_DEBUG;
+                    }
+                    else
+                    {
+                        printf("%s contains unknown loglevel: %s\n", cfg_path, setting_loglevel);
+                        return 0;
+                    }
+                } else {
+                    print_info("No loglevel defined in %s.\n", cfg_path);
+                }
+            } // end if for "srd.conf"
+
+            // load the actions
+            setting = config_lookup(&cfg, "actions");
+            if (setting == NULL)
+            {
+                print_debug("%s: missing actions in config file.\n", cfg_path);
+                config_destroy(&cfg);
+                return 1;
+            }
+            cc->count = config_setting_length(setting);
+            cc->actions = malloc(cc->count * sizeof(action_t)); // TODO: free
+
+            for (int i = 0; i < cc->count; i++)
+            {
+                const config_setting_t *action = config_setting_get_elem(setting, i);
+
+                const char *action_name;
+                if (!config_setting_lookup_string(action, "action", &action_name))
+                {
+                    print_info("%s: element is missing the action\n", cfg_path);
+                    config_destroy(&cfg);
+                    return 0;
+                }
+                cc->actions[i].name = (char *)action_name;
+
+                if (!config_setting_lookup_int(action, "delay", &cc->actions[i].delay))
+                {
+                    print_info("%s: element is missing the delay\n", cfg_path);
+                    config_destroy(&cfg);
+                    return 0;
+                }
+
+                if (strcmp(action_name, "reboot") == 0)
+                {
+                    // nothing to do
+                }
+                else if (strcmp(action_name, "service-restart") == 0)
+                {
+                    if (!config_setting_lookup_string(action, "name", (const char **)&cc->actions[i].object))
+                    {
+                        print_info("%s: element is missing the name\n", cfg_path);
+                        config_destroy(&cfg);
+                        return 0;
+                    }
+
+                    char *escaped_servicename = escape_servicename((char *)cc->actions[i].object);
+                    print_debug("Escaped \"%s\" to %s\n", (char *)cc->actions[i].object, escaped_servicename);
+                    cc->actions[i].object = escaped_servicename;
+                }
+                else if (strcmp(action_name, "command") == 0)
+                {
+                    action_cmd_t *cmd = malloc(sizeof(action_cmd_t));
+
+                    if (!config_setting_lookup_string(action, "cmd", (const char **)&cmd->command))
+                    {
+                        print_info("%s: element is missing the cmd\n", cfg_path);
+                        config_destroy(&cfg);
+                        return 0;
+                    }
+
+                    if (!config_setting_lookup_string(action, "user", (const char **)&cmd->user))
+                    {
+                        cmd->user = NULL;
+                    }
+
+                    cc->actions[i].object = cmd;
+                }
+                else
+                {
+                    printf("%s: unknown element in configuration on line %d\n", cfg_path, action->line);
+                    config_destroy(&cfg);
+                    return 0;
+                }
+            }
+
+            // update the connectivity check in the array and increase size
+            (*conns)[*conns_size] = cc;
+            (*conns_size)++;
+
+            // check if we need more space in conns
+            if (*conns_size > *max_conns_size) {
+                printf("Increasing size of conns\n");
+                // increase size of conns
+                *max_conns_size += 8;
+                *conns = realloc(*conns, *max_conns_size * sizeof(connectivity_check_t *));
+
+                if (conns == NULL) {
+                    printf("Out of memory\n");
+
+                    return 0;
+                }
+            }
+
+            cur_ip_start = cur_char + 1;
         }
-        else
-        {
-            printf("%s: unknown element in configuration on line %d\n", cfg_path, action->line);
-            config_destroy(cfg);
-            return 0;
-        }
+        cur_char++;
     }
+
+    config_destroy(&cfg);
 
     return 1;
 }
