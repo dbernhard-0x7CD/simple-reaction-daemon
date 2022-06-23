@@ -519,6 +519,7 @@ connectivity_check_t **load(char *directory, int *success, int *count)
     if (cur_size == 0)
     {
         printf("Missing config file at %s\n", configd_path);
+        printf("Configuration files must end with .conf\n");
         fflush(stdout);
         *success = 0;
 
