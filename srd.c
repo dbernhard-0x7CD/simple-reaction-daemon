@@ -147,6 +147,9 @@ int main()
     for (int i = 0; i < connectivity_targets; i++) {
         connectivity_check_t* ptr = connectivity_checks[i];
 
+        free(ptr->ip);
+        free(ptr->depend_ip);
+
         // free cmd if it is a command (contains the command) or service-restart (contains service name)
         for (int i = 0; i < ptr->count; i++) {
             if (strcmp(ptr->actions[i].name, "command") == 0 ||
