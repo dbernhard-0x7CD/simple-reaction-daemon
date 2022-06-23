@@ -11,7 +11,7 @@ Do not forget to enable and start (`systemctl enable srd`, `systemctl start srd`
 
 <br />
 
-## Building
+# Building
 
 Simply run `make` in the root folder of the project.
 
@@ -19,23 +19,21 @@ You need glibc, libconfig and headers for systemd.
 
 <br />
 
-## Installation
+# Installation
 
 There are two available installation methods:
 
-<br />
+* ## Installation - ArchLinux
 
-### Installation - ArchLinux
+    Enter the folder `arch-pkg` and run `makepkg` and then you can install the packaged \*.tar.xz file.
 
-Enter the folder `arch-pkg` and run `makepkg` and then you can install the packaged \*.tar.xz file.
+* ## Installation - Manual
 
-### Installation - Manual
-
-Build with `make` and copy/install srd binary to custom location.
+    Build with `make` and copy/install srd binary to custom location.
 
 <br />
 
-## Configuration of the systemd-service
+# Configuration of the systemd-service
 
 The service is configured by so called **target files** in `/etc/srd/` (with arbitrary name) which follow the following format:
 They can be dependent on eachother by configuring *depends*.
@@ -75,7 +73,7 @@ actions = (
 
 <br />
 
-### srd.conf
+## srd.conf
 This file may also contain the loglevel configuration:
 ```
 # available loglevels: DEBUG, INFO
@@ -118,13 +116,13 @@ loglevel = "INFO"
 ```
 
 
-## Use case - wireguard VPN
+# Use case - wireguard VPN
 
 If you have a wireguard VPN with a dynamic IP it'll disconnect if the IP changes. Using srd you can mitigate this with the following *target file*:
 
 
 ```
-# destination IP
+# destination IP; This is the IP of the VPN server
 destination = "10.10.0.1"
 
 # Period of the pings in s
@@ -139,7 +137,7 @@ actions = (
         name = "wg-quick@wg0.service";
         delay = 300; # 5 minutes
     },
-    { # maybe also restart iwd?
+    {
         action = "service-restart";
         name = "systemd-networkd.service";
         delay = 1800; # 30 minutes
