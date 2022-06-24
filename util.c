@@ -36,7 +36,7 @@ char *escape_servicename(char *input_name)
         start++;
     }
 
-    int new_len = len + 1 + chars_need_escaping * 2;
+    int new_len = len + 2 + chars_need_escaping * 2;
     char *escaped_str = (char *)malloc(new_len);
 
     if (escaped_str == NULL)

@@ -422,7 +422,7 @@ int check_connectivity(const char *ip, int timeout)
         close(pipefd[0]);
 
         int length = (int)((ceil(log10(1.0 * timeout)) + 1) * sizeof(char));
-        char str[length];
+        char str[length + 1];
         sprintf(str, "%d", timeout);
 
         execlp("ping", "ping",
@@ -608,7 +608,8 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
             if (!config_lookup_string(&cfg, "depends", &depend_ip)) {
                 cc->depend_ip = NULL;
             } else {
-                cc->depend_ip = malloc(strlen(depend_ip) * sizeof(char));
+                int depend_ip_len = strlen(depend_ip) + 1;
+                cc->depend_ip = malloc(depend_ip_len * sizeof(char));
                 strcpy((char* )cc->depend_ip, depend_ip);
             }
 
@@ -643,7 +644,7 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                 return 1;
             }
             cc->count = config_setting_length(setting);
-            cc->actions = malloc(cc->count * sizeof(action_t)); // TODO: free
+            cc->actions = malloc(cc->count * sizeof(action_t));
 
             for (int i = 0; i < cc->count; i++)
             {
@@ -656,7 +657,7 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                     config_destroy(&cfg);
                     return 0;
                 }
-                int action_len = strlen(action_name);
+                int action_len = strlen(action_name) + 1;
                 cc->actions[i].name = (char *)malloc(action_len * sizeof(char));
                 strcpy((char *)cc->actions[i].name, action_name);
 
@@ -695,7 +696,7 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                         config_destroy(&cfg);
                         return 0;
                     }
-                    int action_cmd_len = strlen(command);
+                    int action_cmd_len = strlen(command) + 1;
                     cmd->command = (char *) malloc(action_cmd_len * sizeof(char));
                     strcpy((char *)cmd->command, command);
 
@@ -704,7 +705,7 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                     {
                         cmd->user = NULL;
                     } else {
-                        int username_len = strlen(username);
+                        int username_len = strlen(username) + 1;
                         cmd->user = (char *) malloc(username_len * sizeof(char));
                         strcpy((char *)cmd->user, username);
                     }
@@ -724,11 +725,10 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
             (*conns_size)++;
 
             // check if we need more space in conns
-            if (*conns_size > *max_conns_size) {
-                printf("Increasing size of conns\n");
+            if (*conns_size >= *max_conns_size) {
                 // increase size of conns
-                *max_conns_size += 8;
-                *conns = realloc(*conns, *max_conns_size * sizeof(connectivity_check_t *));
+                *max_conns_size += 1;
+                *conns = realloc(*conns, (*max_conns_size) * sizeof(connectivity_check_t *));
 
                 if (conns == NULL) {
                     printf("Out of memory\n");
