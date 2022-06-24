@@ -33,14 +33,14 @@ There are two available installation methods:
 
 <br />
 
-# Configuration of the systemd-service
+# Configuration
 
 The service is configured by so called **target files** in `/etc/srd/` (with arbitrary name) which follow the following format:
 They can be dependent on eachother by configuring *depends*.
 
 ```
 # destination IP
-destination = "127.0.0.1"
+destination = "127.0.0.1[,192.168.0.5]"
 
 # Period of the pings in s
 period = 60
