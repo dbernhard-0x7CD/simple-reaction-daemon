@@ -25,8 +25,8 @@ validpgpkeys=()
 
 
 prepare() {
-    cp ../../srd.c .
-    cp ../../srd.h .
+    cp ../../srd.* .
+    cp ../../util.* .
     cp ../../srd.service .
     cp ../../Makefile .
 }
