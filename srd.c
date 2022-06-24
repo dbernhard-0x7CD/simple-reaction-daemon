@@ -257,7 +257,7 @@ void run_check(check_arguments_t *args)
         {
             if (check->actions[i].delay <= diff)
             {
-                print_debug("[%s]: Should do action: %s\n", check->ip, check->actions[i].name);
+                print_info("[%s]: Performing action: %s\n", check->ip, check->actions[i].name);
 
                 if (strcmp(check->actions[i].name, "service-restart") == 0)
                 {
