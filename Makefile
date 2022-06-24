@@ -4,11 +4,14 @@ CFLAGS = -O3 -Wall -Wextra -pthread -lrt -lsystemd -lconfig -lm
 
 all: srd
 
-% : %.c
-	$(CC) $< $(CFLAGS) -o $@
+srd: util.o srd.o
+	$(CC) $(CFLAGS) util.o srd.o -o srd
+
+%.o : %.c
+		$(CC) -c $(CFLAGS) $< -o $@
 
 clean:
-	rm -f srd
+	rm -f *.o srd
 
 .PHONY: all
 .PHONY: clean

@@ -5,3 +5,5 @@ arch-pkg/src/*
 arch-pkg/pkg/*
 arch-pkg/*.zst
 .gitp/
+*.o
+

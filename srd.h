@@ -144,16 +144,4 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
 */
 void signal_handler(int);
 
-/*
- * Accepts a service name and returns the same service name escaped.
- * Each character not in [a-Z] or [0-9] will get escaped to '_HEX' where HEX is
- * the HEX value of the value
- */
-char* escape_servicename(char*);
-
-/*
-* Checks if the string 'str' ends with 'end'
-*/
-int ends_with(char* str, char* end);
-
 #endif
