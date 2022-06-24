@@ -571,7 +571,6 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
     const char* cur_char = ip_field;
     const char* end = ip_field + strlen(ip_field);
     const char* cur_ip_start = ip_field;
-    printf("Read: %s\n", ip_field);
 
     while (cur_char <= end) {
         if (*(cur_char) == '\0' || *cur_char == ',') {
