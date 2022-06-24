@@ -697,8 +697,14 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                     }
                     int action_cmd_len = strlen(command) + 1;
                     cmd->command = (char *) malloc(action_cmd_len * sizeof(char));
+                    
                     strcpy((char *)cmd->command, command);
+                    
+                    command = str_replace((char *)cmd->command, "%ip", (char *)cc->ip);
 
+                    cmd->command = command;
+
+                    // load username
                     const char* username;
                     if (!config_setting_lookup_string(action, "user", &username))
                     {

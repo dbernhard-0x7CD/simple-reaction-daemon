@@ -22,4 +22,11 @@ char* escape_servicename(char*);
 */
 int ends_with(char* str, char* end);
 
+/*
+* Returns a pointer to the string 'string' where substr was replaced with
+* replacement.
+*/
+char* str_replace(char* string, const char* substr, const char* replacement);
+
+
 #endif
