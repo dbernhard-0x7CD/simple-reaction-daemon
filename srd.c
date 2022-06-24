@@ -153,10 +153,16 @@ int main()
 
         // free cmd if it is a command (contains the command) or service-restart (contains service name)
         for (int i = 0; i < ptr->count; i++) {
-            if (strcmp(ptr->actions[i].name, "command") == 0 ||
-                strcmp(ptr->actions[i].name, "service-restart") == 0) {
+            if (strcmp(ptr->actions[i].name, "command") == 0) {
+                action_cmd_t* cmd = (action_cmd_t*) ptr->actions[i].object;
+                free ((char *)cmd->command);
+                free ((char *)cmd->user);
+                free(ptr->actions[i].object);
+            } else if (strcmp(ptr->actions[i].name, "service-restart") == 0) {
                 free(ptr->actions[i].object);
             }
+
+            free((char *)ptr->actions[i].name);
         }
         free(ptr->actions);
         free(ptr);
@@ -650,7 +656,9 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                     config_destroy(&cfg);
                     return 0;
                 }
-                cc->actions[i].name = (char *)action_name;
+                int action_len = strlen(action_name);
+                cc->actions[i].name = (char *)malloc(action_len * sizeof(char));
+                strcpy((char *)cc->actions[i].name, action_name);
 
                 if (!config_setting_lookup_int(action, "delay", &cc->actions[i].delay))
                 {
@@ -680,16 +688,25 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                 {
                     action_cmd_t *cmd = malloc(sizeof(action_cmd_t));
 
-                    if (!config_setting_lookup_string(action, "cmd", (const char **)&cmd->command))
+                    const char* command;
+                    if (!config_setting_lookup_string(action, "cmd", &command))
                     {
                         print_info("%s: element is missing the cmd\n", cfg_path);
                         config_destroy(&cfg);
                         return 0;
                     }
+                    int action_cmd_len = strlen(command);
+                    cmd->command = (char *) malloc(action_cmd_len * sizeof(char));
+                    strcpy((char *)cmd->command, command);
 
-                    if (!config_setting_lookup_string(action, "user", (const char **)&cmd->user))
+                    const char* username;
+                    if (!config_setting_lookup_string(action, "user", &username))
                     {
                         cmd->user = NULL;
+                    } else {
+                        int username_len = strlen(username);
+                        cmd->user = (char *) malloc(username_len * sizeof(char));
+                        strcpy((char *)cmd->user, username);
                     }
 
                     cc->actions[i].object = cmd;
