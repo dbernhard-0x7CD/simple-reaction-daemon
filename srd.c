@@ -265,7 +265,7 @@ void run_check(check_arguments_t *args)
         fflush(stdout);
 
         // check if any action is required
-        for (int i = 0; i < check->count; i++)
+        for (int i = 0; running && i < check->count; i++)
         {
             if (check->actions[i].delay <= diff)
             {
