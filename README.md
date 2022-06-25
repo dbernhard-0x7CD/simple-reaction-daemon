@@ -64,10 +64,19 @@ actions = (
 ```
 
 **destination**: IP or domain to ping regularly
+    
+* Can also be `%gw` to ping the gateway
+* **Note**: this is currently only set at startup. So changes of the gateway are not yet supported
+
+<br />
 
 **period**: Delay between the pings in seconds
 
+<br />
+
 **timeout**: Time to wait for a ping response in seconds
+
+<br />
 
 **depends**: IP of another target. If the ping to depends is not successful, then this target won't get checked and no actions performed.
 
