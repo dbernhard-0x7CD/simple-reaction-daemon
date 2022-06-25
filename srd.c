@@ -129,18 +129,14 @@ int main()
         print_info("Awaiting shutdown signal\n");
 
         // waits until a signal arrives
-        int result = sigwaitinfo(&waitset, &info);
+        int result;
+        
+        while ((result = sigwaitinfo(&waitset, &info) < 0)) {
+            printf("sigwaitinfo received error %d\n", errno);
+        }
         running = 0;
 
-        if (result > 0) // returns caught signal
-        {
-            print_debug("Got signal %d\n", info.si_signo);
-        }
-        else
-        {
-            print_info("Sigwaitinfo failed with errno: %d, result: %d\n", errno, result);
-            exit(-1);
-        }
+        print_debug("Got signal %d\n", info.si_signo);
     }
 
     print_info("Shutting down Simple Reconnect Daemon\n");
