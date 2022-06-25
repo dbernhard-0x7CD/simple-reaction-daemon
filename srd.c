@@ -55,6 +55,8 @@ int running = 1;
 /* used to lock stdout as all threads write to it */
 pthread_mutex_t stdout_mut;
 
+char* default_gw;
+
 int main()
 {
     print_info("Starting Simple Reconnect Daemon\n");
@@ -66,6 +68,10 @@ int main()
         fflush(stderr);
         exit(1);
     }
+
+    // try to get default gateway
+    default_gw = get_default_gw();
+    print_debug("default gateway %s\n", default_gw);
 
     // load configuration files for connectivity targets
     int success = 0;
@@ -180,6 +186,7 @@ int main()
         free(ptr);
     }
     free(connectivity_checks);
+    free(default_gw);
 
     return EXIT_SUCCESS;
 } // main end
@@ -568,9 +575,6 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
         
         return 0;
     }
-    
-    char* default_gw = get_default_gw();
-    print_debug("default gateway %s\n", default_gw);
 
     const char *setting_loglevel;
     config_setting_t *setting;
