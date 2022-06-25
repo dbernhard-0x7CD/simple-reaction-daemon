@@ -569,6 +569,9 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
         return 0;
     }
     
+    char* default_gw = get_default_gw();
+    print_debug("default gateway %s\n", default_gw);
+
     const char *setting_loglevel;
     config_setting_t *setting;
     const char* ip_field;
@@ -597,7 +600,7 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
             memcpy(ip, cur_ip_start, length);
             *(ip + length) = '\0';
 
-            cc->ip = ip;
+            cc->ip = str_replace(ip, "%gw", default_gw);
 
             // initial connectivity_check values
             cc->status = STATUS_NONE;
@@ -621,8 +624,14 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                 cc->depend_ip = NULL;
             } else {
                 int depend_ip_len = strlen(depend_ip) + 1;
+                
+                // create ip on heap
                 cc->depend_ip = malloc(depend_ip_len * sizeof(char));
-                strcpy((char* )cc->depend_ip, depend_ip);
+                strcpy((char *)cc->depend_ip, depend_ip);
+
+                char* replaced = str_replace((char *)cc->depend_ip, "%gw", default_gw);
+
+                strcpy((char* )cc->depend_ip, replaced);
             }
 
             // check if this is "srd.conf"

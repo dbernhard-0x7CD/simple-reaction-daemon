@@ -2,6 +2,10 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <net/if.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <errno.h>
 
 #include "util.h"
 
@@ -121,4 +125,42 @@ char* str_replace(char* string, const char* substr, const char* replacement) {
 	free(string);
 
 	return newstr;
+}
+
+char* get_default_gw() {
+    long dest;
+    long gw;
+    char iface[IF_NAMESIZE];
+    char buffer[1024];
+    FILE* file;
+
+    file = fopen("/proc/net/route", "r");
+    if (!file) {
+        printf("Unable to access /proc/net/route to get the default gateway\n");
+        return 0;
+    }
+
+    while (fgets(buffer, sizeof(buffer), file)) {
+        if (sscanf(buffer, "%s %lx %lx", iface, &dest, &gw) == 3) {
+            if (dest == 0) {
+                int size = INET_ADDRSTRLEN * sizeof(char);
+                char* str = malloc(size);
+
+                if (inet_ntop(AF_INET, &gw, str, INET_ADDRSTRLEN))
+                {
+                    fclose(file);
+                    return str;
+                }
+                
+                fclose(file);
+                return NULL;
+            }
+        }
+    }
+    if (file) {
+        fclose(file);
+    }
+    
+    printf("Did not find the default route\n");
+    return NULL;
 }

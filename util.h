@@ -29,4 +29,11 @@ int ends_with(char* str, char* end);
 char* str_replace(char* string, const char* substr, const char* replacement);
 
 
+/*
+* Returns a pointer to the string of the IP of the gateway.
+* Returns NULL if an error occurs.
+*/
+char* get_default_gw();
+
+
 #endif
