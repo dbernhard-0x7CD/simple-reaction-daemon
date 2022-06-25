@@ -24,6 +24,8 @@ char *const version = "0.0.1-dev";
 
 int loglevel = LOGLEVEL_DEBUG;
 
+#define DEBUG 0
+
 /* Define some macros to print inside a mutex */
 #define print(...)                            \
     if (pthread_mutex_lock(&stdout_mut) != 0) \
@@ -74,8 +76,17 @@ int main()
         fflush(stderr);
         return EXIT_FAILURE;
     }
+#if DEBUG
+    printf("Printing all connectivity targets:\n");
+    for (int i = 0; i < connectivity_targets; i++) {
+        connectivity_check_t cc = *connectivity_checks[i];
 
-    print_debug("Amount of actions: %d\n", connectivity_targets);
+        printf("Connectivity target %d has ip %s\n", i, cc.ip);
+        printf("\t depends on: %s\n", cc.depend_ip);
+        printf("\t period: %d\n", cc.period);
+        printf("\tnum actions: %d\n", cc.count);
+    }
+#endif
 
     print_info("Starting srd (Simple Reconnect Daemon) version %s\n", version);
     print_info("Connectivity Targets: %d\n", connectivity_targets);
