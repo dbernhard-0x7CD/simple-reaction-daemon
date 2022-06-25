@@ -30,11 +30,12 @@ int loglevel = LOGLEVEL_DEBUG;
 #define print(...)                            \
     if (pthread_mutex_lock(&stdout_mut) != 0) \
     {                                         \
-        perror("Failed to lock mutex\n");     \
-        exit(1);                              \
-    }                                         \
-    printf(__VA_ARGS__);                      \
-    pthread_mutex_unlock(&stdout_mut);
+        printf(__VA_ARGS__);                  \
+    } else {                                  \
+        printf(__VA_ARGS__);                  \
+        pthread_mutex_unlock(&stdout_mut);    \
+    }
+    
 
 #define print_debug(...)              \
     if (loglevel <= LOGLEVEL_DEBUG)   \
