@@ -283,6 +283,7 @@ void run_check(check_arguments_t *args)
                 {
                     action_cmd_t *cmd = check->actions[i].object;
                     print_debug("\tCommand: %s\n", cmd->command)
+                    fflush(stdout);
 
                     int status = run_command(cmd);
                     if (status < 0)
