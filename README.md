@@ -83,9 +83,9 @@ loglevel = "INFO"
 <br />
 
 ## Actions
-**Note**: The delay denotes the amount of time passed (in seconds) since the last successful ping (`period + timeout`) until this action is performed.
+**Note**: The `delay` configuration denotes the amount of time passed (in seconds) since the last successful ping (`period + timeout`) until this action is performed.
 
-* *reboot*:
+* **reboot**:
 
 ```
 {
@@ -94,7 +94,7 @@ loglevel = "INFO"
 }
 ```
 
-* *restart a service*:
+* **restart a service**:
 
 ```
 {
@@ -104,7 +104,7 @@ loglevel = "INFO"
 }
 ```
 
-* *execute command as a user*:
+* **execute arbitrary command as a user**:
 
 ```
 {
@@ -114,6 +114,7 @@ loglevel = "INFO"
     cmd = "echo \"down at `date`\" >> /var/log/srd.log";
 }
 ```
+* You can use `%ip` as a placeholder for the actual IP of the current target (if you use multiple destination IPs)
 
 
 # Use case - wireguard VPN
