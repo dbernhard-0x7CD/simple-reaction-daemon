@@ -57,8 +57,6 @@ typedef struct connectivity_check_t {
 
     // Actions if the target is not reachable
     action_t* actions;
-
-    config_t config;
 } connectivity_check_t;
 
 /*
