@@ -631,7 +631,7 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
 
                 char* replaced = str_replace((char *)cc->depend_ip, "%gw", default_gw);
 
-                strcpy((char* )cc->depend_ip, replaced);
+                cc->depend_ip = replaced;
             }
 
             // check if this is "srd.conf"
