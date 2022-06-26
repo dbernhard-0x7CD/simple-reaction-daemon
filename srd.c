@@ -369,7 +369,7 @@ finish:
     sd_bus_message_unref(msg);
     sd_bus_unref(bus);
 
-    return r < 0 ? 0 : 1;
+    return r >= 0;
 }
 
 int run_command(const action_cmd_t *cmd)
@@ -830,6 +830,6 @@ finish:
     sd_bus_message_unref(m);
     sd_bus_unref(bus);
 
-    return r < 0 ? 0 : 1;
+    return r >= 0;
 }
 
