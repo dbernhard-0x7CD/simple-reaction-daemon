@@ -128,7 +128,9 @@ loglevel = "INFO"
 
 # Use case - wireguard VPN
 
-If you have a wireguard VPN with a dynamic IP it'll disconnect if the IP changes. Using srd you can mitigate this with the following *target file*:
+If you have a wireguard VPN with a dynamic IP it'll disconnect if the IP of the server changes. 
+
+Using srd you can mitigate this with the following *target file*:
 
 
 ```
@@ -153,4 +155,33 @@ actions = (
         delay = 1800; # 30 minutes
     }
 )
+```
+
+# Use case - monitoring of the clients inside a VPN
+
+In this scenario you have some clients which must be online all the time and you want to monitor their reachability.
+You also could define a command to send an email to you, etc.
+
+```
+# destination IP; This is the IP of the VPN server
+destination = "10.10.0.1,10.10.0.2,10.0.0.3[,10.10.0.X,...]"
+
+# Period of the pings in s
+period = 60
+
+# timeout for one ping in s
+timeout = 10
+
+# uncomment, if you also have your gateway as a target
+# depends = "%gw"
+
+actions = ( 
+    {   
+        action = "command";
+        delay = 60; 
+        user = "REPLACE-ME!";
+        cmd = "echo \"`date`: %ip is down\" >> PATH_WHICH_EXISTS/vpn_clients_avail.log";
+    }   
+)
+
 ```
