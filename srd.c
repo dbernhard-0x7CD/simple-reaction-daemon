@@ -791,11 +791,12 @@ int restart_service(const char *name, const char *ip)
         fprintf(stderr, "Failed to connect to system bus: %s\n", strerror(-r));
         goto finish;
     }
-    char service_name[256];
     char *prefix = "/org/freedesktop/systemd1/unit/";
-    int len = strlen(prefix);
+    int prefix_len = strlen(prefix);
+    char* service_name = malloc(prefix_len + strlen(name) + 1);
+    
     strcpy(service_name, prefix);
-    strcpy(service_name + len, name);
+    strcpy(service_name + prefix_len, name);
 
     print_debug("Object path: %s\n", service_name);
 
@@ -812,8 +813,10 @@ int restart_service(const char *name, const char *ip)
     if (r < 0)
     {
         fprintf(stderr, "Failed to issue method call: %s\n", error.message);
+        free(service_name);
         goto finish;
     }
+    free(service_name);
 
     /* Parse the response message */
     r = sd_bus_message_read(m, "o", &path);
