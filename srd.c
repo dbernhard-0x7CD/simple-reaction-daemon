@@ -69,10 +69,6 @@ int main()
         exit(1);
     }
 
-    // try to get default gateway
-    default_gw = get_default_gw();
-    print_debug("default gateway %s\n", default_gw);
-
     // load configuration files for connectivity targets
     int success = 0;
     int connectivity_targets = 0;
@@ -97,6 +93,11 @@ int main()
 
     print_info("Starting srd (Simple Reconnect Daemon) version %s\n", version);
     print_info("Connectivity Targets: %d\n", connectivity_targets);
+    
+    // try to get default gateway
+    default_gw = get_default_gw();
+    print_debug("default gateway %s\n", default_gw);
+    
     fflush(stdout);
 
     pthread_t threads[connectivity_targets];
