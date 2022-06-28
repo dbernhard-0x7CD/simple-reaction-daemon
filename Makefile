@@ -1,8 +1,10 @@
-CC = gcc
-CFLAGS = -g3 -Wall -Wextra -pthread -lrt -lsystemd -lconfig -lm -I./liboping/src/
+makefile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
+proj_dir := $(dir $(makefile_path))
 
-current_dir = $(shell pwd)
-OPING_LIB = ./liboping/build/opt/oping/lib/
+CC = gcc
+CFLAGS = -g3 -Wall -Wextra -pthread -lrt \
+		-lsystemd -lconfig -lm -I$(proj_dir)/liboping/src/
+OPING_LIB = $(proj_dir)/liboping/build/opt/oping/lib/
 
 all: srd
 
@@ -16,7 +18,7 @@ $(OPING_LIB)/liboping.a:
 	cd liboping && ./autogen.sh
 	cd liboping && ./configure --without-perl-bindings --without-ncurses
 	sed '/-Wall -Werror/d' -i liboping/src/Makefile.*
-	cd liboping && make DESTDIR=$(current_dir)/liboping/build install
+	cd liboping && make DESTDIR=$(proj_dir)/liboping/build install
 	
 
 clean:
