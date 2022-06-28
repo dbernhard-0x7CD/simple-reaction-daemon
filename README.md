@@ -13,7 +13,9 @@ Do not forget to enable and start (`systemctl enable srd`, `systemctl start srd`
 
 # Building
 
-Simply run `make` in the root folder of the project.
+After cloning this repository you have to run `git submodule init` and `git submodule update`.
+
+Then simply run `make` in the root folder of the project.
 
 You need glibc, libconfig and headers for systemd.
 
