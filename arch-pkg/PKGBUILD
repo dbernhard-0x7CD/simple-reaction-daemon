@@ -29,6 +29,7 @@ prepare() {
     cp ../../util.* .
     cp ../../srd.service .
     cp ../../Makefile .
+    cp -r ../../liboping .
 }
 
 build() {
