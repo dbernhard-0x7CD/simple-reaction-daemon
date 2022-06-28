@@ -43,7 +43,7 @@ typedef struct connectivity_check_t {
     const char *depend_ip;
 
     // Timeout in seconds
-    int timeout;
+    double timeout;
 
     // Period in which this IP is pinged
     int period;
@@ -127,7 +127,7 @@ int run_command(const action_cmd_t* cmd);
  * else 0. If we cannot determine connectivity a negative value
  * is returned
  */
-int check_connectivity(const char* ip, int timeout);
+int check_connectivity(const char* ip, double timeout);
 
 /* Loads the configuration file at the given path and appends
 * all found connectivity targets to conns.

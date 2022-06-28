@@ -420,7 +420,7 @@ int run_command(const action_cmd_t *cmd)
     return 1;
 }
 
-int check_connectivity(const char *ip, int timeout)
+int check_connectivity(const char *ip, double timeout)
 {
     int pipefd[2];
     pipe(pipefd);
@@ -439,9 +439,9 @@ int check_connectivity(const char *ip, int timeout)
 
         close(pipefd[0]);
 
-        int length = (int)((ceil(log10(1.0 * timeout)) + 1) * sizeof(char));
+        int length = (int)((ceil(log10(1.0 * timeout)) + 1) * sizeof(char)) + 1 + 6;
         char str[length + 1];
-        sprintf(str, "%d", timeout);
+        sprintf(str, "%1.6f", timeout);
 
         execlp("ping", "ping",
                "-c", "3",
@@ -614,9 +614,18 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                 return 0;
             }
 
-            if (!config_lookup_int(&cfg, "timeout", &cc->timeout))
+            // timeout (can be an integer or double)
+            int timeout;
+            if (config_lookup_int(&cfg, "timeout", &timeout)) {
+                cc->timeout = (double)timeout;
+            } else if (!config_lookup_float(&cfg, "timeout", &cc->timeout))
             {
                 print_info("%s is missing setting: timeout\n", cfg_path);
+                config_destroy(&cfg);
+                return 0;
+            }
+            if (cc->timeout < 0) {
+                print_info("%s timeout cannot be negative\n", cfg_path);
                 config_destroy(&cfg);
                 return 0;
             }
