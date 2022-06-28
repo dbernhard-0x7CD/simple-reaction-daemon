@@ -7,3 +7,4 @@ arch-pkg/*.zst
 .gitp/
 *.o
 
+liboping/

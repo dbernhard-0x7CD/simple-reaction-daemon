@@ -14,6 +14,7 @@
 #include <fts.h>
 #include <pthread.h>
 #include <errno.h>
+#include <oping.h>
 
 #include "util.h"
 #include "srd.h"
@@ -422,72 +423,56 @@ int run_command(const action_cmd_t *cmd)
 
 int check_connectivity(const char *ip, double timeout)
 {
-    int pipefd[2];
-    pipe(pipefd);
+    pingobj_t* pingo;
+    pingobj_iter_t *result_iterator;
 
-    print_debug("[%s]: Checking connectivity\n", ip);
+    pingo = ping_construct();
 
-    int pid = fork();
-    if (pid == 0) // child
-    {
-        int mypid = getpid();
-        print_debug("[%s]: I'm the child with pid %d\n", ip, mypid);
+    // set address family
+    int family = AF_INET; // ipv4
+    ping_setopt(pingo, PING_OPT_AF, &family);
+    
+    ping_setopt(pingo, PING_OPT_TIMEOUT, &timeout);
 
-        // close my stdout
-        close(1);
-        dup(pipefd[1]);
+    // set address
+    ping_host_add(pingo, ip);
 
-        close(pipefd[0]);
+    // send the ping
+    int res = ping_send(pingo);
 
-        int length = (int)((ceil(log10(1.0 * timeout)) + 1) * sizeof(char)) + 1 + 6;
-        char str[length + 1];
-        sprintf(str, "%1.6f", timeout);
-
-        execlp("ping", "ping",
-               "-c", "3",
-               "-i", "0.002",
-               "-W", str,
-               ip, (char *)0);
+    if (res < 0) {
+        const char* err_msg = ping_get_error(pingo);
+        printf("error message: %s\n", err_msg);
         return 0;
     }
-    else if (pid < 0) // failed
-    {
-        printf("Forking did not work\n");
-        fflush(stdout);
-        running = 0;
 
-        return -1;
+    // we're only interested if it was dropped
+    uint32_t dropped;
+    double latency;
+
+    // we only ping one target; thus only first ping is interesting
+    result_iterator = ping_iterator_get(pingo);
+    size_t size = sizeof(uint32_t);
+
+    int status = ping_iterator_get_info(result_iterator, PING_INFO_DROPPED, &dropped, &size);
+
+    size = sizeof(double);
+    status |= ping_iterator_get_info(result_iterator, PING_INFO_LATENCY, &latency, &size);
+
+    if (status < 0) {
+        printf("Unable to get status %d\n", status);
+        return 0;
     }
-    else
-    {
-        // await my child
-        int status, ret;
-        while ((ret = waitpid(pid, &status, WUNTRACED)) == -1) {
-            if (errno == EINTR) {
-                printf("Got interrupted\n");
-                sleep(1);
-                continue;
-            } else {
-                printf("error %d\n", errno);
-                break;
-            }
-        };
-        
-        close(pipefd[1]);
 
-        if (ret == -1)
-        {
-            print_debug("Unable to ping. errno is %d\n", errno);
-        }
+    print_debug("[%s]: latency %lf\n", ip, latency);
 
-        close(pipefd[0]);
+    ping_destroy(pingo);
 
-        int success = status == 0;
+    int success = dropped == 0;
 
-        print_debug("[%s]: Ping has success: %d\n", ip, success);
+    print_debug("[%s]: Ping has success: %d\n", ip, success);
 
-        return success;
-    }
+    return success;
 }
 
 connectivity_check_t **load(char *directory, int *success, int *count)
