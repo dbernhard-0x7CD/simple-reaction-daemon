@@ -27,7 +27,7 @@ There are two available installation methods:
 
 * ## Installation - ArchLinux
 
-    Enter the folder `arch-pkg` and run `makepkg` and then you can install the packaged \*.tar.xz file.
+    Enter the folder `arch-pkg` and run `makepkg` and then you can install the packaged \*.tar.xz file (or simply run `makepkg -si`).
 
 * ## Installation - Manual
 
@@ -183,7 +183,29 @@ actions = (
         delay = 60; 
         user = "REPLACE-ME!";
         cmd = "echo \"`date`: %ip is down\" >> PATH_WHICH_EXISTS/vpn_clients_avail.log";
-    }   
+    }
 )
 
+```
+
+Here's the file to check the gateway. This is used to not check the vpn clients if the gateway is unreachable (and unnecessarily log that they are down).
+
+```
+# destination IP
+destination = "%gw"
+
+# Period of the pings in s
+period = 5
+
+# timeout in seconds of one ping
+timeout = 5
+
+actions = (
+    {
+        action = "command";
+        delay = 10;
+        user = "david";
+        cmd = "notify-send \"gateway %ip is down\"";
+    }
+)
 ```
