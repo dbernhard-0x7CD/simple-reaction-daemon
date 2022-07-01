@@ -4,7 +4,8 @@ pkgver=0.0.1
 pkgrel=1
 pkgdesc="Simple Reconnect Daemon"
 arch=('any')
-url=""
+_srctag=v${pkgver%.*}-${pkgver##*.}
+url="https://github.com/dbernhard-0x7CD/simple-reconnect-daemon/commits/$_srctag"
 license=('GPL2')
 groups=()
 depends=(libsystemd libconfig glibc)
@@ -25,11 +26,7 @@ validpgpkeys=()
 
 
 prepare() {
-    cp ../../srd.* .
-    cp ../../util.* .
-    cp ../../srd.service .
-    cp ../../Makefile .
-    cp -r ../../liboping .
+    echo 0 > /dev/null
 }
 
 build() {
@@ -41,4 +38,8 @@ package() {
 
     install -Dm644 ./srd.conf "${pkgdir}/etc/srd/srd.conf"
     install -Dm644 ./srd.service "${pkgdir}/usr/lib/systemd/system/srd.service"
+
+    install -Dm644 ./ThirdPartyLicenses.txt "${pkgdir}/usr/share/srd/ThirdPartyLicenses.txt"
+
+    install -Dm644 ./LICENSE "${pkgdir}/usr/share/srd/LICENSE"
 }
