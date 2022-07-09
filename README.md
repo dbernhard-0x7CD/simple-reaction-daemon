@@ -82,6 +82,9 @@ actions = (
 
 **depends**: IP of another target. If the ping to depends is not successful, then this target won't get checked and no actions performed.
 
+* Can also be `%gw` to ping the gateway
+* **Note**: this is currently only set at startup. So changes of the gateway are not yet supported
+
 <br />
 
 ## srd.conf
