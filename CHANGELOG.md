@@ -4,6 +4,7 @@
 
 * (Planned) 1.0
     * Support config name as dependencies
+
 <br />
 
 * 0.0.2
