@@ -60,7 +60,8 @@ char* default_gw;
 
 int main()
 {
-    print_info("Starting Simple Reconnect Daemon\n");
+    print_info("Starting Simple Reaction Daemon\n");
+
 
     // create a mutex; if unsuccessful we stop
     if (pthread_mutex_init(&stdout_mut, NULL) != 0)
@@ -95,7 +96,7 @@ int main()
     }
 #endif
 
-    print_info("Starting srd (Simple Reconnect Daemon) version %s\n", version);
+    print_info("Starting srd (Simple Reaction Daemon) version %s\n", version);
     print_info("Connectivity Targets: %d\n", connectivity_targets);
     
     print_debug("default gateway %s\n", default_gw);
@@ -142,7 +143,7 @@ int main()
         print_debug("Got signal %d\n", info.si_signo);
     }
 
-    print_info("Shutting down Simple Reconnect Daemon\n");
+    print_info("Shutting down Simple Reaction Daemon\n");
     fflush(stdout);
 
     // kill and join all threads
@@ -158,7 +159,7 @@ int main()
 
     print_debug("Killed all threads\n");
 
-    print_info("Finished Simple Reconnect Daemon.\n");
+    print_info("Finished Simple Reaction Daemon.\n");
     fflush(stdout);
 
     // free all memory

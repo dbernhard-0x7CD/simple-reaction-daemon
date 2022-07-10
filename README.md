@@ -1,4 +1,4 @@
-# Simple Reconnect Daemon
+# Simple Reaction Daemon
 
 This program allows to configure certain actions which will be executed if pings to a certain host fail for a given amount of time. Currently implemented actions are:
 
