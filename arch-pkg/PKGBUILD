@@ -1,6 +1,6 @@
 # Maintainer: David Bernhard <davidbernhard.w@gmail.com>
 pkgname=simple-reaction-daemon
-pkgver=0.0.1
+pkgver=0.0.2
 pkgrel=1
 pkgdesc="Simple Reaction Daemon"
 arch=('any')
