@@ -86,8 +86,8 @@ int main();
 void run_check(check_arguments_t*);
 
 /*
-* Checks if the given ip is available. Returns 1 if it is.
-* If it's non strict we'll also return 1 if it's unknown.
+* Checks if the given ip is available. Returns 1 if it is, else 0.
+* If a dependency does not exist a negative value is returned.
 */
 int is_available(connectivity_check_t** ccs, const int n, char const *ip, int strict);
 

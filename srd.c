@@ -208,8 +208,8 @@ int is_available(connectivity_check_t **ccs, const int n, char const *ip, int st
         }
     }
 
-    print_info("This dependency does not have a check: %s\n", ip);
-    return 0;
+    print_info("ERROR: This dependency does not have a check: %s\n", ip);
+    return -1;
 }
 
 void run_check(check_arguments_t *args)
@@ -237,6 +237,9 @@ void run_check(check_arguments_t *args)
                 print_info("[%s]: Awaiting dependency %s\n", check->ip, check->depend_ip);
                 sleep(check->period);
                 continue;
+            } else if (available < 0) {
+                running = 0;
+                break;
             }
         }
 
