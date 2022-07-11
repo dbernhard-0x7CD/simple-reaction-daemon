@@ -73,6 +73,12 @@ int main()
     // try to get default gateway
     default_gw = get_default_gw();
 
+    if (default_gw == NULL) {
+        printf("Unable to get default gateway\n");
+        pthread_mutex_destroy(&stdout_mut);
+        return EXIT_FAILURE;
+    }
+
     // load configuration files for connectivity targets
     int success = 0;
     int connectivity_targets = 0;
