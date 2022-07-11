@@ -270,7 +270,7 @@ void run_check(check_arguments_t *args)
             check->timestamp_last_reply = now;
             diff = 0;
         }
-        else
+        else if (connected == 0)
         {
             double_t delta_ms = (now.tv_sec - check->timestamp_last_reply.tv_sec) + (now.tv_nsec - check->timestamp_last_reply.tv_nsec) / 1.0e9;
             
@@ -279,6 +279,10 @@ void run_check(check_arguments_t *args)
             print_info("[%s]: NOT reachable at %.*s; now for %0.3fs\n", check->ip, len - 1, p, delta_ms);
 
             diff = delta_ms;
+        } else {
+            print_info("Error when checking connectivity\n");
+            kill(getpid(), SIGALRM);
+            return;
         }
         fflush(stdout);
 
@@ -454,8 +458,8 @@ int check_connectivity(const char *ip, double timeout)
 
     if (res < 0) {
         const char* err_msg = ping_get_error(pingo);
-        printf("error message: %s\n", err_msg);
-        return 0;
+        print_info("Error sending ping. Message: %s\n", err_msg);
+        return (-1);
     }
 
     // we're only interested if it was dropped
