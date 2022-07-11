@@ -193,6 +193,8 @@ int main()
     free(connectivity_checks);
     free(default_gw);
 
+    pthread_mutex_destroy(&stdout_mut);
+
     return EXIT_SUCCESS;
 } // main end
 
