@@ -247,7 +247,8 @@ void run_check(check_arguments_t *args)
             } else if (available < 0) {
                 print_info("[%s]: Bad check: %s\n", check->ip, check->depend_ip);
                 running = 0;
-                break;
+                kill(getpid(), SIGALRM);
+                return;
             }
         }
 
