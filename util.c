@@ -154,6 +154,8 @@ char* get_default_gw() {
                     fclose(file);
                     return str;
                 }
+
+                printf("Unable to get the IP of the gateway: %s\n", strerror(errno));
                 
                 fclose(file);
                 return NULL;
