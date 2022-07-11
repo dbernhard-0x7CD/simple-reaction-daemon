@@ -23,6 +23,7 @@ $(oping_lib)/liboping.a:
 
 clean:
 	rm -f *.o srd
+	cd liboping && make clean
 
 .PHONY: all
 .PHONY: clean
