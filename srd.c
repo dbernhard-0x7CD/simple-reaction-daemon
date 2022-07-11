@@ -62,7 +62,6 @@ int main()
 {
     print_info("Starting Simple Reaction Daemon\n");
 
-
     // create a mutex; if unsuccessful we stop
     if (pthread_mutex_init(&stdout_mut, NULL) != 0)
     {
