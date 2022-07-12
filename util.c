@@ -12,7 +12,7 @@
 int needs_escaping(char c)
 {
     if (!(c >= 48 && c <= 57) &&
-        !(c >= 65 && c <= 90) && 
+        !(c >= 65 && c <= 90) &&
         !(c >= 97 && c <= 122))
     {
         return 1;
@@ -20,7 +20,6 @@ int needs_escaping(char c)
 
     return 0;
 }
-
 
 char *escape_servicename(char *input_name)
 {
@@ -70,16 +69,18 @@ char *escape_servicename(char *input_name)
             new_i++;
         }
     }
-    escaped_str[new_len-1] = '\0';
+    escaped_str[new_len - 1] = '\0';
 
     return escaped_str;
 }
 
-int ends_with(char* str, char* end) {
-    if (!str || !end) {
+int ends_with(char *str, char *end)
+{
+    if (!str || !end)
+    {
         return 0;
     }
-    
+
     int len_str = strlen(str);
     int len_end = strlen(end);
     if (len_end > len_str)
@@ -88,8 +89,9 @@ int ends_with(char* str, char* end) {
 }
 
 // this is from: https://gist.github.com/bg5sbk/11058000
-char* str_replace(char* string, const char* substr, const char* replacement) {
-    char* tok = NULL;
+char *str_replace(char *string, const char *substr, const char *replacement)
+{
+    char *tok = NULL;
     char *newstr = NULL;
     char *oldstr = NULL;
     int oldstr_len = 0;
@@ -130,24 +132,29 @@ char* str_replace(char* string, const char* substr, const char* replacement) {
     return newstr;
 }
 
-char* get_default_gw() {
+char *get_default_gw()
+{
     long dest;
     long gw;
     char iface[IF_NAMESIZE];
     char buffer[1024];
-    FILE* file;
+    FILE *file;
 
     file = fopen("/proc/net/route", "r");
-    if (!file) {
+    if (!file)
+    {
         printf("Unable to access /proc/net/route to get the default gateway\n");
         return 0;
     }
 
-    while (fgets(buffer, sizeof(buffer), file)) {
-        if (sscanf(buffer, "%s %lx %lx", iface, &dest, &gw) == 3) {
-            if (dest == 0) {
+    while (fgets(buffer, sizeof(buffer), file))
+    {
+        if (sscanf(buffer, "%s %lx %lx", iface, &dest, &gw) == 3)
+        {
+            if (dest == 0)
+            {
                 int size = INET_ADDRSTRLEN * sizeof(char);
-                char* str = malloc(size);
+                char *str = malloc(size);
 
                 if (inet_ntop(AF_INET, &gw, str, INET_ADDRSTRLEN))
                 {
@@ -156,16 +163,17 @@ char* get_default_gw() {
                 }
 
                 printf("Unable to get the IP of the gateway: %s\n", strerror(errno));
-                
+
                 fclose(file);
                 return NULL;
             }
         }
     }
-    if (file) {
+    if (file)
+    {
         fclose(file);
     }
-    
+
     printf("Did not find the default route\n");
     return NULL;
 }
