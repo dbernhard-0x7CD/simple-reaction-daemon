@@ -277,7 +277,7 @@ void run_check(check_arguments_t *args)
             
             check->status = STATUS_FAILED;
 
-            print_info("[%s]: NOT reachable at %.*s; now for %0.3fs\n", check->ip, len - 1, p, delta_ms);
+            print_info("[%s]: %.*s: Ping FAILED. Now for %0.3fs\n", check->ip, len - 1, p, delta_ms);
 
             diff = delta_ms;
         } else {
