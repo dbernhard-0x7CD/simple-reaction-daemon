@@ -1,24 +1,35 @@
 
 # Development notes
 
-* Reboot
+* Reboot with dbus
     * `sudo busctl call org.freedesktop.systemd1 /org/freedesktop/systemd1 org.freedesktop.systemd1.Manager Reboot`
 
 
 * Restart systemd-networkd
     * `busctl call org.freedesktop.systemd1 /org/freedesktop/systemd1/unit/systemd_2dnetworkd_2eservice org.freedesktop.systemd1.Unit Restart s "fail"`
 
+* setting capabilities for srd binary to create sockets
+    * `sudo setcap 'CAP_NET_RAW+eip' ./srd`
 
-https://www.freedesktop.org/wiki/Software/systemd/dbus/
+# Resources
+* Dbus stuff: https://www.freedesktop.org/wiki/Software/systemd/dbus/
 
-https://github.com/archlinux/svntogit-packages/tree/packages/openssh/trunk
+* example PKGBUILD: https://github.com/archlinux/svntogit-packages/tree/packages/openssh/trunk
 
-http://0pointer.de/blog/the-new-sd-bus-api-of-systemd.html
+* systemd sd bus api: http://0pointer.de/blog/the-new-sd-bus-api-of-systemd.html
 
 
 # TODO
+* configure amount of pings
+    * compare if 2 pings detects less outages
+* compare between ARM and x86 time values
+    * running on LM and bubbleon
+* action on successful ping
+    * run = "failure|success|always|up-again"
+* test if error in IP is easy to understand
+    * not detected
 * dependency as config name (f.ex: gw.conf or just gw)
-* list of IPs as target?
+* latency as variable (to log the latency)
 
 
 # VM (testing):
