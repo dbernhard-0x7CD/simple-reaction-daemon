@@ -29,7 +29,6 @@
 * test if error in IP is easy to understand
     * not detected
 * dependency as config name (f.ex: gw.conf or just gw)
-* latency as variable (to log the latency)
 
 
 # VM (testing):

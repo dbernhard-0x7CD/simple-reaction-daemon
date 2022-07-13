@@ -294,11 +294,21 @@ void run_check(check_arguments_t *args)
                 else if (strcmp(this_action.name, "command") == 0)
                 {
                     action_cmd_t *cmd = this_action.object;
+                    action_cmd_t copy = *cmd;
 
-                    print_debug(stdout_mut, "\tCommand: %s\n", cmd->command)
+                    if (check->latency >= 0) {
+                        char* latency_str = malloc((log10f(check->latency) + 1) * sizeof(char));
+
+                        sprintf(latency_str, "%1.0lf", check->latency);
+
+                        copy.command = str_replace(cmd->command, "%lat_ms", latency_str);
+                        free(latency_str);
+                    }
+                    print_debug(stdout_mut, "\tCommand: %s\n", copy.command);
                     fflush(stdout);
 
-                    int status = run_command(cmd);
+                    int status = run_command(&copy);
+                    
                     if (status < 0)
                     {
                         continue;
@@ -445,6 +455,7 @@ int check_connectivity(connectivity_check_t* cc)
     ping_host_add(pingo, cc->ip);
 
     int success = 0;
+    double latency_sum = 0.0;
 
     for (int i = 0; i < cc->num_pings; i++) {
         // send the ping
@@ -475,6 +486,7 @@ int check_connectivity(connectivity_check_t* cc)
         }
 
         print_debug(stdout_mut, "[%s]: latency %2.4lf ms\n", cc->ip, latency);
+        latency_sum += latency;
 
         success = success || (dropped == 0);
     }
@@ -482,6 +494,8 @@ int check_connectivity(connectivity_check_t* cc)
     ping_destroy(pingo);
 
     print_debug(stdout_mut, "[%s]: Ping has success: %d\n", cc->ip, success);
+
+    cc->latency = latency_sum / cc->num_pings;
 
     return success;
 }

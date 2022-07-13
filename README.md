@@ -132,6 +132,7 @@ loglevel = "INFO"
 }
 ```
 * You can use `%ip` as a placeholder for the actual IP of the current target (if you use multiple destination IPs)
+* You can use `%lat_ms` as a placeholder for the latency in milliseconds
 
 
 # Use case - wireguard VPN

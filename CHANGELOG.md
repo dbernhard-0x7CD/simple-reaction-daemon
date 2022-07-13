@@ -14,6 +14,7 @@
     * configure num_pings (number of pings sent)
     * add configuration 'run_if' to actions to define when it is run
         * down, up, always, up-again
+    * print latency in command with `%lat_ms`
 
 * 0.0.2
     * Rename to "Simple Reaction Daemon" to reflect that any command can be executed and not some magic to reconnect

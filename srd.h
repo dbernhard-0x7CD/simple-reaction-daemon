@@ -57,6 +57,9 @@ typedef struct connectivity_check_t {
 
     int num_pings;
 
+    // Latency of the last ping; -1 if not successful
+    double latency;
+
     // Status of last ping
     enum conn_status status;
     struct timespec timestamp_last_reply;
