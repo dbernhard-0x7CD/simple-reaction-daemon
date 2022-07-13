@@ -24,6 +24,7 @@ char *const config_main = "/srd.conf";
 char *const version = "0.0.3-dev";
 
 int loglevel = LOGLEVEL_DEBUG;
+int num_pings = 1;
 
 #define DEBUG 0
 
@@ -454,38 +455,42 @@ int check_connectivity(const char *ip, double timeout)
     // set address
     ping_host_add(pingo, ip);
 
-    // send the ping
-    int res = ping_send(pingo);
+    int success = 0;
 
-    if (res < 0) {
-        const char* err_msg = ping_get_error(pingo);
-        print_info("Error sending ping. Message: %s\n", err_msg);
-        return (-1);
+    for (int i = 0; i < num_pings; i++) {
+        // send the ping
+        int res = ping_send(pingo);
+
+        if (res < 0) {
+            const char* err_msg = ping_get_error(pingo);
+            print_info("Error sending ping. Message: %s\n", err_msg);
+            return (-1);
+        }
+
+        // variables we're interested in
+        uint32_t dropped;
+        double latency;
+
+        // we only ping one target; thus only first ping is interesting
+        result_iterator = ping_iterator_get(pingo);
+        size_t size = sizeof(uint32_t);
+
+        int status = ping_iterator_get_info(result_iterator, PING_INFO_DROPPED, &dropped, &size);
+
+        size = sizeof(double);
+        status |= ping_iterator_get_info(result_iterator, PING_INFO_LATENCY, &latency, &size);
+
+        if (status < 0) {
+            printf("Unable to get status %d\n", status);
+            return 0;
+        }
+
+        print_debug("[%s]: latency %2.4lf ms\n", ip, latency);
+
+        success = success || (dropped == 0);
     }
-
-    // we're only interested if it was dropped
-    uint32_t dropped;
-    double latency;
-
-    // we only ping one target; thus only first ping is interesting
-    result_iterator = ping_iterator_get(pingo);
-    size_t size = sizeof(uint32_t);
-
-    int status = ping_iterator_get_info(result_iterator, PING_INFO_DROPPED, &dropped, &size);
-
-    size = sizeof(double);
-    status |= ping_iterator_get_info(result_iterator, PING_INFO_LATENCY, &latency, &size);
-
-    if (status < 0) {
-        printf("Unable to get status %d\n", status);
-        return 0;
-    }
-
-    print_debug("[%s]: latency %lf\n", ip, latency);
-
+    
     ping_destroy(pingo);
-
-    int success = dropped == 0;
 
     print_debug("[%s]: Ping has success: %d\n", ip, success);
 
@@ -667,6 +672,8 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                 } else {
                     print_info("No loglevel defined in %s.\n", cfg_path);
                 }
+
+                config_lookup_int(&cfg, "num_pings", &num_pings);
             } // end if for "srd.conf"
 
             // load the actions
