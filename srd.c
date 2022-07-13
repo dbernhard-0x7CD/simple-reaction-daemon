@@ -26,7 +26,6 @@ char *const version = "0.0.3-dev";
 
 // application configuration
 int loglevel = LOGLEVEL_DEBUG;
-int num_pings = 1;
 
 #define DEBUG 0
 
@@ -232,7 +231,7 @@ void run_check(check_arguments_t *args)
             }
         }
 
-        int connected = check_connectivity(check->ip, check->timeout);
+        int connected = check_connectivity(check);
         char *p;
         int len;
         time_t t = time(NULL);
@@ -429,7 +428,7 @@ int run_command(const action_cmd_t *cmd)
     return 1;
 }
 
-int check_connectivity(const char *ip, double timeout)
+int check_connectivity(connectivity_check_t* cc)
 {
     pingobj_t* pingo;
     pingobj_iter_t *result_iterator;
@@ -440,14 +439,14 @@ int check_connectivity(const char *ip, double timeout)
     int family = AF_INET; // ipv4
     ping_setopt(pingo, PING_OPT_AF, &family);
     
-    ping_setopt(pingo, PING_OPT_TIMEOUT, &timeout);
+    ping_setopt(pingo, PING_OPT_TIMEOUT, &cc->timeout);
 
     // set address
-    ping_host_add(pingo, ip);
+    ping_host_add(pingo, cc->ip);
 
     int success = 0;
 
-    for (int i = 0; i < num_pings; i++) {
+    for (int i = 0; i < cc->num_pings; i++) {
         // send the ping
         int res = ping_send(pingo);
 
@@ -475,14 +474,14 @@ int check_connectivity(const char *ip, double timeout)
             return 0;
         }
 
-        print_debug(stdout_mut, "[%s]: latency %2.4lf ms\n", ip, latency);
+        print_debug(stdout_mut, "[%s]: latency %2.4lf ms\n", cc->ip, latency);
 
         success = success || (dropped == 0);
     }
     
     ping_destroy(pingo);
 
-    print_debug(stdout_mut, "[%s]: Ping has success: %d\n", ip, success);
+    print_debug(stdout_mut, "[%s]: Ping has success: %d\n", cc->ip, success);
 
     return success;
 }
@@ -643,6 +642,11 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                 cc->depend_ip = replaced;
             }
 
+            // num_pings configuration
+            int num_pings = 1;
+            config_lookup_int(&cfg, "num_pings", &num_pings);
+            cc->num_pings = num_pings;
+
             // check if this is "srd.conf" (config_main)
             if (ends_with(cfg_path, config_main)) {
                 // loglevel of srd
@@ -664,8 +668,6 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                 } else {
                     print_info(stdout_mut, "No loglevel defined in %s.\n", cfg_path);
                 }
-
-                config_lookup_int(&cfg, "num_pings", &num_pings);
             } // end if for "srd.conf"
 
             // load the actions

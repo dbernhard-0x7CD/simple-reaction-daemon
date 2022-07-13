@@ -1,6 +1,6 @@
 # Simple Reaction Daemon
 
-This program allows to configure certain actions which will be executed if pings to a certain host fail for a given amount of time. Currently implemented actions are:
+This program allows to configure certain actions which will be executed if pings to a certain host fail/succeed for a given amount of time. Currently implemented actions are:
 
 * restart another systemd-service (f.ex: systemd-networkd, iwd or wpa_supplicant)
 * restart the system
@@ -49,6 +49,9 @@ period = 60
 
 # timeout for one ping in s
 timeout = 10
+
+# number of pings to send
+num_pings = 1
 
 actions = (
     {

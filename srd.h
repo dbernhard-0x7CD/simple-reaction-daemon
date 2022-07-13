@@ -55,6 +55,8 @@ typedef struct connectivity_check_t {
     // Period in which this IP is pinged
     int period;
 
+    int num_pings;
+
     // Status of last ping
     enum conn_status status;
     struct timespec timestamp_last_reply;
@@ -129,12 +131,12 @@ connectivity_check_t** load(char *const directory, int* success, int* count);
 int run_command(const action_cmd_t* cmd);
 
 /*
- * Checks if this machine is still able to ping the given IP.
+ * Checks if this machine is still able to ping the target.
  * Returns 1 if the IP is still reachable in the given timeout,
  * else 0. If we cannot determine connectivity a negative value
- * is returned
+ * is returned.
  */
-int check_connectivity(const char* ip, double timeout);
+int check_connectivity(connectivity_check_t* check);
 
 /* Loads the configuration file at the given path and appends
 * all found connectivity targets to conns.
