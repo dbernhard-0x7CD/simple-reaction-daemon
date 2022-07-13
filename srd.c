@@ -24,6 +24,7 @@ char *const configd_path = "/etc/srd/";
 char *const config_main = "/srd.conf";
 char *const version = "0.0.3-dev";
 
+// application configuration
 int loglevel = LOGLEVEL_DEBUG;
 int num_pings = 1;
 
@@ -35,6 +36,7 @@ int running = 1;
 /* used to lock stdout as all threads write to it */
 pthread_mutex_t stdout_mut;
 
+// loaded at startup
 char* default_gw;
 
 int main()
@@ -240,11 +242,15 @@ void run_check(check_arguments_t *args)
         len = strlen(p);
 
         double diff; // in ms
+        enum run_if state;
         if (connected == 1)
         {
             if (check->status != STATUS_SUCCESS) {
                 print_info(stdout_mut, "[%s]: Reachable %.*s\n", check->ip, len - 1, p);
                 check->status = STATUS_SUCCESS;
+                state = RUN_UP_AGAIN;
+            } else {
+                state = RUN_UP;
             }
             check->timestamp_last_reply = now;
             diff = 0;
@@ -254,6 +260,7 @@ void run_check(check_arguments_t *args)
             double_t delta_ms = (now.tv_sec - check->timestamp_last_reply.tv_sec) + (now.tv_nsec - check->timestamp_last_reply.tv_nsec) / 1.0e9;
             
             check->status = STATUS_FAILED;
+            state = RUN_DOWN;
 
             print_info(stdout_mut, "[%s]: %.*s: Ping FAILED. Now for %0.3fs\n", check->ip, len - 1, p, delta_ms);
 
@@ -268,21 +275,27 @@ void run_check(check_arguments_t *args)
         // check if any action is required
         for (int i = 0; running && i < check->count; i++)
         {
-            if (check->actions[i].delay <= diff)
+            action_t this_action = check->actions[i];
+            int should_run = this_action.run == RUN_ALWAYS || 
+                            (this_action.run == RUN_DOWN && check->actions[i].delay <= diff) ||
+                            (this_action.run == state && state == RUN_UP) ||
+                            (this_action.run == state && state == RUN_UP_AGAIN);
+            if (should_run)
             {
                 print_info(stdout_mut, "[%s]: Performing action: %s\n", check->ip, check->actions[i].name);
 
-                if (strcmp(check->actions[i].name, "service-restart") == 0)
+                if (strcmp(this_action.name, "service-restart") == 0)
                 {
-                    restart_service(check->actions[i].object, check->ip);
+                    restart_service(this_action.object, check->ip);
                 }
-                else if (strcmp(check->actions[i].name, "reboot") == 0)
+                else if (strcmp(this_action.name, "reboot") == 0)
                 {
                     restart_system(check->ip);
                 }
-                else if (strcmp(check->actions[i].name, "command") == 0)
+                else if (strcmp(this_action.name, "command") == 0)
                 {
-                    action_cmd_t *cmd = check->actions[i].object;
+                    action_cmd_t *cmd = this_action.object;
+
                     print_debug(stdout_mut, "\tCommand: %s\n", cmd->command)
                     fflush(stdout);
 
@@ -667,7 +680,9 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
             for (int i = 0; i < cc->count; i++)
             {
                 const config_setting_t *action = config_setting_get_elem(setting, i);
+                action_t* this_action = &cc->actions[i];
 
+                // action name configuration
                 const char *action_name;
                 if (!config_setting_lookup_string(action, "action", &action_name))
                 {
@@ -679,11 +694,32 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                 cc->actions[i].name = (char *)malloc(action_len * sizeof(char));
                 strcpy((char *)cc->actions[i].name, action_name);
 
-                if (!config_setting_lookup_int(action, "delay", &cc->actions[i].delay))
+                // run_if configuration
+                const char *run_if_str;
+                if (!config_setting_lookup_string(action, "run_if", &run_if_str))
                 {
-                    print_info(stdout_mut, "%s: element is missing the delay\n", cfg_path);
-                    config_destroy(&cfg);
-                    return 0;
+                    // default run_if setting is RUN_DOWN
+                    cc->actions[i].run = RUN_DOWN;
+                } else {
+                    if (strcmp(run_if_str, "down") == 0) {
+                        this_action->run = RUN_DOWN;
+                    } else if (strcmp(run_if_str, "up") == 0) {
+                        this_action->run = RUN_UP;
+                    } else if (strcmp(run_if_str, "always") == 0) {
+                        this_action->run = RUN_ALWAYS;
+                    } else if (strcmp(run_if_str, "up-again") == 0) {
+                        this_action->run = RUN_UP_AGAIN;
+                    } else {
+                        print_info(stdout_mut, "%s: Action %s is has unknown run_if: %s\n", cfg_path, action_name, run_if_str);
+                        config_destroy(&cfg);
+                        return 0;
+                    }
+                }
+                
+                // delay configuration
+                if (!config_setting_lookup_int(action, "delay", &this_action->delay))
+                {
+                    this_action->delay = 0;
                 }
 
                 if (strcmp(action_name, "reboot") == 0)

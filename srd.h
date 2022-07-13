@@ -2,6 +2,21 @@
 #ifndef SRD_H
 #define SRD_H
 
+/*
+* Log level of each target.
+*/
+enum loglevel { LOGLEVEL_DEBUG, LOGLEVEL_INFO };
+
+/*
+* Connectivity status for a target.
+*/
+enum conn_status { STATUS_SUCCESS, STATUS_FAILED, STATUS_NONE };
+
+/*
+* When to run the given action
+*/
+enum run_if { RUN_UP, RUN_ALWAYS, RUN_DOWN, RUN_UP_AGAIN };
+
 /* 
 * An action which will be performed for one target
 * if down for delay seconds.
@@ -10,6 +25,7 @@ typedef struct action_t {
     const char* name;
     void*       object;
     int         delay;
+    enum run_if run;
 } action_t;
 
 /* 
@@ -21,15 +37,6 @@ typedef struct action_cmd_t {
     const char* user;
 } action_cmd_t;
 
-/*
-* Log level of each target.
-*/
-enum loglevel { LOGLEVEL_DEBUG, LOGLEVEL_INFO };
-
-/*
-* Connectivity status for a target.
-*/
-enum conn_status { STATUS_SUCCESS, STATUS_FAILED, STATUS_NONE };
 
 /* A connectivity check is one target to which we do connectivity checks.
 * Each config file represents one such check. As Each target can have its
