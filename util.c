@@ -89,7 +89,7 @@ int ends_with(char *str, char *end)
 }
 
 // this is from: https://gist.github.com/bg5sbk/11058000
-char *str_replace(char *string, const char *substr, const char *replacement)
+char *str_replace(const char *string, const char *substr, const char *replacement)
 {
     char *tok = NULL;
     char *newstr = NULL;
@@ -101,8 +101,6 @@ char *str_replace(char *string, const char *substr, const char *replacement)
     newstr = strdup(string);
     substr_len = strlen(substr);
     replacement_len = strlen(replacement);
-
-    free(string);
 
     if (substr == NULL || replacement == NULL)
     {
