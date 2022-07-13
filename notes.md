@@ -22,10 +22,6 @@
 # TODO
 * configure amount of pings
     * compare if 2 pings detects less outages
-* compare between ARM and x86 time values
-    * running on LM and bubbleon
-* action on successful ping
-    * run = "failure|success|always|up-again"
 * test if error in IP is easy to understand
     * not detected
 * dependency as config name (f.ex: gw.conf or just gw)
