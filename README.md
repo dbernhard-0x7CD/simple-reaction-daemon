@@ -123,14 +123,26 @@ loglevel = "INFO"
 
 * **execute arbitrary command as a user**:
 
+If a host is **down**:
 ```
 {
     action = "command";
     delay = 10;
     user = "root";
-    cmd = "echo \"down at `date`\" >> /var/log/srd.log";
+    cmd = "echo \"DOWN at `date`\" >> /var/log/srd.log";
 }
 ```
+Or if he's **up**:
+```
+{
+    action = "command";
+    run_if = "up";
+    user = "root";
+    cmd = "echo \"UP at `date`\" >> /var/log/srd.log";
+}
+```
+
+
 * You can use `%ip` as a placeholder for the actual IP of the current target (if you use multiple destination IPs)
 * You can use `%lat_ms` as a placeholder for the latency in milliseconds
 
