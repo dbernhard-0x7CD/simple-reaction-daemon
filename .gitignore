@@ -6,4 +6,4 @@ arch-pkg/pkg/*
 arch-pkg/*.zst
 .gitp/
 *.o
-
+performance.txt
