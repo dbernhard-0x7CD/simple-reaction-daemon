@@ -1,8 +1,8 @@
 # Maintainer: David Bernhard <davidbernhard.w@gmail.com>
 pkgname=simple-reaction-daemon
-pkgver=0.0.2
+pkgver=0.0.3
 pkgrel=1
-pkgdesc="Simple Reaction Daemon - Periodically ping hosts and run custom actions if they are unreachable"
+pkgdesc="Simple Reaction Daemon - Periodically ping hosts and run custom actions if they fail/succeed"
 arch=('any')
 _srctag=v${pkgver}
 url="https://github.com/dbernhard-0x7CD/simple-reaction-daemon/releases/tag/$_srctag"
