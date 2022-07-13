@@ -316,7 +316,7 @@ void run_check(check_arguments_t *args)
                 }
                 else
                 {
-                    print_info(stdout_mut, "This action is NOT yet implemented: %s\n", check->actions[i].name);
+                    print_info(stdout_mut, "This action is NOT yet implemented: %s\n", this_action.name);
                 }
             }
         } // end check if any action has to be taken
