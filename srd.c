@@ -627,6 +627,7 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                 return 0;
             }
 
+            // depends configuration
             const char* depend_ip;
             if (!config_lookup_string(&cfg, "depends", &depend_ip)) {
                 cc->depend_ip = NULL;
@@ -642,8 +643,9 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                 cc->depend_ip = replaced;
             }
 
-            // check if this is "srd.conf"
+            // check if this is "srd.conf" (config_main)
             if (ends_with(cfg_path, config_main)) {
+                // loglevel of srd
                 if (config_lookup_string(&cfg, "loglevel", &setting_loglevel))
                 {
                     if (strcmp("INFO", setting_loglevel) == 0)
