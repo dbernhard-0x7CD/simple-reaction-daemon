@@ -464,6 +464,7 @@ int check_connectivity(connectivity_check_t* cc)
         if (res < 0) {
             const char* err_msg = ping_get_error(pingo);
             print_info(stdout_mut, "Error sending ping. Message: %s\n", err_msg);
+            ping_destroy(pingo);
             return (-1);
         }
 
@@ -482,6 +483,7 @@ int check_connectivity(connectivity_check_t* cc)
 
         if (status < 0) {
             printf("Unable to get status %d\n", status);
+            ping_destroy(pingo);
             return 0;
         }
 
