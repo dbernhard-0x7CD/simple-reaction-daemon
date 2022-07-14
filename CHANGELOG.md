@@ -7,6 +7,11 @@
 
 <br />
 
+* 0.0.4
+    * Fix some memory not getting deallocated
+    * [TODO] up-again variables (for a powerful log)
+        * up-again variables for %initial_downtime and %now
+
 * 0.0.3
     * Do not start if gateway IP cannot be determined
     * Do not start if a dependency is non-existent
