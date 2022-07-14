@@ -442,6 +442,7 @@ int check_connectivity(connectivity_check_t* cc)
 {
     pingobj_t* pingo;
     pingobj_iter_t *result_iterator;
+    int status;
 
     pingo = ping_construct();
 
@@ -452,7 +453,10 @@ int check_connectivity(connectivity_check_t* cc)
     ping_setopt(pingo, PING_OPT_TIMEOUT, &cc->timeout);
 
     // set address
-    ping_host_add(pingo, cc->ip);
+    status = ping_host_add(pingo, cc->ip);
+    if (status < 0) {
+        print_info(stdout_mut, "Unable to add host %s\n", cc->ip);
+    }
 
     int success = 0;
     double latency_sum = 0.0;
