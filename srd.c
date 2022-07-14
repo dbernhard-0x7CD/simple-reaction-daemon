@@ -22,7 +22,7 @@
 
 char *const configd_path = "/etc/srd/";
 char *const config_main = "/srd.conf";
-char *const version = "0.0.3";
+char *const version = "0.0.4-dev";
 
 // application configuration
 int loglevel = LOGLEVEL_DEBUG;
