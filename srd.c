@@ -463,7 +463,7 @@ int check_connectivity(connectivity_check_t* cc)
 
         if (res < 0) {
             const char* err_msg = ping_get_error(pingo);
-            print_info(stdout_mut, "Error sending ping. Message: %s\n", err_msg);
+            print_info(stdout_mut, "Error sending ping to %s. Message: %s\n", cc->ip, err_msg);
             ping_destroy(pingo);
             return (-1);
         }
