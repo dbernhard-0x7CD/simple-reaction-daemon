@@ -455,7 +455,9 @@ int check_connectivity(connectivity_check_t* cc)
     // set address
     status = ping_host_add(pingo, cc->ip);
     if (status < 0) {
-        print_info(stdout_mut, "Unable to add host %s\n", cc->ip);
+        print_info(stdout_mut, "Unable to add host %s status %d\n", cc->ip, status);
+        const char* err_msg = ping_get_error(pingo);
+        print_info(stdout_mut, "Error adding host %s. Message: %s\n", cc->ip, err_msg);
     }
 
     int success = 0;
