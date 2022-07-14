@@ -615,6 +615,7 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
             *(ip + length) = '\0';
 
             cc->ip = str_replace(ip, "%gw", default_gw);
+            free(ip);
 
             // initial connectivity_check values
             cc->status = STATUS_NONE;
@@ -647,13 +648,7 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
             if (!config_lookup_string(&cfg, "depends", &depend_ip)) {
                 cc->depend_ip = NULL;
             } else {
-                int depend_ip_len = strlen(depend_ip) + 1;
-                
-                // create ip on heap
-                cc->depend_ip = malloc(depend_ip_len * sizeof(char));
-                strcpy((char *)cc->depend_ip, depend_ip);
-
-                char* replaced = str_replace((char *)cc->depend_ip, "%gw", default_gw);
+                char* replaced = str_replace(depend_ip, "%gw", default_gw);
 
                 cc->depend_ip = replaced;
             }
@@ -770,12 +765,7 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                         config_destroy(&cfg);
                         return 0;
                     }
-                    int action_cmd_len = strlen(command) + 1;
-                    cmd->command = (char *) malloc(action_cmd_len * sizeof(char));
-                    
-                    strcpy((char *)cmd->command, command);
-                    
-                    command = str_replace((char *)cmd->command, "%ip", (char *)cc->ip);
+                    command = str_replace(command, "%ip", (char *)cc->ip);
 
                     cmd->command = command;
 
