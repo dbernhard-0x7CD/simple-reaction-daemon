@@ -438,10 +438,8 @@ int run_command(const action_cmd_t *cmd)
     return 1;
 }
 
-int check_connectivity(connectivity_check_t* cc)
-{
+pingobj_t* create_pingo(const char* ip, double timeout) {
     pingobj_t* pingo;
-    pingobj_iter_t *result_iterator;
     int status;
 
     pingo = ping_construct();
@@ -450,20 +448,29 @@ int check_connectivity(connectivity_check_t* cc)
     int family = AF_INET; // ipv4
     ping_setopt(pingo, PING_OPT_AF, &family);
     
-    ping_setopt(pingo, PING_OPT_TIMEOUT, &cc->timeout);
+    ping_setopt(pingo, PING_OPT_TIMEOUT, &timeout);
 
     // set address
-    status = ping_host_add(pingo, cc->ip);
+    status = ping_host_add(pingo, ip);
     if (status < 0) {
-        print_info(stdout_mut, "Unable to add host %s status %d\n", cc->ip, status);
+        print_info(stdout_mut, "Unable to add host %s status %d\n", ip, status);
         const char* err_msg = ping_get_error(pingo);
-        print_info(stdout_mut, "Error adding host %s. Message: %s\n", cc->ip, err_msg);
+        print_info(stdout_mut, "Error adding host %s. Message: %s\n", ip, err_msg);
     }
+
+    return pingo;
+}
+
+int check_connectivity(connectivity_check_t* cc)
+{
+    pingobj_iter_t *result_iterator;
 
     int success = 0;
     double latency_sum = 0.0;
 
     for (int i = 0; i < cc->num_pings; i++) {
+        pingobj_t* pingo = create_pingo(cc->ip, cc->timeout);
+
         // send the ping
         int res = ping_send(pingo);
 
@@ -497,9 +504,9 @@ int check_connectivity(connectivity_check_t* cc)
         latency_sum += latency;
 
         success = success || (dropped == 0);
+
+        ping_destroy(pingo);
     }
-    
-    ping_destroy(pingo);
 
     print_debug(stdout_mut, "[%s]: Ping has success: %d\n", cc->ip, success);
 
