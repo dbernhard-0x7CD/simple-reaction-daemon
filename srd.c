@@ -493,7 +493,7 @@ int check_connectivity(connectivity_check_t* cc)
             return 0;
         }
 
-        print_debug(stdout_mut, "[%s]: latency %2.4lf ms\n", cc->ip, latency);
+        print_debug(stdout_mut, "[%s]: latency %2.4lf ms and dropped: %d\n", cc->ip, latency, dropped);
         latency_sum += latency;
 
         success = success || (dropped == 0);
