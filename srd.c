@@ -35,6 +35,9 @@ int running = 1;
 /* used to lock stdout as all threads write to it */
 pthread_mutex_t stdout_mut;
 
+/* Get results from liboping */
+pthread_mutex_t read_mut;
+
 // loaded at startup
 char* default_gw;
 
@@ -43,7 +46,8 @@ int main()
     print_info(stdout_mut, "Starting Simple Reaction Daemon\n");
 
     // create a mutex; if unsuccessful we stop
-    if (pthread_mutex_init(&stdout_mut, NULL) != 0)
+    if (pthread_mutex_init(&stdout_mut, NULL) != 0 || 
+        pthread_mutex_init(&read_mut, NULL) != 0)
     {
         fprintf(stderr, "Unable to initialize mutex\n");
         fflush(stderr);
@@ -481,6 +485,10 @@ int check_connectivity(connectivity_check_t* cc)
             return (-1);
         }
 
+        if (pthread_mutex_lock(&read_mut) != 0) {
+            printf("Failed to get mutex\n");
+            return (-1);
+        }
         // variables we're interested in
         uint32_t dropped;
         double latency;
@@ -493,6 +501,7 @@ int check_connectivity(connectivity_check_t* cc)
         if (status < 0) {
             printf("Unable to get dropped %d\n", status);
             ping_destroy(pingo);
+            pthread_mutex_unlock(&read_mut);
             return 0;
         }
 
@@ -502,6 +511,7 @@ int check_connectivity(connectivity_check_t* cc)
         if (status < 0) {
             printf("Unable to get latency %d\n", status);
             ping_destroy(pingo);
+            pthread_mutex_unlock(&read_mut);
             return 0;
         }
 
@@ -511,6 +521,8 @@ int check_connectivity(connectivity_check_t* cc)
         
         print_debug(stdout_mut, "[%s]: latency %2.4lf ms and dropped: %d to address %s\n", cc->ip, latency, dropped, addr);
         latency_sum += latency;
+
+        pthread_mutex_unlock(&read_mut);
 
         success = success || (dropped == 0);
 
