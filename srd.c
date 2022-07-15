@@ -490,12 +490,17 @@ int check_connectivity(connectivity_check_t* cc)
         size_t size = sizeof(uint32_t);
 
         int status = ping_iterator_get_info(result_iterator, PING_INFO_DROPPED, &dropped, &size);
+        if (status < 0) {
+            printf("Unable to get dropped %d\n", status);
+            ping_destroy(pingo);
+            return 0;
+        }
 
         size = sizeof(double);
         status |= ping_iterator_get_info(result_iterator, PING_INFO_LATENCY, &latency, &size);
 
         if (status < 0) {
-            printf("Unable to get status %d\n", status);
+            printf("Unable to get latency %d\n", status);
             ping_destroy(pingo);
             return 0;
         }
