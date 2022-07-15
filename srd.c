@@ -475,6 +475,11 @@ int check_connectivity(connectivity_check_t* cc)
     for (int i = 0; i < cc->num_pings; i++) {
         pingobj_t* pingo = create_pingo(cc->ip, cc->timeout);
 
+        if (pthread_mutex_lock(&read_mut) != 0) {
+            printf("Failed to get mutex\n");
+            return (-1);
+        }
+
         // send the ping
         int res = ping_send(pingo);
 
@@ -482,13 +487,10 @@ int check_connectivity(connectivity_check_t* cc)
             const char* err_msg = ping_get_error(pingo);
             print_info(stdout_mut, "Error sending ping to %s. Message: %s\n", cc->ip, err_msg);
             ping_destroy(pingo);
+            pthread_mutex_unlock(&read_mut);
             return (-1);
         }
 
-        if (pthread_mutex_lock(&read_mut) != 0) {
-            printf("Failed to get mutex\n");
-            return (-1);
-        }
         // variables we're interested in
         uint32_t dropped;
         double latency;
