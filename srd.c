@@ -154,7 +154,7 @@ int main()
         free((char *)ptr->depend_ip);
 
         // free cmd if it is a command (contains the command) or service-restart (contains service name)
-        for (int i = 0; i < ptr->count; i++) {
+        for (int i = 0; i < ptr->actions_count; i++) {
             if (strcmp(ptr->actions[i].name, "command") == 0) {
                 action_cmd_t* cmd = (action_cmd_t*) ptr->actions[i].object;
                 free ((char *)cmd->command);
@@ -272,7 +272,7 @@ void run_check(check_arguments_t *args)
         fflush(stdout);
 
         // check if any action is required
-        for (int i = 0; running && i < check->count; i++)
+        for (int i = 0; running && i < check->actions_count; i++)
         {
             action_t this_action = check->actions[i];
             int should_run = this_action.run == RUN_ALWAYS || 
@@ -695,10 +695,10 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                 config_destroy(&cfg);
                 return 1;
             }
-            cc->count = config_setting_length(setting);
-            cc->actions = malloc(cc->count * sizeof(action_t));
+            cc->actions_count = config_setting_length(setting);
+            cc->actions = malloc(cc->actions_count * sizeof(action_t));
 
-            for (int i = 0; i < cc->count; i++)
+            for (int i = 0; i < cc->actions_count; i++)
             {
                 const config_setting_t *action = config_setting_get_elem(setting, i);
                 action_t* this_action = &cc->actions[i];

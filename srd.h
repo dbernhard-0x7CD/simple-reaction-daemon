@@ -65,7 +65,7 @@ typedef struct connectivity_check_t {
     struct timespec timestamp_last_reply;
 
     // Count of actions if this target is not reachable
-    int count;
+    int actions_count;
 
     // Actions if the target is not reachable
     action_t* actions;
