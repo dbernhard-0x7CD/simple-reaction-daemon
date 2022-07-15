@@ -505,7 +505,11 @@ int check_connectivity(connectivity_check_t* cc)
             return 0;
         }
 
-        print_debug(stdout_mut, "[%s]: latency %2.4lf ms and dropped: %d\n", cc->ip, latency, dropped);
+        char addr[16] = "none";
+        size = sizeof(addr) - 1;
+        status |= ping_iterator_get_info(result_iterator, PING_INFO_ADDRESS, addr, &size);
+        
+        print_debug(stdout_mut, "[%s]: latency %2.4lf ms and dropped: %d to address %s\n", cc->ip, latency, dropped, addr);
         latency_sum += latency;
 
         success = success || (dropped == 0);
