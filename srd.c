@@ -526,7 +526,8 @@ int check_connectivity(connectivity_check_t* cc)
 
         pthread_mutex_unlock(&read_mut);
 
-        success = success || (dropped == 0);
+        // sometimes dropped = 0 and latency = -1.0 when the host is down
+        success = success || (dropped == 0 && latency > -1.0);
 
         ping_destroy(pingo);
     }
