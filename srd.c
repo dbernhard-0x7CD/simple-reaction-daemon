@@ -61,7 +61,7 @@ int main()
 
     // load configuration files for connectivity targets
     int success = 0;
-    int connectivity_targets = 0;
+    int connectivity_targets;
     connectivity_check_t **connectivity_checks = load(configd_path, &success, &connectivity_targets);
     if (!success || connectivity_checks == NULL)
     {
