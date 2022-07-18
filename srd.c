@@ -208,7 +208,7 @@ void run_check(check_arguments_t *args)
 
     // store time to calculate how long a ping took
     struct timespec now;
-    clock_gettime(CLOCK_MONOTONIC_RAW, &check->timestamp_last_reply);
+    clock_gettime(CLOCK_REALTIME, &check->timestamp_last_reply);
 
     // main loop: check connectivity repeatedly
     while (running)
@@ -235,19 +235,24 @@ void run_check(check_arguments_t *args)
         char *p;
         int len;
         time_t t = time(NULL);
-        clock_gettime(CLOCK_MONOTONIC_RAW, &now);
+        clock_gettime(CLOCK_REALTIME, &now);
 
         p = ctime(&t);
         len = strlen(p);
 
         double diff; // in ms
         enum run_if state;
+        struct timespec previous_last_reply = check->timestamp_last_reply;
         if (connected == 1)
         {
             if (check->status != STATUS_SUCCESS) {
                 print_info(stdout_mut, "[%s]: Reachable %.*s\n", check->ip, len - 1, p);
+                if (check->status != STATUS_NONE) {
+                    state = RUN_UP_AGAIN;
+                } else {
+                    state = RUN_UP;
+                }
                 check->status = STATUS_SUCCESS;
-                state = RUN_UP_AGAIN;
             } else {
                 state = RUN_UP;
             }
@@ -302,6 +307,17 @@ void run_check(check_arguments_t *args)
                         sprintf(latency_str, "%1.0lf", check->latency);
 
                         copy.command = str_replace(cmd->command, "%lat_ms", latency_str);
+
+                        if (state == RUN_UP_AGAIN) {
+                            char str_time[32];
+                            struct tm time;
+                            localtime_r(&previous_last_reply.tv_sec, &time);
+
+                            strftime(str_time, 32, "%Y-%m-%dT%H:%M:%S.", &time);
+
+                            copy.command = str_replace(copy.command, "%sd", str_time);
+                        }
+
                         free(latency_str);
                     }
                     print_debug(stdout_mut, "\tCommand: %s\n", copy.command);

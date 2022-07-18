@@ -62,6 +62,8 @@ typedef struct connectivity_check_t {
 
     // Status of last ping
     enum conn_status status;
+
+    // Timestamp of the last successfull ping
     struct timespec timestamp_last_reply;
 
     // Count of actions if this target is not reachable
