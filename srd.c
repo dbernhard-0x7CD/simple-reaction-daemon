@@ -472,6 +472,8 @@ pingobj_t* create_pingo(const char* ip, double timeout) {
         print_info(stdout_mut, "Unable to add host %s status %d\n", ip, status);
         const char* err_msg = ping_get_error(pingo);
         print_info(stdout_mut, "Error adding host %s. Message: %s\n", ip, err_msg);
+
+        return NULL;
     }
 
     return pingo;
@@ -486,6 +488,14 @@ int check_connectivity(connectivity_check_t* cc)
 
     for (int i = 0; i < cc->num_pings; i++) {
         pingobj_t* pingo = create_pingo(cc->ip, cc->timeout);
+
+        /* if we cannot create a ping object, we assume this host is down
+        * as if name-resolution does not work we get an error when
+        * adding a host.
+        */
+        if (pingo == NULL) {
+            return 0;
+        }
 
         // send the ping
         int res = ping_send(pingo);
