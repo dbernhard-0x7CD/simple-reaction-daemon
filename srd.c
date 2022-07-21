@@ -661,6 +661,7 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
             cc->actions_count = config_setting_length(setting);
             cc->actions = malloc(cc->actions_count * sizeof(action_t));
 
+            // Iterate over all actions
             for (int i = 0; i < cc->actions_count; i++)
             {
                 const config_setting_t *action = config_setting_get_elem(setting, i);
@@ -706,6 +707,7 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                     this_action->delay = 0;
                 }
 
+                // Load the properties for action_name
                 if (strcmp(action_name, "reboot") == 0)
                 {
                     // nothing to do

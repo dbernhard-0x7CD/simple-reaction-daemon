@@ -3,12 +3,12 @@
 #define SRD_H
 
 /*
-* Connectivity status for a target.
+* Connectivity status for a target (connectivity_check_t).
 */
 enum conn_status { STATUS_SUCCESS, STATUS_FAILED, STATUS_NONE };
 
 /*
-* When to run the given action
+* When to run the given action.
 */
 enum run_if { RUN_UP, RUN_ALWAYS, RUN_DOWN, RUN_UP_AGAIN };
 
@@ -17,9 +17,17 @@ enum run_if { RUN_UP, RUN_ALWAYS, RUN_DOWN, RUN_UP_AGAIN };
 * if down for delay seconds.
 */
 typedef struct action_t {
+    // Defines which action to perform
     const char* name;
+
+    // Pointer to struct or string with more info
+    // about the given action
     void*       object;
+
+    // Delay until this action is performed when run is DOWN
     int         delay;
+
+    // When to run this action
     enum run_if run;
 } action_t;
 
@@ -31,7 +39,6 @@ typedef struct action_cmd_t {
     const char* command;
     const char* user;
 } action_cmd_t;
-
 
 /* A connectivity check is one target to which we do connectivity checks.
 * Each config file represents one such check. As Each target can have its
