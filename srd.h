@@ -3,11 +3,6 @@
 #define SRD_H
 
 /*
-* Log level of each target.
-*/
-enum loglevel { LOGLEVEL_DEBUG, LOGLEVEL_INFO };
-
-/*
 * Connectivity status for a target.
 */
 enum conn_status { STATUS_SUCCESS, STATUS_FAILED, STATUS_NONE };
@@ -106,34 +101,11 @@ void run_check(check_arguments_t*);
 int is_available(connectivity_check_t** ccs, const int n, char const *ip, int strict);
 
 /*
-* Restarts the given service. The service-name must have
-* characters not in [a-Z] or [0-9] escaped to _HEX where
-* HEX is the hex value of the character as string.
-* ip is used when logging to indicate from which target
-* this restart originated.
-* Returns 1 on success, else 0.
-*/
-int restart_service(const char* name, const char* ip);
-
-/*
-* Restarts the system (errors out if the executing user has
-* insufficient permissions). 
-* Returns 1 on success, and otherwise 0.
-*/
-int restart_system(const char* ip);
-
-/*
 * Loads all connectivity checks inside the directory.
 * These files have to be '.conf' files and follow the
 * srd.conf syntax.
 */
 connectivity_check_t** load(char *const directory, int* success, int* count);
-
-/*
- * Runs the given command.
- * Returns 1 if success, else 0.
- */
-int run_command(const action_cmd_t* cmd);
 
 /*
  * Checks if this machine is still able to ping the target.

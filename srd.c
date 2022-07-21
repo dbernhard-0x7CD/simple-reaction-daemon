@@ -6,7 +6,6 @@
 #include <math.h>
 #include <string.h>
 #include <sys/wait.h>
-#include <systemd/sd-bus.h>
 #include <libconfig.h>
 #include <pwd.h>
 #include <sys/stat.h>
@@ -19,13 +18,14 @@
 #include "util.h"
 #include "srd.h"
 #include "printing.h"
+#include "actions.h"
 
 char *const configd_path = "/etc/srd/";
 char *const config_main = "/srd.conf";
 char *const version = "0.0.4-dev";
 
 // application configuration
-int loglevel = LOGLEVEL_DEBUG;
+enum loglevel loglevel = LOGLEVEL_DEBUG;
 
 #define DEBUG 0
 
@@ -38,9 +38,15 @@ pthread_mutex_t stdout_mut;
 // loaded at startup
 char* default_gw;
 
+// used for printing to stdout
+logger_t logger;
+
 int main()
 {
-    print_info(stdout_mut, "Starting Simple Reaction Daemon\n");
+    logger.level = &loglevel;
+    logger.stdout_mut = &stdout_mut;
+
+    print_info(logger, "Starting Simple Reaction Daemon\n");
 
     // create a mutex; if unsuccessful we stop
     if (pthread_mutex_init(&stdout_mut, NULL) != 0)
@@ -81,10 +87,10 @@ int main()
     }
 #endif
 
-    print_info(stdout_mut, "Starting srd (Simple Reaction Daemon) version %s\n", version);
-    print_info(stdout_mut, "Connectivity Targets: %d\n", connectivity_targets);
+    print_info(logger, "Starting srd (Simple Reaction Daemon) version %s\n", version);
+    print_info(logger, "Connectivity Targets: %d\n", connectivity_targets);
     
-    print_debug(stdout_mut, "default gateway %s\n", default_gw);
+    print_debug(logger, "default gateway %s\n", default_gw);
     
     fflush(stdout);
 
@@ -115,7 +121,7 @@ int main()
 
         sigprocmask(SIG_BLOCK, &waitset, NULL);
 
-        print_info(stdout_mut, "Awaiting shutdown signal\n");
+        print_info(logger, "Awaiting shutdown signal\n");
 
         // waits until a signal arrives
         int result;
@@ -125,10 +131,10 @@ int main()
         }
         running = 0;
 
-        print_debug(stdout_mut, "Got signal %d\n", info.si_signo);
+        print_debug(logger, "Got signal %d\n", info.si_signo);
     }
 
-    print_info(stdout_mut, "Shutting down Simple Reaction Daemon\n");
+    print_info(logger, "Shutting down Simple Reaction Daemon\n");
     fflush(stdout);
 
     // kill and join all threads
@@ -141,9 +147,9 @@ int main()
         pthread_join(threads[i], NULL);
     }
 
-    print_debug(stdout_mut, "Killed all threads\n");
+    print_debug(logger, "Killed all threads\n");
 
-    print_info(stdout_mut, "Finished Simple Reaction Daemon.\n");
+    print_info(logger, "Finished Simple Reaction Daemon.\n");
     fflush(stdout);
 
     // free all memory
@@ -189,12 +195,12 @@ int is_available(connectivity_check_t **ccs, const int n, char const *ip, int st
                 return 1;
             }
 
-            print_debug(stdout_mut, "Not available: %s %d\n", ptr->ip, ptr->status);
+            print_debug(logger, "Not available: %s %d\n", ptr->ip, ptr->status);
             return 0;
         }
     }
 
-    print_info(stdout_mut, "ERROR: This dependency does not have a check: %s\n", ip);
+    print_info(logger, "ERROR: This dependency does not have a check: %s\n", ip);
     return -1;
 }
 
@@ -215,16 +221,16 @@ void run_check(check_arguments_t *args)
     {
         // check if our dependency is available
         if (check->depend_ip != NULL) {
-            print_debug(stdout_mut, "[%s]: Checking for dependency %s\n",check->ip, check->depend_ip);
+            print_debug(logger, "[%s]: Checking for dependency %s\n",check->ip, check->depend_ip);
 
             int available = is_available(args->connectivity_checks, args->amount_targets, check->depend_ip, 1);
 
             if (available == 0) {
-                print_info(stdout_mut, "[%s]: Awaiting dependency %s\n", check->ip, check->depend_ip);
+                print_info(logger, "[%s]: Awaiting dependency %s\n", check->ip, check->depend_ip);
                 sleep(check->period);
                 continue;
             } else if (available < 0) {
-                print_info(stdout_mut, "[%s]: Bad check: %s\n", check->ip, check->depend_ip);
+                print_info(logger, "[%s]: Bad check: %s\n", check->ip, check->depend_ip);
                 running = 0;
                 kill(getpid(), SIGALRM);
                 return;
@@ -246,7 +252,7 @@ void run_check(check_arguments_t *args)
         if (connected == 1)
         {
             if (check->status != STATUS_SUCCESS) {
-                print_info(stdout_mut, "[%s]: Reachable %.*s\n", check->ip, len - 1, p);
+                print_info(logger, "[%s]: Reachable %.*s\n", check->ip, len - 1, p);
                 if (check->status != STATUS_NONE) {
                     state = RUN_UP_AGAIN;
                 } else {
@@ -266,11 +272,11 @@ void run_check(check_arguments_t *args)
             check->status = STATUS_FAILED;
             state = RUN_DOWN;
 
-            print_info(stdout_mut, "[%s]: %.*s: Ping FAILED. Now for %0.3fs\n", check->ip, len - 1, p, delta_ms);
+            print_info(logger, "[%s]: %.*s: Ping FAILED. Now for %0.3fs\n", check->ip, len - 1, p, delta_ms);
 
             diff = delta_ms;
         } else {
-            print_info(stdout_mut, "Error when checking connectivity\n");
+            print_info(logger, "Error when checking connectivity\n");
             kill(getpid(), SIGALRM);
             return;
         }
@@ -286,15 +292,17 @@ void run_check(check_arguments_t *args)
                             (this_action.run == state && state == RUN_UP_AGAIN);
             if (should_run)
             {
-                print_info(stdout_mut, "[%s]: Performing action: %s\n", check->ip, check->actions[i].name);
+                print_info(logger, "[%s]: Performing action: %s\n", check->ip, check->actions[i].name);
 
                 if (strcmp(this_action.name, "service-restart") == 0)
                 {
-                    restart_service(this_action.object, check->ip);
+                    restart_service(logger, this_action.object, check->ip);
                 }
                 else if (strcmp(this_action.name, "reboot") == 0)
                 {
-                    restart_system(check->ip);
+                    print_info(logger, "[%s]: Sending restart signal\n", check->ip);
+                    restart_system();
+                    print_info(logger, "[%s]: Reboot scheduled. \n", check->ip);
                 }
                 else if (strcmp(this_action.name, "command") == 0)
                 {
@@ -320,10 +328,10 @@ void run_check(check_arguments_t *args)
 
                         free(latency_str);
                     }
-                    print_debug(stdout_mut, "\tCommand: %s\n", copy.command);
+                    print_debug(logger, "\tCommand: %s\n", copy.command);
                     fflush(stdout);
 
-                    int status = run_command(&copy);
+                    int status = run_command(logger, &copy);
                     
                     if (status < 0)
                     {
@@ -332,12 +340,12 @@ void run_check(check_arguments_t *args)
                 }
                 else
                 {
-                    print_info(stdout_mut, "This action is NOT yet implemented: %s\n", this_action.name);
+                    print_info(logger, "This action is NOT yet implemented: %s\n", this_action.name);
                 }
             }
         } // end check if any action has to be taken
 
-        print_debug(stdout_mut, "[%s]: Sleeping for %d seconds...\n\n", check->ip, check->period);
+        print_debug(logger, "[%s]: Sleeping for %d seconds...\n\n", check->ip, check->period);
         fflush(stdout);
 
         if (running) {
@@ -358,101 +366,6 @@ void signal_handler(int s)
     fflush(stdout);
 }
 
-int restart_system(const char *ip)
-{
-    print_info(stdout_mut, "[%s]: Sending restart signal\n", ip);
-    sd_bus_error error = SD_BUS_ERROR_NULL;
-    sd_bus_message *msg = NULL;
-    sd_bus *bus = NULL;
-    const char *path;
-    int r;
-
-    /* Connect to the system bus */
-    r = sd_bus_open_system(&bus);
-    if (r < 0)
-    {
-        fprintf(stderr, "Failed to connect to system bus: %s\n", strerror(-r));
-        goto finish;
-    }
-
-    r = sd_bus_call_method(
-        bus,
-        "org.freedesktop.systemd1",         /* service to contact */
-        "/org/freedesktop/systemd1",        /* object path */
-        "org.freedesktop.systemd1.Manager", /* interface name */
-        "Reboot",                           /* method name */
-        &error,                             /* object to return error in */
-        &msg,                               /* return message on success */
-        "");
-    if (r < 0)
-    {
-        fprintf(stderr, "Failed to issue method call: %s\n", error.message);
-        goto finish;
-    }
-
-    /* Parse the response message */
-    r = sd_bus_message_read(msg, "o", &path);
-    if (r < 0)
-    {
-        fprintf(stderr, "Failed to parse response message: %s\n", strerror(-r));
-        goto finish;
-    }
-
-    print_info(stdout_mut, "[%s]: Reboot scheduled. Service job: %s.\n", ip, path);
-
-finish:
-    sd_bus_error_free(&error);
-    sd_bus_message_unref(msg);
-    sd_bus_unref(bus);
-
-    return r >= 0;
-}
-
-int run_command(const action_cmd_t *cmd)
-{
-    FILE *fp;
-    char buf[1024];
-
-    int pid = fork();
-
-    if (pid < 0)
-    {
-        printf("Unable to fork.\n");
-        return 0;
-    }
-    else if (pid == 0)
-    {
-        // switch to user
-        if (cmd->user != NULL)
-        {
-            struct passwd *a = getpwnam(cmd->user);
-            uid_t uid = a->pw_uid;
-            setuid(uid);
-        }
-
-        fp = popen(cmd->command, "r");
-        if (fp == NULL)
-        {
-            printf("Failed to run command\n");
-            return EXIT_FAILURE;
-        }
-
-        while (fgets(buf, sizeof(buf), fp) != NULL)
-        {
-            print_info(stdout_mut, "Command output: %s", buf);
-        }
-
-        pclose(fp);
-        exit(0);
-    }
-    else
-    {
-        // await child
-        waitpid(pid, NULL, WUNTRACED);
-    }
-
-    return 1;
-}
 
 pingobj_t* create_pingo(const char* ip, double timeout) {
     pingobj_t* pingo;
@@ -469,9 +382,9 @@ pingobj_t* create_pingo(const char* ip, double timeout) {
     // set address
     status = ping_host_add(pingo, ip);
     if (status < 0) {
-        print_info(stdout_mut, "Unable to add host %s status %d\n", ip, status);
+        print_info(logger, "Unable to add host %s status %d\n", ip, status);
         const char* err_msg = ping_get_error(pingo);
-        print_info(stdout_mut, "Error adding host %s. Message: %s\n", ip, err_msg);
+        print_info(logger, "Error adding host %s. Message: %s\n", ip, err_msg);
 
         return NULL;
     }
@@ -502,7 +415,7 @@ int check_connectivity(connectivity_check_t* cc)
 
         if (res < 0) {
             const char* err_msg = ping_get_error(pingo);
-            print_info(stdout_mut, "Error sending ping to %s. Message: %s\n", cc->ip, err_msg);
+            print_info(logger, "Error sending ping to %s. Message: %s\n", cc->ip, err_msg);
             ping_destroy(pingo);
             return (-1);
         }
@@ -535,7 +448,7 @@ int check_connectivity(connectivity_check_t* cc)
         size = sizeof(addr) - 1;
         status |= ping_iterator_get_info(result_iterator, PING_INFO_ADDRESS, addr, &size);
         
-        print_debug(stdout_mut, "[%s]: latency %2.4lf ms and dropped: %d to address %s\n", cc->ip, latency, dropped, addr);
+        print_debug(logger, "[%s]: latency %2.4lf ms and dropped: %d to address %s\n", cc->ip, latency, dropped, addr);
         latency_sum += latency;
 
         // sometimes dropped = 0 and latency = -1.0 when the host is down
@@ -544,7 +457,7 @@ int check_connectivity(connectivity_check_t* cc)
         ping_destroy(pingo);
     }
 
-    print_debug(stdout_mut, "[%s]: Ping has success: %d\n", cc->ip, success);
+    print_debug(logger, "[%s]: Ping has success: %d\n", cc->ip, success);
 
     cc->latency = latency_sum / cc->num_pings;
 
@@ -590,11 +503,11 @@ connectivity_check_t **load(char *directory, int *success, int *count)
                 continue;
             }
 
-            print_info(stdout_mut, "Read config file %s\n", p->fts_path);
+            print_info(logger, "Read config file %s\n", p->fts_path);
 
             if (!load_config(p->fts_path, &conns, &cur_size, &cur_max))
             {
-                print(stdout_mut, "Unable to load config %s\n", p->fts_path);
+                print(logger, "Unable to load config %s\n", p->fts_path);
                 *success = 0;
                 return NULL;
             }
@@ -641,7 +554,7 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
 
     if (!config_lookup_string(&cfg, "destination", &ip_field))
     {
-        print_info(stdout_mut, "%s is missing setting: destination\n", cfg_path);
+        print_info(logger, "%s is missing setting: destination\n", cfg_path);
         config_destroy(&cfg);
         return 0;
     }
@@ -671,7 +584,7 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
 
             if (!config_lookup_int(&cfg, "period", &cc->period))
             {
-                print_info(stdout_mut, "%s is missing setting: period\n", cfg_path);
+                print_info(logger, "%s is missing setting: period\n", cfg_path);
                 config_destroy(&cfg);
                 return 0;
             }
@@ -682,12 +595,12 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                 cc->timeout = (double)timeout;
             } else if (!config_lookup_float(&cfg, "timeout", &cc->timeout))
             {
-                print_info(stdout_mut, "%s is missing setting: timeout\n", cfg_path);
+                print_info(logger, "%s is missing setting: timeout\n", cfg_path);
                 config_destroy(&cfg);
                 return 0;
             }
             if (cc->timeout < 0) {
-                print_info(stdout_mut, "%s timeout cannot be negative\n", cfg_path);
+                print_info(logger, "%s timeout cannot be negative\n", cfg_path);
                 config_destroy(&cfg);
                 return 0;
             }
@@ -726,7 +639,7 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                         return 0;
                     }
                 } else {
-                    print_info(stdout_mut, "No loglevel defined in %s.\n", cfg_path);
+                    print_info(logger, "No loglevel defined in %s.\n", cfg_path);
                 }
             } // end if for "srd.conf"
 
@@ -734,7 +647,7 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
             setting = config_lookup(&cfg, "actions");
             if (setting == NULL)
             {
-                print_debug(stdout_mut, "%s: missing actions in config file.\n", cfg_path);
+                print_debug(logger, "%s: missing actions in config file.\n", cfg_path);
                 config_destroy(&cfg);
                 return 1;
             }
@@ -750,7 +663,7 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                 const char *action_name;
                 if (!config_setting_lookup_string(action, "action", &action_name))
                 {
-                    print_info(stdout_mut, "%s: element is missing the action\n", cfg_path);
+                    print_info(logger, "%s: element is missing the action\n", cfg_path);
                     config_destroy(&cfg);
                     return 0;
                 }
@@ -774,7 +687,7 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                     } else if (strcmp(run_if_str, "up-again") == 0) {
                         this_action->run = RUN_UP_AGAIN;
                     } else {
-                        print_info(stdout_mut, "%s: Action %s is has unknown run_if: %s\n", cfg_path, action_name, run_if_str);
+                        print_info(logger, "%s: Action %s is has unknown run_if: %s\n", cfg_path, action_name, run_if_str);
                         config_destroy(&cfg);
                         return 0;
                     }
@@ -794,13 +707,13 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                 {
                     if (!config_setting_lookup_string(action, "name", (const char **)&cc->actions[i].object))
                     {
-                        print_info(stdout_mut, "%s: element is missing the name\n", cfg_path);
+                        print_info(logger, "%s: element is missing the name\n", cfg_path);
                         config_destroy(&cfg);
                         return 0;
                     }
 
                     char *escaped_servicename = escape_servicename((char *)cc->actions[i].object);
-                    print_debug(stdout_mut, "Escaped \"%s\" to %s\n", (char *)cc->actions[i].object, escaped_servicename);
+                    print_debug(logger, "Escaped \"%s\" to %s\n", (char *)cc->actions[i].object, escaped_servicename);
                     cc->actions[i].object = escaped_servicename;
                 }
                 else if (strcmp(action_name, "command") == 0)
@@ -810,7 +723,7 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                     const char* command;
                     if (!config_setting_lookup_string(action, "cmd", &command))
                     {
-                        print_info(stdout_mut, "%s: element is missing the cmd\n", cfg_path);
+                        print_info(logger, "%s: element is missing the cmd\n", cfg_path);
                         config_destroy(&cfg);
                         return 0;
                     }
@@ -866,65 +779,5 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
     return 1;
 }
 
-int restart_service(const char *name, const char *ip)
-{
-    print_debug(stdout_mut, "[%s]: Restart service %s\n", ip, name);
 
-    sd_bus_error error = SD_BUS_ERROR_NULL;
-    sd_bus_message *m = NULL;
-    sd_bus *bus = NULL;
-    const char *path;
-    int r;
-
-    /* Connect to the system bus */
-    r = sd_bus_open_system(&bus);
-    if (r < 0)
-    {
-        fprintf(stderr, "Failed to connect to system bus: %s\n", strerror(-r));
-        goto finish;
-    }
-    char *prefix = "/org/freedesktop/systemd1/unit/";
-    int prefix_len = strlen(prefix);
-    char* service_name = malloc(prefix_len + strlen(name) + 1);
-    
-    strcpy(service_name, prefix);
-    strcpy(service_name + prefix_len, name);
-
-    print_debug(stdout_mut, "Object path: %s\n", service_name);
-
-    r = sd_bus_call_method(
-        bus,
-        "org.freedesktop.systemd1",      /* service to contact */
-        service_name,                    /* object path */
-        "org.freedesktop.systemd1.Unit", /* interface name */
-        "Restart",                       /* method name */
-        &error,                          /* object to return error in */
-        &m,                              /* return message on success */
-        "s",                             /* input signature */
-        "fail");
-    if (r < 0)
-    {
-        fprintf(stderr, "Failed to issue method call: %s\n", error.message);
-        free(service_name);
-        goto finish;
-    }
-    free(service_name);
-
-    /* Parse the response message */
-    r = sd_bus_message_read(m, "o", &path);
-    if (r < 0)
-    {
-        fprintf(stderr, "Failed to parse response message: %s\n", strerror(-r));
-        goto finish;
-    }
-
-    print_debug(stdout_mut, "[%s]: Queued service job as %s.\n", ip, path);
-
-finish:
-    sd_bus_error_free(&error);
-    sd_bus_message_unref(m);
-    sd_bus_unref(bus);
-
-    return r >= 0;
-}
 
