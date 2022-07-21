@@ -314,6 +314,7 @@ void run_check(check_arguments_t *args)
                     action_cmd_t *cmd = this_action.object;
                     action_cmd_t copy = *cmd;
 
+                    // replace %lat_ms
                     if (check->latency >= 0) {
                         char* latency_str = malloc((log10f(check->latency) + 1) * sizeof(char));
 
