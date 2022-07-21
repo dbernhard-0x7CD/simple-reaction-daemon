@@ -324,8 +324,13 @@ void run_check(check_arguments_t *args)
                             localtime_r(&previous_last_reply.tv_sec, &time);
 
                             strftime(str_time, 32, "%Y-%m-%dT%H:%M:%S.", &time);
+                            // TODO copy.command should lose a pointer to memory
 
-                            copy.command = str_replace(copy.command, "%sd", str_time);
+                            const char* command = copy.command;
+
+                            copy.command = str_replace(copy.command, "%sdt", str_time);
+
+                            free((void*)command);
                         }
 
                         free(latency_str);
