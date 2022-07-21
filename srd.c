@@ -847,6 +847,3 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
 
     return 1;
 }
-
-
-
