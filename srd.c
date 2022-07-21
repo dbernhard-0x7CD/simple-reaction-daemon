@@ -281,7 +281,7 @@ void run_check(check_arguments_t *args)
         } else if (!running) {
             break; 
         } else {
-            print_info(logger, "Error when checking connectivity\n");
+            print_info(logger, "Error when checking connectivity. (connected: %d)\n", connected);
             kill(getpid(), SIGALRM);
             return;
         }
