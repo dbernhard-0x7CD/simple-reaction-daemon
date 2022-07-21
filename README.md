@@ -122,6 +122,19 @@ loglevel = "INFO"
 }
 ```
 
+* **log to a file**:
+```
+{
+    action = "log";
+    message = "Host %ip was down from %sdt until %now";
+    path = "SOME_PATH/downtimes.log";
+}
+```
+* Notes for `message`:
+    * You can use `%ip` as a placeholder for the actual IP of the current target (if you use multiple destination IPs)
+    * When `run_if = "up-again"`: You can use `%sdt` (**s**tart **d**own**t**ime) as a placeholder for the start of the downtime 
+
+
 * **execute arbitrary command as a user**:
 
 If a host is **down**:
