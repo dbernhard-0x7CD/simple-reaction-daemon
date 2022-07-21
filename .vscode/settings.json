@@ -34,6 +34,7 @@
     "stdlib.h": "c",
     "math.h": "c",
     "pwd.h": "c",
-    "util.h": "c"
+    "util.h": "c",
+    "actions.h": "c"
   }
 }
