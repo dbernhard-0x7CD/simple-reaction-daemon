@@ -9,8 +9,11 @@
 
 * 0.0.4
     * Fix some memory not getting deallocated
-    * [TODO] up-again variables (for a powerful log)
-        * up-again variables for %initial_downtime and %now
+    * Fix host beeing reported as up due to a race condition when pinging
+    * Do not stop service if we cannot create a ping object
+    * New action: `log` to file
+    * [TEST, DOCUMENT] up-again variables (for a more log)
+        * up-again variables for %sdt (start downtime) and %now
 
 * 0.0.3
     * Do not start if gateway IP cannot be determined
