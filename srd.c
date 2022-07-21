@@ -275,6 +275,8 @@ void run_check(check_arguments_t *args)
             print_info(logger, "[%s]: %.*s: Ping FAILED. Now for %0.3fs\n", check->ip, len - 1, p, delta_ms);
 
             diff = delta_ms;
+        } else if (!running) {
+            break; 
         } else {
             print_info(logger, "Error when checking connectivity\n");
             kill(getpid(), SIGALRM);
