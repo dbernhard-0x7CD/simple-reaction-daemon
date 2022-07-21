@@ -38,6 +38,9 @@ pthread_mutex_t stdout_mut;
 // loaded at startup
 char* default_gw;
 
+// format used for datetimes
+const char* datetime_format = "%Y-%m-%dT%H:%M:%S.";
+
 // used for printing to stdout
 logger_t logger;
 
@@ -344,6 +347,38 @@ void run_check(check_arguments_t *args)
                     {
                         continue;
                     }
+                } else if (strcmp(this_action.name, "log") == 0) { 
+                    action_log_t* action_log = (action_log_t*) this_action.object;
+
+                    const char* raw_message = action_log->message;
+
+                    print_debug(logger, "raw message: %s\n", raw_message);
+
+                    const char* message = raw_message;
+
+                    // replace %sdt
+                    if (state == RUN_UP_AGAIN) {
+                        char str_time[32];
+                        struct tm time;
+                        localtime_r(&previous_last_reply.tv_sec, &time);
+
+                        strftime(str_time, 32, datetime_format, &time);
+
+                        const char* old = message;
+
+                        message = str_replace(message, "%sdt", str_time);
+
+                        free((void*)old);
+                    }
+
+                    // replace %now
+                    char str_now[32];
+                    get_current_time(str_now, 32, datetime_format);
+                    const char* old = message;
+                    message = str_replace(message, "%now", str_now);
+                    free((void*)old);
+
+                    log_to_file(logger, action_log->path, message);
                 }
                 else
                 {
@@ -752,6 +787,31 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                     }
 
                     cc->actions[i].object = cmd;
+                }
+                else if (strcmp(action_name, "log") == 0) {
+                    action_log_t *action_log = malloc(sizeof(action_log_t));
+
+                    const char* path;
+                    if (!config_setting_lookup_string(action, "path", &path))
+                    {
+                        print_info(logger, "%s: element is missing the path\n", cfg_path);
+                        config_destroy(&cfg);
+                        return 0;
+                    } else {
+                        action_log->path = strdup(path);
+                    }
+
+                    const char* message;
+                    if (!config_setting_lookup_string(action, "message", &message))
+                    {
+                        print_info(logger, "%s: element is missing the message\n", cfg_path);
+                        config_destroy(&cfg);
+                        return 0;
+                    } else {
+                        action_log->message = str_replace(message, "%ip", (char *)cc->ip);
+                    }
+
+                    this_action->object = action_log;
                 }
                 else
                 {

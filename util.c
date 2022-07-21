@@ -6,6 +6,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <errno.h>
+#include <time.h>
 
 #include "util.h"
 
@@ -174,4 +175,13 @@ char *get_default_gw()
 
     printf("Did not find the default route\n");
     return NULL;
+}
+
+void get_current_time(char* str, const int n, const char* format) {
+    struct tm tm;
+    time_t t = time(NULL);
+    
+    localtime_r(&t, &tm);
+
+    strftime(str, n, format, &tm);
 }

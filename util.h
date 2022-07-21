@@ -31,4 +31,9 @@ char *str_replace(const char *string, const char *substr, const char *replacemen
  */
 char *get_default_gw();
 
+/*
+* Writes the current time into str with the given format
+*/
+void get_current_time(char* str, const int n, const char* format);
+
 #endif

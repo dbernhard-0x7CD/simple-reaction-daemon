@@ -1,3 +1,4 @@
+#include "actions.h"
 
 #ifndef SRD_H
 #define SRD_H
@@ -30,15 +31,6 @@ typedef struct action_t {
     // When to run this action
     enum run_if run;
 } action_t;
-
-/* 
-* A command action which will be performed for one target
-* if down for a specific duration.
-*/
-typedef struct action_cmd_t {
-    const char* command;
-    const char* user;
-} action_cmd_t;
 
 /* A connectivity check is one target to which we do connectivity checks.
 * Each config file represents one such check. As Each target can have its

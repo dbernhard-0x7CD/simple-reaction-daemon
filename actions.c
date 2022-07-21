@@ -161,3 +161,19 @@ int run_command(logger_t logger, const action_cmd_t *cmd)
 
     return 1;
 }
+
+int log_to_file(const logger_t logger, const char* path, const char* message) {
+    FILE *file;
+
+    file = fopen(path, "a");
+
+    if (file == NULL) {
+        print_info(logger, "Unable to open file: %s\n", path);
+        return 0;
+    }
+
+    fputs(message, file);
+    fputs("\n", file);
+
+    return fclose(file) == 0;
+}
