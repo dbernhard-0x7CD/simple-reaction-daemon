@@ -8,30 +8,6 @@
 */
 enum conn_status { STATUS_SUCCESS, STATUS_FAILED, STATUS_NONE };
 
-/*
-* When to run the given action.
-*/
-enum run_if { RUN_UP, RUN_ALWAYS, RUN_DOWN, RUN_UP_AGAIN };
-
-/* 
-* An action which will be performed for one target
-* if down for delay seconds.
-*/
-typedef struct action_t {
-    // Defines which action to perform
-    const char* name;
-
-    // Pointer to struct or string with more info
-    // about the given action
-    void*       object;
-
-    // Delay until this action is performed when run is DOWN
-    int         delay;
-
-    // When to run this action
-    enum run_if run;
-} action_t;
-
 /* A connectivity check is one target to which we do connectivity checks.
 * Each config file represents one such check. As Each target can have its
 * own IP, timeout, period and actions.
