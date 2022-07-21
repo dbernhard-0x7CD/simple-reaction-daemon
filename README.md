@@ -133,6 +133,7 @@ loglevel = "INFO"
 * Notes for `message`:
     * You can use `%ip` as a placeholder for the actual IP of the current target (if you use multiple destination IPs)
     * When `run_if = "up-again"`: You can use `%sdt` (**s**tart **d**own**t**ime) as a placeholder for the start of the downtime 
+    * You can use `%lat_ms` as a placeholder for the latency in milliseconds
 
 
 * **execute arbitrary command as a user**:

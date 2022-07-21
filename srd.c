@@ -370,6 +370,17 @@ void run_check(check_arguments_t *args)
 
                         free((void*)old);
                     }
+                    if (check->latency >= 0) {
+                        char* latency_str = malloc((log10f(check->latency) + 1) * sizeof(char));
+
+                        const char* old = message;
+
+                        sprintf(latency_str, "%1.0lf", check->latency);
+                        message = str_replace(message, "%lat_ms", latency_str);
+
+                        free(latency_str);
+                        free((char *)old);
+                    }
 
                     // replace %now
                     char str_now[32];
