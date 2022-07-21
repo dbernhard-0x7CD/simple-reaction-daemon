@@ -26,8 +26,9 @@ You need glibc, libconfig and headers for systemd.
 There are two available installation methods:
 
 * ## Installation - ArchLinux
-
-    Enter the folder `arch-pkg` and run `makepkg` and then you can install the packaged \*.tar.xz file (or simply run `makepkg -si`).
+    * AUR: `[paru|yay|your-favourite-aur-helper] simple-reaction-daemon` 
+    * Manual: <br />
+        Enter the folder `arch-pkg` and run `makepkg` and then you can install the packaged \*.tar.zst file (or simply run `makepkg -si`).
 
 * ## Installation - Manual
 
