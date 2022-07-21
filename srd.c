@@ -786,7 +786,7 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                         strcpy((char *)cmd->user, username);
                     }
 
-                    cc->actions[i].object = cmd;
+                    this_action->object = cmd;
                 }
                 else if (strcmp(action_name, "log") == 0) {
                     action_log_t *action_log = malloc(sizeof(action_log_t));
