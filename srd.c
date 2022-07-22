@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -5,15 +6,11 @@
 #include <signal.h>
 #include <math.h>
 #include <string.h>
-#include <sys/wait.h>
 #include <libconfig.h>
-#include <pwd.h>
-#include <sys/stat.h>
-#include <sys/time.h>
 #include <fts.h>
 #include <pthread.h>
-#include <errno.h>
 #include <oping.h>
+#include <sys/socket.h>
 
 #include "util.h"
 #include "srd.h"

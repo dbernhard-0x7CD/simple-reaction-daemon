@@ -1,4 +1,5 @@
 #include "actions.h"
+#include <time.h> 
 
 #ifndef SRD_H
 #define SRD_H

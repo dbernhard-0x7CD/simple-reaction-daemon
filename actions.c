@@ -2,8 +2,10 @@
 #include <pwd.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdio.h>
+#include <string.h>
+#include <sys/wait.h>
 
-#include "srd.h"
 #include "actions.h"
 #include "printing.h"
 

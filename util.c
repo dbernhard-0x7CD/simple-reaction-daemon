@@ -1,11 +1,12 @@
-#include <unistd.h>
+#include <arpa/inet.h>
+#include <bits/types/struct_tm.h> 
+#include <errno.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/socket.h>
 #include <net/if.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
-#include <errno.h>
 #include <time.h>
 #include <math.h>
 
