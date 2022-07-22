@@ -3,6 +3,7 @@
 This program allows to configure certain actions which will be executed if pings to a certain host fail/succeed for a given amount of time. Currently implemented actions are:
 
 * restart another systemd-service (f.ex: systemd-networkd, iwd or wpa_supplicant)
+* log to a file
 * restart the system
 * execute custom command as user
 
