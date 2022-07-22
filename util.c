@@ -189,7 +189,7 @@ void get_current_time(char* str, const int n, const char* format) {
 }
 
 char* insert_placeholders(const char* raw_message, connectivity_check_t* check, enum run_if state, struct timespec previous_last_reply, const char* datetime_format) {
-    const char* message = strdup(raw_message);
+    char* message = strdup(raw_message);
 
     // replace %sdt
     if (state == RUN_UP_AGAIN) {

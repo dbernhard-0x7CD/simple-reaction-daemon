@@ -318,7 +318,7 @@ void run_check(check_arguments_t *args)
                     // we use a copy as the command has placeholders
                     action_cmd_t copy = *cmd;
 
-                    copy.command = insert_placeholders(action_log->message, check, state, previous_last_reply, datetime_format);
+                    copy.command = insert_placeholders(cmd->command, check, state, previous_last_reply, datetime_format);
                     
                     print_debug(logger, "\tCommand: %s\n", copy.command);
                     fflush(stdout);

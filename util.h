@@ -1,3 +1,4 @@
+#include "srd.h"
 
 #ifndef SRD_UTIL_H
 #define SRD_UTIL_H
