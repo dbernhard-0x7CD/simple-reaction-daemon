@@ -39,7 +39,7 @@ pthread_mutex_t stdout_mut;
 char* default_gw;
 
 // format used for datetimes
-const char* datetime_format = "%Y-%m-%dT%H:%M:%S.";
+const char* datetime_format = "%Y-%m-%dT%H:%M:%S";
 
 // used for printing to stdout
 logger_t logger;
