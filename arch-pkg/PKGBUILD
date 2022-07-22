@@ -11,7 +11,6 @@ depends=(libsystemd libconfig glibc)
 makedepends=()
 checkdepends=()
 optdepends=()
-replaces=()
 backup=('etc/srd/srd.conf')
 options=('strip')
 install=
