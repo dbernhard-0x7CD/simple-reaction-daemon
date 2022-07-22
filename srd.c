@@ -355,7 +355,7 @@ void run_check(check_arguments_t *args)
 
                     print_debug(logger, "raw message: %s\n", raw_message);
 
-                    const char* message = raw_message;
+                    const char* message = strdup(raw_message);
 
                     // replace %sdt
                     if (state == RUN_UP_AGAIN) {
