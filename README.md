@@ -101,7 +101,7 @@ loglevel = "INFO"
 <br />
 
 ## Actions
-**Note**: The `delay` configuration denotes the amount of time passed (in seconds) since the last successful ping (`period + timeout`) until this action is performed.
+**Note**: The `delay` configuration denotes the amount of time passed (in seconds) since the last successful ping (`period + num_pings * timeout`) until this action is performed. `num_pings` is how many pings are sent in sequential order (only one has to succeed) and worst case takes `num_pings * timeout` time. This makes sense if you have a high period but you don't want to have a host labeled as 'down' if a ping gets lost.
 
 * **reboot**:
 
