@@ -22,9 +22,11 @@
 # TODO
 * configure amount of pings
     * compare if 2 pings detects less outages
+    -> little bit less
 * test if error in IP is easy to understand
     * not detected
-* dependency as config name (f.ex: gw.conf or just gw)
+* example with latency measurement and graph
+* QUIET loglevel (nothing except startup); STATUS (only UP/DOWN)
 
 
 # VM (testing):
