@@ -11,9 +11,9 @@
     * Fix some memory not getting deallocated
     * Fix host beeing reported as up due to a race condition when pinging
     * Do not stop service if we cannot create a ping object
-    * New action: `log` to file
-    * [TEST, DOCUMENT] up-again variables (for a more log)
-        * up-again variables for %sdt (start downtime) and %now
+    * New action: `log` to file (see README.md for documentation)
+    * `up-again` variables: for %sdt (start downtime) and %now
+        * available in `log.message` and `command.cmd`
 
 * 0.0.3
     * Do not start if gateway IP cannot be determined
