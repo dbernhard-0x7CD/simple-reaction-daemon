@@ -7,8 +7,10 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <time.h>
+#include <math.h>
 
 #include "util.h"
+#include "srd.h"
 
 int needs_escaping(char c)
 {
@@ -184,4 +186,43 @@ void get_current_time(char* str, const int n, const char* format) {
     localtime_r(&t, &tm);
 
     strftime(str, n, format, &tm);
+}
+
+char* insert_placeholders(const char* raw_message, connectivity_check_t* check, enum run_if state, struct timespec previous_last_reply, const char* datetime_format) {
+    const char* message = strdup(raw_message);
+
+    // replace %sdt
+    if (state == RUN_UP_AGAIN) {
+        char str_time[32];
+        struct tm time;
+        localtime_r(&previous_last_reply.tv_sec, &time);
+
+        strftime(str_time, 32, datetime_format, &time);
+
+        const char* old = message;
+
+        message = str_replace(message, "%sdt", str_time);
+
+        free((void*)old);
+    }
+    if (check->latency >= 0) {
+        char* latency_str = malloc((log10f(check->latency) + 1) * sizeof(char));
+
+        const char* old = message;
+
+        sprintf(latency_str, "%1.0lf", check->latency);
+        message = str_replace(message, "%lat_ms", latency_str);
+
+        free(latency_str);
+        free((char *)old);
+    }
+
+    // replace %now
+    char str_now[32];
+    get_current_time(str_now, 32, datetime_format);
+    const char* old = message;
+    message = str_replace(message, "%now", str_now);
+    free((void*)old);
+
+    return message;
 }

@@ -36,4 +36,9 @@ char *get_default_gw();
 */
 void get_current_time(char* str, const int n, const char* format);
 
+/*
+* Replaces all placeholders inside raw_message and returns a pointer to the updated string (which must be free'd).
+*/
+char* insert_placeholders(const char* raw_message, connectivity_check_t* check, enum run_if state, struct timespec previous_last_reply, const char* datetime_format);
+
 #endif
