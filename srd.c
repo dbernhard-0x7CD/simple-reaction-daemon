@@ -163,13 +163,16 @@ int main()
                 action_cmd_t* cmd = (action_cmd_t*) ptr->actions[i].object;
                 free ((char *)cmd->command);
                 free ((char *)cmd->user);
+                free(ptr->actions[i].object);
+            } else if (strcmp(ptr->actions[i].name, "log") == 0) {
+                free(ptr->actions[i].object);
             } else if (strcmp(ptr->actions[i].name, "log") == 0) {
                 action_log_t* cmd = (action_log_t*) ptr->actions[i].object;
 
                 free((char *)cmd->message);
                 free((char *)cmd->path);
+                free(ptr->actions[i].object);
             }
-            free(ptr->actions[i].object);
             free((char *)ptr->actions[i].name);
         }
         free(ptr->actions);
