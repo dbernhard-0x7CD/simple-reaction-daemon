@@ -39,3 +39,5 @@
 * stopping when running with valgrind:
     * `kill -SIGALRM 276436 (obtained with ps -aux | grep "srd")`
 
+* kill srd (send SIGALRM)
+    * `ps -aux | grep srd | grep -v "grep" | cut -f 5 -d ' ' | xargs kill -SIGALRM`
