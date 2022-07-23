@@ -201,7 +201,7 @@ int is_available(connectivity_check_t **ccs, const int n, char const *ip, int st
                 return 1;
             }
 
-            print_debug(logger, "Not available: %s %d\n", ptr->ip, ptr->status);
+            sprint_debug(logger, "Not available: %s (status: %d)\n", ptr->ip, ptr->status);
             return 0;
         }
     }
