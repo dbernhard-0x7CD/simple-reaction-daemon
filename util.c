@@ -227,3 +227,7 @@ char* insert_placeholders(const char* raw_message, connectivity_check_t* check, 
 
     return message;
 }
+
+double calculate_difference(struct timespec old, struct timespec new) {
+    return (new.tv_sec - old.tv_sec) + (new.tv_nsec - old.tv_nsec) / 1.0e9;
+}

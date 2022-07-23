@@ -248,7 +248,8 @@ void run_check(check_arguments_t *args)
         p = ctime(&t);
         len = strlen(p);
 
-        double diff; // in ms
+        // downtime in seconds
+        double diff;
         enum run_if state;
         struct timespec previous_last_reply = check->timestamp_last_reply;
         if (connected == 1)
@@ -269,14 +270,12 @@ void run_check(check_arguments_t *args)
         }
         else if (connected == 0)
         {
-            double_t delta_ms = (now.tv_sec - check->timestamp_last_reply.tv_sec) + (now.tv_nsec - check->timestamp_last_reply.tv_nsec) / 1.0e9;
+            diff = calculate_difference(previous_last_reply, now);
             
             check->status = STATUS_FAILED;
             state = RUN_DOWN;
 
-            print_info(logger, "[%s]: %.*s: Ping FAILED. Now for %0.3fs\n", check->ip, len - 1, p, delta_ms);
-
-            diff = delta_ms;
+            print_info(logger, "[%s]: %.*s: Ping FAILED. Now for %0.3fs\n", check->ip, len - 1, p, diff);
         } else if (!running) {
             break; 
         } else {
