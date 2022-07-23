@@ -107,7 +107,7 @@ int main()
         args[i] = (check_arguments_t) { connectivity_checks, i, connectivity_targets };
         pthread_create(&threads[i], NULL, (void *)run_check, (void *)&args[i]);
     }
-    print_error(logger, "Started all target checks.");
+    print_error(logger, "Started all target checks.\n");
 
     // used to await only specific signals
     sigset_t waitset;
@@ -209,7 +209,7 @@ int is_available(connectivity_check_t **ccs, const int n, char const *ip, int st
         }
     }
 
-    print_info(logger, "ERROR: This dependency does not have a check: %s\n", ip);
+    sprint_error(logger, "ERROR: This dependency does not have a check: %s\n", ip);
     return -1;
 }
 
