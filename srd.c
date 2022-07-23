@@ -39,28 +39,29 @@ char* default_gw;
 const char* datetime_format = "%Y-%m-%dT%H:%M:%S";
 
 // used for printing to stdout
-logger_t logger;
+logger_t* logger;
 
 int main()
 {
-    logger.level = &loglevel;
-    logger.stdout_mut = &stdout_mut;
+    logger_t log;
+    log.level = &loglevel;
+    log.stdout_mut = &stdout_mut;
+    logger = &log;
 
-    print_info(logger, "Starting Simple Reaction Daemon\n");
+    print_error(logger, "Starting srd (Simple Reaction Daemon) version %s\n", version);
 
     // create a mutex; if unsuccessful we stop
     if (pthread_mutex_init(&stdout_mut, NULL) != 0)
     {
-        fprintf(stderr, "Unable to initialize mutex\n");
-        fflush(stderr);
-        exit(1);
+        print_error(logger, "Unable to initialize mutex\n");
+        return EXIT_FAILURE;
     }
 
     // try to get default gateway
     default_gw = get_default_gw();
 
     if (default_gw == NULL) {
-        printf("Unable to get default gateway\n");
+        print_error(logger, "Unable to get default gateway\n");
         pthread_mutex_destroy(&stdout_mut);
         return EXIT_FAILURE;
     }
@@ -71,8 +72,8 @@ int main()
     connectivity_check_t **connectivity_checks = load(configd_path, &success, &connectivity_targets);
     if (!success || connectivity_checks == NULL)
     {
-        fprintf(stderr, "Unable to load configuration\n");
-        fflush(stderr);
+        // print only debug, as load is responsible for printing the error
+        print_debug(logger, "Unable to load configuration.\n");
         return EXIT_FAILURE;
     }
 #if DEBUG
@@ -87,7 +88,6 @@ int main()
     }
 #endif
 
-    print_info(logger, "Starting srd (Simple Reaction Daemon) version %s\n", version);
     print_info(logger, "Connectivity Targets: %d\n", connectivity_targets);
     
     print_debug(logger, "default gateway %s\n", default_gw);
@@ -104,6 +104,7 @@ int main()
         args[i] = (check_arguments_t) { connectivity_checks, i, connectivity_targets };
         pthread_create(&threads[i], NULL, (void *)run_check, (void *)&args[i]);
     }
+    print_error(logger, "Started all target checks.");
 
     // used to await only specific signals
     sigset_t waitset;
@@ -127,14 +128,14 @@ int main()
         int result;
         
         while ((result = sigwaitinfo(&waitset, &info) < 0)) {
-            printf("sigwaitinfo received error %d\n", errno);
+            print_debug(logger, "sigwaitinfo received error %d\n", errno);
         }
         running = 0;
 
         print_debug(logger, "Got signal %d\n", info.si_signo);
     }
 
-    print_info(logger, "Shutting down Simple Reaction Daemon\n");
+    print_error(logger, "Shutting down Simple Reaction Daemon\n");
     fflush(stdout);
 
     // kill and join all threads
@@ -148,9 +149,6 @@ int main()
     }
 
     print_debug(logger, "Killed all threads\n");
-
-    print_info(logger, "Finished Simple Reaction Daemon.\n");
-    fflush(stdout);
 
     // free all memory
     for (int i = 0; i < connectivity_targets; i++) {
@@ -181,6 +179,9 @@ int main()
     free(default_gw);
 
     pthread_mutex_destroy(&stdout_mut);
+
+    print_error(logger, "Finished Simple Reaction Daemon.\n");
+    fflush(stdout);
 
     return EXIT_SUCCESS;
 } // main end
@@ -223,16 +224,16 @@ void run_check(check_arguments_t *args)
     {
         // check if our dependency is available
         if (check->depend_ip != NULL) {
-            print_debug(logger, "[%s]: Checking for dependency %s\n",check->ip, check->depend_ip);
+            sprint_debug(logger, "[%s]: Checking for dependency %s\n",check->ip, check->depend_ip);
 
             int available = is_available(args->connectivity_checks, args->amount_targets, check->depend_ip, 1);
 
             if (available == 0) {
-                print_info(logger, "[%s]: Awaiting dependency %s\n", check->ip, check->depend_ip);
+                sprint_info(logger, "[%s]: Awaiting dependency %s\n", check->ip, check->depend_ip);
                 sleep(check->period);
                 continue;
             } else if (available < 0) {
-                print_info(logger, "[%s]: Bad check: %s\n", check->ip, check->depend_ip);
+                sprint_error(logger, "[%s]: Bad check: %s\n", check->ip, check->depend_ip);
                 running = 0;
                 kill(getpid(), SIGALRM);
                 return;
@@ -347,7 +348,7 @@ void run_check(check_arguments_t *args)
                 }
                 else
                 {
-                    print_info(logger, "This action is NOT yet implemented: %s\n", this_action.name);
+                    print_error(logger, "This action is NOT yet implemented: %s\n", this_action.name);
                 }
             }
         } // end check if any action has to be taken
@@ -389,9 +390,9 @@ pingobj_t* create_pingo(const char* ip, double timeout) {
     // set address
     status = ping_host_add(pingo, ip);
     if (status < 0) {
-        print_info(logger, "Unable to add host %s status %d\n", ip, status);
+        sprint_error(logger, "Unable to add host %s status %d\n", ip, status);
         const char* err_msg = ping_get_error(pingo);
-        print_info(logger, "Error adding host %s. Message: %s\n", ip, err_msg);
+        sprint_error(logger, "Error adding host %s. Message: %s\n", ip, err_msg);
 
         return NULL;
     }
@@ -422,7 +423,7 @@ int check_connectivity(connectivity_check_t* cc)
 
         if (res < 0) {
             const char* err_msg = ping_get_error(pingo);
-            print_info(logger, "Error sending ping to %s. Message: %s\n", cc->ip, err_msg);
+            sprint_error(logger, "Error sending ping to %s. Message: %s\n", cc->ip, err_msg);
             ping_destroy(pingo);
             return (-1);
         }
@@ -437,7 +438,7 @@ int check_connectivity(connectivity_check_t* cc)
 
         int status = ping_iterator_get_info(result_iterator, PING_INFO_DROPPED, &dropped, &size);
         if (status < 0) {
-            printf("Unable to get dropped %d\n", status);
+            sprint_error(logger, "Unable to get dropped of ping %d\n", status);
             ping_destroy(pingo);
             return 0;
         }
@@ -446,7 +447,7 @@ int check_connectivity(connectivity_check_t* cc)
         status |= ping_iterator_get_info(result_iterator, PING_INFO_LATENCY, &latency, &size);
 
         if (status < 0) {
-            printf("Unable to get latency %d\n", status);
+            sprint_error(logger, "Unable to get latency %d\n", status);
             ping_destroy(pingo);
             return 0;
         }
@@ -455,7 +456,7 @@ int check_connectivity(connectivity_check_t* cc)
         size = sizeof(addr) - 1;
         status |= ping_iterator_get_info(result_iterator, PING_INFO_ADDRESS, addr, &size);
         
-        print_debug(logger, "[%s]: latency %2.4lf ms and dropped: %d to address %s\n", cc->ip, latency, dropped, addr);
+        sprint_debug(logger, "[%s]: latency %2.4lf ms and dropped: %d to address %s\n", cc->ip, latency, dropped, addr);
         latency_sum += latency;
 
         // sometimes dropped = 0 and latency = -1.0 when the host is down
@@ -464,7 +465,7 @@ int check_connectivity(connectivity_check_t* cc)
         ping_destroy(pingo);
     }
 
-    print_debug(logger, "[%s]: Ping has success: %d\n", cc->ip, success);
+    sprint_debug(logger, "[%s]: Ping has success: %d\n", cc->ip, success);
 
     cc->latency = latency_sum / cc->num_pings;
 
@@ -487,7 +488,7 @@ connectivity_check_t **load(char *directory, int *success, int *count)
 
     if ((fts_ptr = fts_open(args, opt, NULL)) == NULL)
     {
-        printf("Unable to read directory %s\n", directory);
+        print_error(logger, "Unable to read directory %s\n", directory);
         *success = 0;
         return NULL;
     }
@@ -514,7 +515,7 @@ connectivity_check_t **load(char *directory, int *success, int *count)
 
             if (!load_config(p->fts_path, &conns, &cur_size, &cur_max))
             {
-                print(logger, "Unable to load config %s\n", p->fts_path);
+                print_error(logger, "Unable to load config %s\n", p->fts_path);
                 *success = 0;
                 return NULL;
             }
@@ -548,7 +549,7 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
 
     if (!config_read_file(&cfg, cfg_path))
     {
-        fprintf(stderr, "%s:%d - %s\n", config_error_file(&cfg), config_error_line(&cfg), config_error_text(&cfg));
+        print_error(logger, "%s:%d - %s\n", config_error_file(&cfg), config_error_line(&cfg), config_error_text(&cfg));
         fflush(stderr);
         config_destroy(&cfg);
         
@@ -561,7 +562,7 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
 
     if (!config_lookup_string(&cfg, "destination", &ip_field))
     {
-        print_info(logger, "%s is missing setting: destination\n", cfg_path);
+        print_error(logger, "%s is missing setting: destination\n", cfg_path);
         config_destroy(&cfg);
         return 0;
     }
@@ -591,7 +592,7 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
 
             if (!config_lookup_int(&cfg, "period", &cc->period))
             {
-                print_info(logger, "%s is missing setting: period\n", cfg_path);
+                print_error(logger, "%s is missing setting: period\n", cfg_path);
                 config_destroy(&cfg);
                 return 0;
             }
@@ -602,12 +603,12 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                 cc->timeout = (double)timeout;
             } else if (!config_lookup_float(&cfg, "timeout", &cc->timeout))
             {
-                print_info(logger, "%s is missing setting: timeout\n", cfg_path);
+                print_error(logger, "%s is missing setting: timeout\n", cfg_path);
                 config_destroy(&cfg);
                 return 0;
             }
             if (cc->timeout < 0) {
-                print_info(logger, "%s timeout cannot be negative\n", cfg_path);
+                print_error(logger, "%s timeout cannot be negative\n", cfg_path);
                 config_destroy(&cfg);
                 return 0;
             }
@@ -640,13 +641,21 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                     {
                         loglevel = LOGLEVEL_DEBUG;
                     }
+                    else if (strcmp("QUIET", setting_loglevel) == 0)
+                    {
+                        loglevel = LOGLEVEL_QUIET;
+                    }
+                    else if (strcmp("ERROR", setting_loglevel) == 0)
+                    {
+                        loglevel = LOGLEVEL_ERROR;
+                    }
                     else
                     {
-                        printf("%s contains unknown loglevel: %s\n", cfg_path, setting_loglevel);
+                        print_error(logger, "%s contains unknown loglevel: %s\n", cfg_path, setting_loglevel);
                         return 0;
                     }
                 } else {
-                    print_info(logger, "No loglevel defined in %s.\n", cfg_path);
+                    print_error(logger, "No loglevel defined in %s.\n", cfg_path);
                 }
             } // end if for "srd.conf"
 
@@ -654,7 +663,7 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
             setting = config_lookup(&cfg, "actions");
             if (setting == NULL)
             {
-                print_debug(logger, "%s: missing actions in config file.\n", cfg_path);
+                print_error(logger, "%s: missing actions in config file.\n", cfg_path);
                 config_destroy(&cfg);
                 return 1;
             }
@@ -671,7 +680,7 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                 const char *action_name;
                 if (!config_setting_lookup_string(action, "action", &action_name))
                 {
-                    print_info(logger, "%s: element is missing the action\n", cfg_path);
+                    print_error(logger, "%s: element is missing the action\n", cfg_path);
                     config_destroy(&cfg);
                     return 0;
                 }
@@ -695,7 +704,7 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                     } else if (strcmp(run_if_str, "up-again") == 0) {
                         this_action->run = RUN_UP_AGAIN;
                     } else {
-                        print_info(logger, "%s: Action %s is has unknown run_if: %s\n", cfg_path, action_name, run_if_str);
+                        print_error(logger, "%s: Action %s is has unknown run_if: %s\n", cfg_path, action_name, run_if_str);
                         config_destroy(&cfg);
                         return 0;
                     }
@@ -716,13 +725,13 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                 {
                     if (!config_setting_lookup_string(action, "name", (const char **)&cc->actions[i].object))
                     {
-                        print_info(logger, "%s: element is missing the name\n", cfg_path);
+                        print_error(logger, "%s: element is missing the name\n", cfg_path);
                         config_destroy(&cfg);
                         return 0;
                     }
 
                     char *escaped_servicename = escape_servicename((char *)cc->actions[i].object);
-                    print_debug(logger, "Escaped \"%s\" to %s\n", (char *)cc->actions[i].object, escaped_servicename);
+                    
                     cc->actions[i].object = escaped_servicename;
                 }
                 else if (strcmp(action_name, "command") == 0)
@@ -732,7 +741,7 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                     const char* command;
                     if (!config_setting_lookup_string(action, "cmd", &command))
                     {
-                        print_info(logger, "%s: element is missing the cmd\n", cfg_path);
+                        print_error(logger, "%s: element is missing the cmd\n", cfg_path);
                         config_destroy(&cfg);
                         return 0;
                     }
@@ -759,7 +768,7 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                     const char* path;
                     if (!config_setting_lookup_string(action, "path", &path))
                     {
-                        print_info(logger, "%s: element is missing the path\n", cfg_path);
+                        print_error(logger, "%s: element is missing the path\n", cfg_path);
                         config_destroy(&cfg);
                         return 0;
                     } else {
@@ -769,7 +778,7 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                     const char* message;
                     if (!config_setting_lookup_string(action, "message", &message))
                     {
-                        print_info(logger, "%s: element is missing the message\n", cfg_path);
+                        print_error(logger, "%s: element is missing the message\n", cfg_path);
                         config_destroy(&cfg);
                         return 0;
                     } else {
@@ -780,7 +789,7 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                 }
                 else
                 {
-                    printf("%s: unknown element in configuration on line %d\n", cfg_path, action->line);
+                    print_error(logger, "%s: unknown element in configuration on line %d\n", cfg_path, action->line);
                     config_destroy(&cfg);
                     return 0;
                 }
@@ -797,7 +806,7 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                 *conns = realloc(*conns, (*max_conns_size) * sizeof(connectivity_check_t *));
 
                 if (conns == NULL) {
-                    printf("Out of memory\n");
+                    print_error(logger, "Out of memory\n");
 
                     return 0;
                 }

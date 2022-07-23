@@ -56,7 +56,7 @@ typedef struct action_log_t {
 * this restart originated.
 * Returns 1 on success, else 0.
 */
-int restart_service(logger_t logger, const char* name, const char* ip);
+int restart_service(const logger_t* logger, const char* name, const char* ip);
 
 /*
 * Restarts the system (errors out if the executing user has
@@ -69,11 +69,11 @@ int restart_system();
  * Runs the given command.
  * Returns 1 if success, else 0.
  */
-int run_command(logger_t logger, const action_cmd_t* cmd);
+int run_command(const logger_t *logger, const action_cmd_t* cmd);
 
 /*
 * Logs the given message to the given file by appending.
 */
-int log_to_file(logger_t logger, const char* path, const char* message);
+int log_to_file(const logger_t* logger, const char* path, const char* message);
 
 #endif

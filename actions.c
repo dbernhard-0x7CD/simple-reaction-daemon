@@ -56,7 +56,7 @@ finish:
     return r >= 0;
 }
 
-int restart_service(logger_t logger, const char *name, const char *ip)
+int restart_service(const logger_t* logger, const char *name, const char *ip)
 {
     print_debug(logger, "[%s]: Restart service %s\n", ip, name);
 
@@ -118,7 +118,7 @@ finish:
     return r >= 0;
 }
 
-int run_command(logger_t logger, const action_cmd_t *cmd)
+int run_command(const logger_t* logger, const action_cmd_t *cmd)
 {
     FILE *fp;
     char buf[1024];
@@ -164,7 +164,7 @@ int run_command(logger_t logger, const action_cmd_t *cmd)
     return 1;
 }
 
-int log_to_file(const logger_t logger, const char *path, const char *message)
+int log_to_file(const logger_t* logger, const char *path, const char *message)
 {
     FILE *file;
 
