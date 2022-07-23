@@ -43,6 +43,9 @@ logger_t* logger;
 
 int main()
 {
+    // await stop signal, then we stop (set running = 0)
+    signal(SIGALRM, signal_handler); 
+
     logger_t log;
     log.level = &loglevel;
     log.stdout_mut = &stdout_mut;
@@ -212,9 +215,6 @@ int is_available(connectivity_check_t **ccs, const int n, char const *ip, int st
 
 void run_check(check_arguments_t *args)
 {
-    // await alarm signal, then we stop
-    signal(SIGALRM, signal_handler);
-
     int idx = args->idx;
     connectivity_check_t* check = args->connectivity_checks[idx];
 
