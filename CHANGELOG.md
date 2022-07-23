@@ -7,6 +7,10 @@
 
 <br />
 
+* 0.0.5
+    * new ERROR loglevel (nothing logged regarding connections)
+    * Fix free when using a reboot action
+
 * 0.0.4
     * Fix some memory not getting deallocated
     * Fix host beeing reported as up due to a race condition when pinging
