@@ -250,20 +250,25 @@ void run_check(check_arguments_t *args)
 
         // downtime in seconds
         double diff;
-        enum run_if state;
+
+        // previous downtime; set when up-again
+        double prev_downtime = 0.0;
+
+        enum run_if current_state;
         struct timespec previous_last_reply = check->timestamp_last_reply;
         if (connected == 1)
         {
             if (check->status != STATUS_SUCCESS) {
                 print_info(logger, "[%s]: Reachable %.*s\n", check->ip, len - 1, p);
                 if (check->status != STATUS_NONE) {
-                    state = RUN_UP_AGAIN;
+                    current_state = RUN_UP_AGAIN;
+                    prev_downtime = calculate_difference(previous_last_reply, now);
                 } else {
-                    state = RUN_UP;
+                    current_state = RUN_UP;
                 }
                 check->status = STATUS_SUCCESS;
             } else {
-                state = RUN_UP;
+                current_state = RUN_UP;
             }
             check->timestamp_last_reply = now;
             diff = 0;
@@ -273,7 +278,7 @@ void run_check(check_arguments_t *args)
             diff = calculate_difference(previous_last_reply, now);
             
             check->status = STATUS_FAILED;
-            state = RUN_DOWN;
+            current_state = RUN_DOWN;
 
             print_info(logger, "[%s]: %.*s: Ping FAILED. Now for %0.3fs\n", check->ip, len - 1, p, diff);
         } else if (!running) {
@@ -289,10 +294,15 @@ void run_check(check_arguments_t *args)
         for (int i = 0; running && i < check->actions_count; i++)
         {
             action_t this_action = check->actions[i];
-            int should_run = this_action.run == RUN_ALWAYS || 
-                            (this_action.run == RUN_DOWN && check->actions[i].delay <= diff) ||
-                            (this_action.run == state && state == RUN_UP) ||
-                            (this_action.run == state && state == RUN_UP_AGAIN);
+            int should_run = 
+                // always
+                this_action.run == RUN_ALWAYS || 
+                // down and diff is bigger or equal the difference
+                (this_action.run == RUN_DOWN && current_state == RUN_DOWN && check->actions[i].delay <= diff) ||
+                // it's up
+                (this_action.run == RUN_UP && current_state == RUN_UP) ||
+                // run when up again
+                (this_action.run == RUN_UP_AGAIN && current_state == RUN_UP_AGAIN && check->actions[i].delay <= prev_downtime);
             if (should_run)
             {
                 print_info(logger, "[%s]: Performing action: %s\n", check->ip, check->actions[i].name);
@@ -314,7 +324,7 @@ void run_check(check_arguments_t *args)
                     // we use a copy as the command has placeholders
                     action_cmd_t copy = *cmd;
 
-                    copy.command = insert_placeholders(cmd->command, check, state, previous_last_reply, datetime_format);
+                    copy.command = insert_placeholders(cmd->command, check, current_state, previous_last_reply, datetime_format);
                     
                     print_debug(logger, "\tCommand: %s\n", copy.command);
                     fflush(stdout);
@@ -330,7 +340,7 @@ void run_check(check_arguments_t *args)
                 } else if (strcmp(this_action.name, "log") == 0) { 
                     action_log_t* action_log = (action_log_t*) this_action.object;
 
-                    const char* message = insert_placeholders(action_log->message, check, state, previous_last_reply, datetime_format);
+                    const char* message = insert_placeholders(action_log->message, check, current_state, previous_last_reply, datetime_format);
 
                     log_to_file(logger, action_log->path, message);
                     free((char *)message);
