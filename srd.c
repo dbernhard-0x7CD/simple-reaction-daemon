@@ -346,9 +346,9 @@ void run_check(check_arguments_t *args)
                 else
                 {
                     print_error(logger, "This action is NOT yet implemented: %s\n", this_action.name);
-                }
+                } 
             }
-        } // end check if any action has to be taken
+        } // end for loop. ( to check if any action has to be taken)
 
         print_debug(logger, "[%s]: Sleeping for %d seconds...\n\n", check->ip, check->period);
         fflush(stdout);
