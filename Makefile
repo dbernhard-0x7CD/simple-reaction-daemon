@@ -23,8 +23,10 @@ $(oping_lib)/liboping.a:
 
 clean:
 	rm -f *.o srd
-	# Complete clean
+
+completeclean: clean
 	rm -rf liboping && git submodule update
+
 
 .PHONY: all
 .PHONY: clean
