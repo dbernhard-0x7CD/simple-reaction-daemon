@@ -4,6 +4,15 @@
 
 * (Planned) 1.0
     * Support config name as dependencies
+    * Own ping
+    * `%success` placeholder
+    * Print if a command is ill formed for sh
+        * capture stderr?
+    * `%dt` (downtime, in some nice format) placeholder
+    * write to file as user?
+    * up-again reverted (print how long an IP was online)
+    * print to stdout action
+    * %num_unreachable placeholder
 
 <br />
 
