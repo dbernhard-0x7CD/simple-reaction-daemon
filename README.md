@@ -93,11 +93,17 @@ actions = (
 <br />
 
 ## srd.conf
-This file may also contain the loglevel configuration:
+This file may also contain the `loglevel` configuration:
 ```
 # available loglevels: DEBUG, INFO
 loglevel = "INFO"
 ```
+
+Also `datetime_format` is configurable, by default it's:
+```
+datetime_format = "%Y-%m-%d %H:%M:%S"
+```
+See here for the exact format: [https://strftime.org/](https://strftime.org/)
 
 <br />
 
