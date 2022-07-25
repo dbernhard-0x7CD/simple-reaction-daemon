@@ -1,5 +1,4 @@
 #include <pthread.h>
-#include <stdio.h>
 
 #ifndef SRD_PRINTING_H
 #define SRD_PRINTING_H
