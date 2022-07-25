@@ -4,7 +4,8 @@ oping_lib = $(proj_dir)/liboping/build/opt/oping/lib/
 
 CC = gcc
 CFLAGS = -O3 -Wall -Wextra -pthread -lrt \
-		-lsystemd -lconfig -lm -I$(proj_dir)/liboping/src/
+		-lsystemd -lconfig -lm -I$(proj_dir)/liboping/src/ \
+		-D_GNU_SOURCE 
 
 all: srd
 
