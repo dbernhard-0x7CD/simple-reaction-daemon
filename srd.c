@@ -36,7 +36,7 @@ pthread_mutex_t stdout_mut;
 char* default_gw;
 
 // format used for datetimes
-const char* datetime_format = "%Y-%m-%dT%H:%M:%S";
+const char* datetime_format = "%Y-%m-%d %H:%M:%S";
 
 // used for printing to stdout
 logger_t* logger;
@@ -653,6 +653,12 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                     }
                 } else {
                     print_error(logger, "No loglevel defined in %s.\n", cfg_path);
+                }
+
+                // datetime_format
+                const char* format;
+                if (config_lookup_string(&cfg, "datetime_format", &format)) {
+                    datetime_format = strdup(format);
                 }
             } // end if for "srd.conf"
 
