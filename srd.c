@@ -317,8 +317,19 @@ void run_check(check_arguments_t *args)
                 else if (strcmp(this_action.name, "reboot") == 0)
                 {
                     print_info(logger, "[%s]: Sending restart signal\n", check->ip);
-                    restart_system();
-                    print_info(logger, "[%s]: Reboot scheduled. \n", check->ip);
+                    int res = restart_system(logger);
+
+                    if (res == 0) { // unable to restart
+                        print_error(logger, "Unable to restart using dbus. Will try command\n");
+
+                        const char* cmd = "reboot";
+                        action_cmd_t cmd_reboot;
+                        cmd_reboot.command = cmd;
+
+                        run_command(logger, &cmd_reboot);
+                    } else {
+                        print_info(logger, "[%s]: Reboot scheduled. \n", check->ip);
+                    }
                 }
                 else if (strcmp(this_action.name, "command") == 0)
                 {
