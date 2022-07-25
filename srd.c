@@ -332,12 +332,7 @@ void run_check(check_arguments_t *args)
                     print_debug(logger, "\tCommand: %s\n", copy.command);
                     fflush(stdout);
 
-                    int status = run_command(logger, &copy);
-                    
-                    if (status < 0)
-                    {
-                        continue;
-                    }
+                    run_command(logger, &copy);
 
                     free((char*)copy.command);
                 } else if (strcmp(this_action.name, "log") == 0) { 
