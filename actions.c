@@ -9,7 +9,7 @@
 #include "actions.h"
 #include "printing.h"
 
-int restart_system()
+int restart_system(const logger_t* logger)
 {
     sd_bus_error error = SD_BUS_ERROR_NULL;
     sd_bus_message *msg = NULL;
@@ -44,7 +44,7 @@ int restart_system()
     r = sd_bus_message_read(msg, "o", &path);
     if (r < 0)
     {
-        fprintf(stderr, "Failed to parse response message: %s\n", strerror(-r));
+        print_error(logger, "Failed to parse response message: %s\n", strerror(-r));
         goto finish;
     }
 
@@ -104,7 +104,7 @@ int restart_service(const logger_t* logger, const char *name, const char *ip)
     r = sd_bus_message_read(m, "o", &path);
     if (r < 0)
     {
-        fprintf(stderr, "Failed to parse response message: %s\n", strerror(-r));
+        print_error(logger, "Failed to parse response message: %s\n", strerror(-r));
         goto finish;
     }
 
@@ -127,7 +127,7 @@ int run_command(const logger_t* logger, const action_cmd_t *cmd)
 
     if (pid < 0)
     {
-        printf("Unable to fork.\n");
+        print_error(logger, "Unable to fork.\n");
         return 0;
     }
     else if (pid == 0)
@@ -143,7 +143,7 @@ int run_command(const logger_t* logger, const action_cmd_t *cmd)
         fp = popen(cmd->command, "r");
         if (fp == NULL)
         {
-            printf("Failed to run command\n");
+            print_error(logger, "Failed to run command\n");
             return EXIT_FAILURE;
         }
 
@@ -172,7 +172,7 @@ int log_to_file(const logger_t* logger, const char *path, const char *message)
 
     if (file == NULL)
     {
-        print_info(logger, "Unable to open file: %s\n", path);
+        print_error(logger, "Unable to open file: %s\n", path);
         return 0;
     }
 

@@ -63,7 +63,7 @@ int restart_service(const logger_t* logger, const char* name, const char* ip);
 * insufficient permissions). 
 * Returns 1 on success, and otherwise 0.
 */
-int restart_system();
+int restart_system(const logger_t* logger);
 
 /*
  * Runs the given command.
