@@ -20,6 +20,10 @@ Then simply run `make` in the root folder of the project.
 
 You need glibc, libconfig and headers for systemd.
 
+On Debian: `libconfig-dev libsystemd-dev`
+
+On Arch: `libconfig systemd`
+
 <br />
 
 # Installation
