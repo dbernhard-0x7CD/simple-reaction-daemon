@@ -8,8 +8,8 @@ CFLAGS = -O3 -Wall -Wextra -pthread -lrt \
 
 all: srd
 
-srd: util.o srd.o actions.o $(oping_lib)/liboping.a Makefile
-	$(CC) $(CFLAGS) -o srd util.o srd.o actions.o $(oping_lib)/liboping.a
+srd: util.o srd.o actions.o printing.o $(oping_lib)/liboping.a Makefile
+	$(CC) $(CFLAGS) -o srd util.o srd.o actions.o printing.o $(oping_lib)/liboping.a
 
 %.o : %.c Makefile
 	$(CC) -c $(CFLAGS) $< -o $@

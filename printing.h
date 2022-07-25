@@ -12,7 +12,8 @@ enum loglevel
     LOGLEVEL_DEBUG, // Everything
     LOGLEVEL_INFO,  // When a ping fails, when an action is performed
     LOGLEVEL_QUIET, // reserved for later
-    LOGLEVEL_ERROR  // Nothing connection related, only when started and when stopped
+    LOGLEVEL_ERROR,  // Nothing connection related, only when started and when stopped
+    INVALID_LOGLEVEL, // This should never happen
 };
 
 typedef struct logger_t
@@ -80,5 +81,8 @@ typedef struct logger_t
     {                                     \
         printf(__VA_ARGS__);              \
     }
+
+
+int to_loglevel(const char* str_loglevel);
 
 #endif
