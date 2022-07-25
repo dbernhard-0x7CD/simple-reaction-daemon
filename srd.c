@@ -133,7 +133,7 @@ int main()
         }
         running = 0;
 
-        print_debug(logger, "Got signal %s\n", sigabbrev_np(info.si_signo));
+        print_debug(logger, "Got signal %d\n", info.si_signo);
     }
 
     print_error(logger, "Shutting down Simple Reaction Daemon\n");
