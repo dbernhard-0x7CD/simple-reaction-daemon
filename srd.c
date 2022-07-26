@@ -220,6 +220,8 @@ void run_check(check_arguments_t *args)
     struct timespec now;
     clock_gettime(CLOCK_REALTIME, &check->timestamp_last_reply);
 
+    pthread_setname_np(pthread_self(), check->ip);
+
     // main loop: check connectivity repeatedly
     while (running)
     {
