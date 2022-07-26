@@ -339,7 +339,14 @@ void run_check(check_arguments_t *args)
                     // we use a copy as the command has placeholders
                     action_cmd_t copy = *cmd;
 
-                    copy.command = insert_placeholders(cmd->command, check, current_state, previous_last_reply, datetime_format);
+                    double downtime;
+                    if (current_state == RUN_UP_AGAIN) {
+                        downtime = prev_downtime;
+                    } else {
+                        downtime = diff; // we are still down (or up)
+                    }
+
+                    copy.command = insert_placeholders(cmd->command, check, current_state, previous_last_reply, datetime_format, downtime);
                     
                     print_debug(logger, "\tCommand: %s\n", copy.command);
                     fflush(stdout);
@@ -350,7 +357,14 @@ void run_check(check_arguments_t *args)
                 } else if (strcmp(this_action.name, "log") == 0) { 
                     action_log_t* action_log = (action_log_t*) this_action.object;
 
-                    const char* message = insert_placeholders(action_log->message, check, current_state, previous_last_reply, datetime_format);
+                    double downtime;
+                    if (current_state == RUN_UP_AGAIN) {
+                        downtime = prev_downtime;
+                    } else {
+                        downtime = diff; // we are still down (or up)
+                    }
+
+                    const char* message = insert_placeholders(action_log->message, check, current_state, previous_last_reply, datetime_format, downtime);
 
                     log_to_file(logger, action_log->path, message, action_log->username);
                     

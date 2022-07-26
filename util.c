@@ -189,7 +189,12 @@ void get_current_time(char* str, const int n, const char* format) {
     strftime(str, n, format, &tm);
 }
 
-char* insert_placeholders(const char* raw_message, connectivity_check_t* check, enum run_if state, struct timespec previous_last_reply, const char* datetime_format) {
+char* insert_placeholders(const char* raw_message, 
+                        const connectivity_check_t* check,
+                        const enum run_if state,
+                        const struct timespec previous_last_reply,
+                        const char* datetime_format,
+                        const double diff) {
     char* message = strdup(raw_message);
 
     // replace %sdt
@@ -203,6 +208,32 @@ char* insert_placeholders(const char* raw_message, connectivity_check_t* check, 
         const char* old = message;
 
         message = str_replace(message, "%sdt", str_time);
+
+        free((void*)old);
+    }
+    // replace %downtime
+    if (state == RUN_UP_AGAIN || state == RUN_DOWN) {
+        // difference string
+        int remainingSeconds = (int) diff;
+
+        int days = remainingSeconds / (60*60*24);
+        remainingSeconds = remainingSeconds % (60*60*24);
+        
+        int hours = remainingSeconds / (60*60);
+        remainingSeconds = remainingSeconds % (60*60);
+        
+        int minutes = remainingSeconds / 60;
+        int seconds = remainingSeconds % 60;
+
+        char dt_string[24];
+        if (days != 0) {
+            sprintf(dt_string, "%d days %02d:%02d:%02d", days, hours, minutes, seconds);
+        } else { // exclude days
+            sprintf(dt_string, "%02d:%02d:%02d", hours, minutes, seconds);
+        }
+        
+        const char* old = message;
+        message = str_replace(message, "%downtime", dt_string);
 
         free((void*)old);
     }
