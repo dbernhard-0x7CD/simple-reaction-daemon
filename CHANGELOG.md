@@ -20,6 +20,7 @@
     * new ERROR loglevel (nothing logged regarding connections)
     * Fix free when using a reboot action
     * Added `datetime_format` as a configuration in srd.conf
+    * Action `log` now supports `user` which sets the owner of the logfile (only on creation)
 
 * 0.0.4
     * Fix some memory not getting deallocated
