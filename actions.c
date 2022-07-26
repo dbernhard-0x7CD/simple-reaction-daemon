@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <systemd/sd-bus.h>
 #include <pwd.h>
 #include <stdlib.h>
@@ -193,6 +194,10 @@ int log_to_file(const logger_t* logger, const char *path, const char *message, c
         struct passwd *user_passwd = getpwnam(username);
 
         int r = chown(path, user_passwd->pw_uid, user_passwd->pw_gid);
+
+        if (r < 0) {
+            sprint_error(logger, "Unable to chown log file %s: %s\n", path, strerror(errno));
+        }
     }
 
     return ret_code;
