@@ -5,14 +5,15 @@
 * (Planned) 1.0
     * Support config name as dependencies
     * Own ping
-    * `%success` placeholder
+    * `%success` placeholder (binary)
     * Print if a command is ill formed for sh
         * capture stderr?
-    * `%dt` (downtime, in some nice format) placeholder
-    * write to file as user?
-    * up-again reverted (print how long an IP was online)
-    * print to stdout action
-    * %num_unreachable placeholder
+    * `down-again` (print how long an IP was online)
+    * `down-start` one message if host went down
+    * `up-start` one message if host is up
+    * print to stdout action `stdout` with message
+    * test concurrent logs
+    * time test for actions: `command` versus `log`
 
 <br />
 
