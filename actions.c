@@ -22,7 +22,7 @@ int restart_system(const logger_t* logger)
     r = sd_bus_open_system(&bus);
     if (r < 0)
     {
-        fprintf(stderr, "Failed to connect to system bus: %s\n", strerror(-r));
+        sprint_error(logger, "Failed to connect to system bus: %s\n", strerror(-r));
         goto finish;
     }
 
@@ -37,7 +37,7 @@ int restart_system(const logger_t* logger)
         "");
     if (r < 0)
     {
-        fprintf(stderr, "Failed to issue method call: %s\n", error.message);
+        print_error(logger, "Failed to issue method call: %s\n", error.message);
         goto finish;
     }
 
@@ -45,7 +45,7 @@ int restart_system(const logger_t* logger)
     r = sd_bus_message_read(msg, "o", &path);
     if (r < 0)
     {
-        print_error(logger, "Failed to parse response message: %s\n", strerror(-r));
+        sprint_error(logger, "Failed to parse response message: %s\n", strerror(-r));
         goto finish;
     }
 
@@ -71,7 +71,7 @@ int restart_service(const logger_t* logger, const char *name, const char *ip)
     r = sd_bus_open_system(&bus);
     if (r < 0)
     {
-        fprintf(stderr, "Failed to connect to system bus: %s\n", strerror(-r));
+        sprint_error(logger, "Failed to connect to system bus: %s\n", strerror(-r));
         goto finish;
     }
     char *prefix = "/org/freedesktop/systemd1/unit/";
@@ -81,7 +81,7 @@ int restart_service(const logger_t* logger, const char *name, const char *ip)
     strcpy(service_name, prefix);
     strcpy(service_name + prefix_len, name);
 
-    print_debug(logger, "Object path: %s\n", service_name);
+    sprint_debug(logger, "Object path: %s\n", service_name);
 
     r = sd_bus_call_method(
         bus,
@@ -95,7 +95,7 @@ int restart_service(const logger_t* logger, const char *name, const char *ip)
         "fail");
     if (r < 0)
     {
-        fprintf(stderr, "Failed to issue method call: %s\n", error.message);
+        sprint_error(logger, "Failed to issue method call: %s\n", error.message);
         free(service_name);
         goto finish;
     }
@@ -105,11 +105,11 @@ int restart_service(const logger_t* logger, const char *name, const char *ip)
     r = sd_bus_message_read(m, "o", &path);
     if (r < 0)
     {
-        print_error(logger, "Failed to parse response message: %s\n", strerror(-r));
+        sprint_error(logger, "Failed to parse response message: %s\n", strerror(-r));
         goto finish;
     }
 
-    print_debug(logger, "[%s]: Queued service job as %s.\n", ip, path);
+    sprint_debug(logger, "[%s]: Queued service job as %s.\n", ip, path);
 
 finish:
     sd_bus_error_free(&error);
@@ -128,7 +128,7 @@ int run_command(const logger_t* logger, const action_cmd_t *cmd)
 
     if (pid < 0)
     {
-        print_error(logger, "Unable to fork.\n");
+        sprint_error(logger, "Unable to fork.\n");
         return 0;
     }
     else if (pid == 0)
@@ -144,13 +144,13 @@ int run_command(const logger_t* logger, const action_cmd_t *cmd)
         fp = popen(cmd->command, "r");
         if (fp == NULL)
         {
-            print_error(logger, "Failed to run command\n");
+            sprint_error(logger, "Failed to run command\n");
             return EXIT_FAILURE;
         }
 
         while (fgets(buf, sizeof(buf), fp) != NULL)
         {
-            print_info(logger, "Command output: %s", buf);
+            sprint_info(logger, "Command output: %s", buf);
         }
 
         pclose(fp);
