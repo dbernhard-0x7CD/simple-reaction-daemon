@@ -164,9 +164,15 @@ int run_command(const logger_t* logger, const action_cmd_t *cmd)
     return 1;
 }
 
-int log_to_file(const logger_t* logger, const char *path, const char *message)
+int log_to_file(const logger_t* logger, const char *path, const char *message, const char* username)
 {
     FILE *file;
+
+    // check if the file is beeing created
+    int is_new = 0;
+    if (access(path, F_OK) != 0) {
+        is_new = 1;
+    }
 
     file = fopen(path, "a");
 
@@ -179,5 +185,15 @@ int log_to_file(const logger_t* logger, const char *path, const char *message)
     fputs(message, file);
     fputs("\n", file);
 
-    return fclose(file) == 0;
+    int ret_code = fclose(file) == 0;
+
+    // set permissions for the file when 
+    // it's newly created
+    if (is_new && username != NULL) {
+        struct passwd *user_passwd = getpwnam(username);
+
+        int r = chown(path, user_passwd->pw_uid, user_passwd->pw_gid);
+    }
+
+    return ret_code;
 }

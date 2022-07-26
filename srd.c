@@ -350,7 +350,8 @@ void run_check(check_arguments_t *args)
 
                     const char* message = insert_placeholders(action_log->message, check, current_state, previous_last_reply, datetime_format);
 
-                    log_to_file(logger, action_log->path, message);
+                    log_to_file(logger, action_log->path, message, action_log->username);
+                    
                     free((char *)message);
                 }
                 else
@@ -782,6 +783,14 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                         return 0;
                     } else {
                         action_log->message = str_replace(message, "%ip", (char *)cc->ip);
+                    }
+
+                    const char* username;
+                    if (!config_setting_lookup_string(action, "user", &username))
+                    {
+                        action_log->username = NULL;
+                    } else {
+                        action_log->username = strdup(username);
                     }
 
                     this_action->object = action_log;

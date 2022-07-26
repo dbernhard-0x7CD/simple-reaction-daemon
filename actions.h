@@ -46,6 +46,9 @@ typedef struct action_log_t {
 
     // Message to log. May contain placeholders: %ip, %sdt (start of downtime)
     const char* message;
+
+    // Username of the owner from the logfile
+    const char* username;
 } action_log_t;
 
 /*
@@ -74,6 +77,6 @@ int run_command(const logger_t *logger, const action_cmd_t* cmd);
 /*
 * Logs the given message to the given file by appending.
 */
-int log_to_file(const logger_t* logger, const char* path, const char* message);
+int log_to_file(const logger_t* logger, const char* path, const char* message, const char* username);
 
 #endif
