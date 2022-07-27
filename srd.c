@@ -483,10 +483,13 @@ int check_connectivity(connectivity_check_t* cc)
         sprint_debug(logger, "[%s]: latency %2.4lf ms and dropped: %d to address %s\n", cc->ip, latency, dropped, addr);
         latency_sum += latency;
 
-        // sometimes dropped = 0 and latency = -1.0 when the host is down
-        success = success || (dropped == 0 && latency > -1.0);
-
         ping_destroy(pingo);
+
+        // sometimes dropped = 0 and latency = -1.0 when the host is down
+        if (dropped == 0 && latency > -1.0) {
+            success = 1;
+            break;
+        }
     }
 
     sprint_debug(logger, "[%s]: Ping has success: %d\n", cc->ip, success);
