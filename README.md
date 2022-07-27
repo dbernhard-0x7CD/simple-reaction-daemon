@@ -6,9 +6,13 @@ This program allows to configure certain actions which will be executed if pings
 * log to a file
 * restart the system
 * execute custom command as user
+    * f.ex: Send wake-on-lan packet to host, send an email, ...
+
 
 It can be installed as a systemd service to run in the background (see Installation).
-Do not forget to enable and start (`systemctl enable srd`, `systemctl start srd` respectively) the service. The motivation for this service is to log disconnects and have some actions in place which may bring the device back online or act as a dead man's switch.
+Do not forget to enable and start (`systemctl enable srd`, `systemctl start srd` respectively) the service.
+
+The motivation for this service is to log disconnects (or the time an IP is reachable) or have some actions in place which may bring the device back online or act as a dead man's switch.
 
 <br />
 
@@ -43,8 +47,8 @@ There are two available installation methods:
 
 # Configuration
 
-The service is configured by so called **target files** in `/etc/srd/` (with arbitrary name) which follow the following format:
-They can be dependent on eachother by configuring *depends*.
+The service is configured by so called **target files** in `/etc/srd/NAME.conf` (with arbitrary name) which follow the following format:
+They can be dependent on eachother by configuring `depends`.
 
 ```
 # destination IP
@@ -88,6 +92,8 @@ actions = (
 **timeout**: Time to wait for a ping response in seconds
 
 <br />
+
+[optional] **num_pings**: Amount of sequential pings sent. Defaults to 1. This should be used if the period is high. If one of the pings succeeds we deem the host as UP.
 
 **depends**: IP of another target. If the ping to depends is not successful, then this target won't get checked and no actions performed.
 
