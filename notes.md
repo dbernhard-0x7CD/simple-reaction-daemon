@@ -19,16 +19,6 @@
 * systemd sd bus api: http://0pointer.de/blog/the-new-sd-bus-api-of-systemd.html
 
 
-# TODO
-* configure amount of pings
-    * compare if 2 pings detects less outages
-    -> little bit less
-* test if error in IP is easy to understand
-    * not detected
-* example with latency measurement and graph
-* QUIET loglevel (nothing except startup); STATUS (only UP/DOWN)
-
-
 # VM (testing):
 * mount shared folder: 
     `sudo mount -t vboxsf -o uid=$USER,gid=vboxsf Desktop /mnt/shared`
