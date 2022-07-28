@@ -366,7 +366,13 @@ void run_check(check_arguments_t *args)
 
                     const char* message = insert_placeholders(action_log->message, check, current_state, previous_last_reply, datetime_format, downtime);
 
-                    log_to_file(logger, action_log->path, message, action_log->username);
+                    int r = log_to_file(logger, action_log->path, message, action_log->username);
+                    if (r == 0) {
+                        print_error(logger, "Unable to log to file %s\n", action_log->path);
+                        free((char *)message);
+                        kill(getpid(), SIGALRM);
+                        return;
+                    }
                     
                     free((char *)message);
                 }
