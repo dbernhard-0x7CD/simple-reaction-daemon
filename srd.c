@@ -244,13 +244,15 @@ void run_check(check_arguments_t *args)
         }
 
         int connected = check_connectivity(check);
-        char *p;
-        int len;
+    
+        char current_time[32];
+        struct tm tm;
         time_t t = time(NULL);
-        clock_gettime(CLOCK_REALTIME, &now);
+        localtime_r(&t, &tm);
 
-        p = ctime(&t);
-        len = strlen(p);
+        strftime(current_time, 32, datetime_format, &tm);
+
+        clock_gettime(CLOCK_REALTIME, &now);
 
         // downtime in seconds
         double diff;
@@ -263,7 +265,7 @@ void run_check(check_arguments_t *args)
         if (connected == 1)
         {
             if (check->status != STATUS_SUCCESS) {
-                print_info(logger, "[%s]: Reachable %.*s\n", check->ip, len - 1, p);
+                print_info(logger, "[%s]: Reachable %s\n", check->ip,  current_time);
                 if (check->status != STATUS_NONE) {
                     current_state = RUN_UP_AGAIN;
                     prev_downtime = calculate_difference(previous_last_reply, now);
@@ -284,7 +286,7 @@ void run_check(check_arguments_t *args)
             check->status = STATUS_FAILED;
             current_state = RUN_DOWN;
 
-            print_info(logger, "[%s]: %.*s: Ping FAILED. Now for %0.3fs\n", check->ip, len - 1, p, diff);
+            print_info(logger, "[%s]: %s: Ping FAILED. Now for %0.3fs\n", check->ip, current_time, diff);
         } else if (!running) {
             break; 
         } else {
@@ -346,7 +348,7 @@ void run_check(check_arguments_t *args)
                         downtime = diff; // we are still down (or up)
                     }
 
-                    copy.command = insert_placeholders(cmd->command, check, current_state, previous_last_reply, datetime_format, downtime);
+                    copy.command = insert_placeholders(cmd->command, check, current_state, previous_last_reply, datetime_format, downtime, connected);
                     
                     print_debug(logger, "\tCommand: %s\n", copy.command);
                     fflush(stdout);
@@ -364,7 +366,7 @@ void run_check(check_arguments_t *args)
                         downtime = diff; // we are still down (or up)
                     }
 
-                    const char* message = insert_placeholders(action_log->message, check, current_state, previous_last_reply, datetime_format, downtime);
+                    const char* message = insert_placeholders(action_log->message, check, current_state, previous_last_reply, datetime_format, downtime, connected);
 
                     int r = log_to_file(logger, action_log->path, message, action_log->username);
                     if (r == 0) {

@@ -194,7 +194,8 @@ char* insert_placeholders(const char* raw_message,
                         const enum run_if state,
                         const struct timespec previous_last_reply,
                         const char* datetime_format,
-                        const double diff) {
+                        const double diff,
+                        const int connected) {
     char* message = strdup(raw_message);
 
     // replace %sdt
@@ -251,10 +252,19 @@ char* insert_placeholders(const char* raw_message,
         message = str_replace(message, "%lat_ms", "-1.0");
     }
 
+    // replace %status
+    const char* old = message;
+    if (connected) {
+        message = str_replace(message, "%status", "success");
+    } else {
+        message = str_replace(message, "%status", "failed");
+    }
+    free((char *) old);
+
     // replace %now
     char str_now[32];
     get_current_time(str_now, 32, datetime_format);
-    const char* old = message;
+    old = message;
     message = str_replace(message, "%now", str_now);
     free((void*)old);
 

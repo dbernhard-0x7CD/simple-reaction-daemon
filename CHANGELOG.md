@@ -5,7 +5,6 @@
 * (Planned) 1.0
     * Support config name as dependencies
     * Own ping
-    * `%success` placeholder (binary)
     * Print if a command is ill formed for sh
         * capture stderr?
     * `down-again` (print how long an IP was online)
@@ -16,6 +15,9 @@
     * time test for actions: `command` versus `log`
 
 <br />
+
+* [WIP] 0.0.6
+    * `%status` placeholder for `success` or `failed` depending if the ping was answered or not
 
 * 0.0.5
     * new ERROR loglevel (nothing logged regarding connections)
