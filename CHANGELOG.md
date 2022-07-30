@@ -18,6 +18,7 @@
 
 * [WIP] 0.0.6
     * `%status` placeholder for `success` or `failed` depending if the ping was answered or not
+    * datetime_format (from srd.conf) is regarded when printing the current time in stdout
 
 * 0.0.5
     * new ERROR loglevel (nothing logged regarding connections)
