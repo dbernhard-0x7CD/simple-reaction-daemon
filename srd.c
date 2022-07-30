@@ -531,7 +531,7 @@ connectivity_check_t **load(char *directory, int *success, int *count)
     children_ptr = fts_children(fts_ptr, 0);
     if (children_ptr == NULL)
     {
-        printf("No config files at %s\n", configd_path);
+        print_error(logger, "No config files at %s\n", configd_path);
         fflush(stdout);
         *success = 0;
         return NULL;
@@ -560,8 +560,8 @@ connectivity_check_t **load(char *directory, int *success, int *count)
     // if no configuration files were found
     if (cur_size == 0)
     {
-        printf("Missing config file at %s\n", configd_path);
-        printf("Configuration files must end with .conf\n");
+        print_error(logger, "Missing config file at %s\n", configd_path);
+        print_error(logger, "Configuration files must end with .conf\n");
         fflush(stdout);
         *success = 0;
 
