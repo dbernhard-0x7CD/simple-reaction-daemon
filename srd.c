@@ -88,7 +88,7 @@ int main()
         printf("Connectivity target %d has ip %s\n", i, cc.ip);
         printf("\t depends on: %s\n", cc.depend_ip);
         printf("\t period: %d\n", cc.period);
-        printf("\tnum actions: %d\n", cc.count);
+        printf("\tnum actions: %d\n", cc.actions_count);
     }
 #endif
 
