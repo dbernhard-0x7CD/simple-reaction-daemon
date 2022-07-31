@@ -12,6 +12,9 @@
 
 int restart_system(const logger_t* logger)
 {
+#ifdef DEBUG
+    return 1; // success
+#endif
     sd_bus_error error = SD_BUS_ERROR_NULL;
     sd_bus_message *msg = NULL;
     sd_bus *bus = NULL;
