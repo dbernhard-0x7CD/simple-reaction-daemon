@@ -13,6 +13,7 @@
 #include <oping.h>
 #include <sys/socket.h>
 
+// Our includes
 #include "util.h"
 #include "srd.h"
 #include "printing.h"
@@ -24,8 +25,6 @@ char *const version = "0.0.6-dev";
 
 // application configuration
 enum loglevel loglevel = LOGLEVEL_DEBUG;
-
-#define DEBUG 0
 
 /* used to exit the main loop and stop all threads */
 int running = 1;
