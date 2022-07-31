@@ -197,10 +197,10 @@ int is_available(connectivity_check_t **ccs, const int n, char const *ip, int st
         connectivity_check_t* ptr = ccs[i];
 
         if (strcmp(ip, ptr->ip) == 0) {
-            if (ptr->status == STATUS_SUCCESS) {
+            if (ptr->status == STATE_UP) {
                 return 1;
             }
-            if (ptr->status == STATUS_NONE && strict == 0) {
+            if (ptr->status == STATE_NONE && strict == 0) {
                 return 1;
             }
 
@@ -262,21 +262,23 @@ void run_check(check_arguments_t *args)
         // previous downtime; set when up-again
         double prev_downtime = 0.0;
 
-        enum run_if current_state;
+        // determine current state
+        conn_state_t current_state;
+        
         struct timespec previous_last_reply = check->timestamp_last_reply;
         if (connected == 1)
         {
-            if (check->status != STATUS_SUCCESS) {
+            if (check->status != STATE_UP) {
                 print_info(logger, "[%s]: Reachable %s\n", check->ip,  current_time);
-                if (check->status != STATUS_NONE) {
-                    current_state = RUN_UP_AGAIN;
+                if (check->status == STATE_DOWN) {
+                    current_state = STATE_UP_NEW;
                     prev_downtime = calculate_difference(previous_last_reply, now);
                 } else {
-                    current_state = RUN_UP;
+                    current_state = STATE_UP;
                 }
-                check->status = STATUS_SUCCESS;
+                check->status = STATE_UP;
             } else {
-                current_state = RUN_UP;
+                current_state = STATE_UP;
             }
             check->timestamp_last_reply = now;
             diff = 0;
@@ -285,8 +287,8 @@ void run_check(check_arguments_t *args)
         {
             diff = calculate_difference(previous_last_reply, now);
             
-            check->status = STATUS_FAILED;
-            current_state = RUN_DOWN;
+            check->status = STATE_DOWN;
+            current_state = STATE_DOWN;
 
             print_info(logger, "[%s]: %s: Ping FAILED. Now for %0.3fs\n", check->ip, current_time, diff);
         } else if (!running) {
@@ -302,15 +304,11 @@ void run_check(check_arguments_t *args)
         for (int i = 0; running && i < check->actions_count; i++)
         {
             action_t this_action = check->actions[i];
-            int should_run = 
-                // always
-                this_action.run == RUN_ALWAYS || 
-                // down and diff is bigger or equal the difference
-                (this_action.run == RUN_DOWN && current_state == RUN_DOWN && check->actions[i].delay <= diff) ||
-                // it's up
-                (this_action.run == RUN_UP && current_state == RUN_UP) ||
-                // run when up again
-                (this_action.run == RUN_UP_AGAIN && current_state == RUN_UP_AGAIN && check->actions[i].delay <= prev_downtime);
+
+            int state_match = current_state & this_action.run;
+            int should_run = state_match && 
+                    (this_action.run != STATE_UP_NEW || check->actions[i].delay <= prev_downtime) &&
+                    (this_action.run != STATE_DOWN || check->actions[i].delay <= diff);
             if (should_run)
             {
                 print_info(logger, "[%s]: Performing action: %s\n", check->ip, check->actions[i].name);
@@ -344,7 +342,7 @@ void run_check(check_arguments_t *args)
                     action_cmd_t copy = *cmd;
 
                     double downtime;
-                    if (current_state == RUN_UP_AGAIN) {
+                    if (current_state == STATE_UP_NEW) {
                         downtime = prev_downtime;
                     } else {
                         downtime = diff; // we are still down (or up)
@@ -362,7 +360,7 @@ void run_check(check_arguments_t *args)
                     action_log_t* action_log = (action_log_t*) this_action.object;
 
                     double downtime;
-                    if (current_state == RUN_UP_AGAIN) {
+                    if (current_state == STATE_UP_NEW) {
                         downtime = prev_downtime;
                     } else {
                         downtime = diff; // we are still down (or up)
@@ -625,7 +623,7 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
             free(ip);
 
             // initial connectivity_check values
-            cc->status = STATUS_NONE;
+            cc->status = STATE_NONE;
 
             if (!config_lookup_int(&cfg, "period", &cc->period))
             {
@@ -722,16 +720,16 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                 if (!config_setting_lookup_string(action, "run_if", &run_if_str))
                 {
                     // default run_if setting is RUN_DOWN
-                    cc->actions[i].run = RUN_DOWN;
+                    this_action->run = STATE_DOWN;
                 } else {
                     if (strcmp(run_if_str, "down") == 0) {
-                        this_action->run = RUN_DOWN;
+                        this_action->run = STATE_DOWN;
                     } else if (strcmp(run_if_str, "up") == 0) {
-                        this_action->run = RUN_UP;
+                        this_action->run = STATE_UP;
                     } else if (strcmp(run_if_str, "always") == 0) {
-                        this_action->run = RUN_ALWAYS;
+                        this_action->run = STATE_ALL;
                     } else if (strcmp(run_if_str, "up-again") == 0) {
-                        this_action->run = RUN_UP_AGAIN;
+                        this_action->run = STATE_UP_NEW;
                     } else {
                         print_error(logger, "%s: Action %s is has unknown run_if: %s\n", cfg_path, action_name, run_if_str);
                         config_destroy(&cfg);

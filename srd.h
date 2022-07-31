@@ -1,18 +1,9 @@
-#include "actions.h"
-#include <time.h>
-
 #ifndef SRD_H
 #define SRD_H
 
-/*
- * Connectivity status for a target (connectivity_check_t).
- */
-enum conn_status
-{
-    STATUS_SUCCESS,
-    STATUS_FAILED,
-    STATUS_NONE
-};
+#include "actions.h"
+#include <time.h>
+
 
 /* A connectivity check is one target to which we do connectivity checks.
  * Each config file represents one such check. As Each target can have its
@@ -38,7 +29,7 @@ typedef struct connectivity_check_t
     double latency;
 
     // Status of last ping
-    enum conn_status status;
+    conn_state_t status;
 
     // Timestamp of the last successfull ping
     struct timespec timestamp_last_reply;

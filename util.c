@@ -11,7 +11,6 @@
 #include <math.h>
 
 #include "util.h"
-#include "srd.h"
 
 int needs_escaping(char c)
 {
@@ -191,7 +190,7 @@ void get_current_time(char* str, const int n, const char* format) {
 
 char* insert_placeholders(const char* raw_message, 
                         const connectivity_check_t* check,
-                        const enum run_if state,
+                        const conn_state_t state,
                         const struct timespec previous_last_reply,
                         const char* datetime_format,
                         const double diff,
@@ -199,7 +198,7 @@ char* insert_placeholders(const char* raw_message,
     char* message = strdup(raw_message);
 
     // replace %sdt
-    if (state == RUN_UP_AGAIN) {
+    if (state == STATE_UP_NEW) {
         char str_time[32];
         struct tm time;
         localtime_r(&previous_last_reply.tv_sec, &time);
@@ -213,7 +212,7 @@ char* insert_placeholders(const char* raw_message,
         free((void*)old);
     }
     // replace %downtime
-    if (state == RUN_UP_AGAIN || state == RUN_DOWN) {
+    if (state == STATE_UP_NEW || state & STATE_DOWN) {
         // difference string
         int remainingSeconds = (int) diff;
 

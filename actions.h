@@ -1,13 +1,21 @@
 
-#include "printing.h"
-
 #ifndef SRD_ACTIONS_H
 #define SRD_ACTIONS_H
 
+#include "printing.h"
+
 /*
-* When to run the given action.
-*/
-enum run_if { RUN_UP, RUN_ALWAYS, RUN_DOWN, RUN_UP_AGAIN };
+ * Connectivity status for a target (connectivity_check_t).
+ */
+typedef enum conn_state_t
+{
+    STATE_UP        = 0b0001,
+    STATE_DOWN      = 0b0010,
+    STATE_UP_NEW    = 0b0101,
+    STATE_DOWN_NEW  = 0b1010,
+    STATE_NONE      = 0b0000,
+    STATE_ALL       = 0b1111,
+} conn_state_t;
 
 /* 
 * An action which will be performed for one target
@@ -25,7 +33,7 @@ typedef struct action_t {
     int         delay;
 
     // When to run this action
-    enum run_if run;
+    conn_state_t run;
 } action_t;
 
 /* 
