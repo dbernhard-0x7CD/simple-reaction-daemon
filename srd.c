@@ -286,8 +286,13 @@ void run_check(check_arguments_t *args)
         {
             diff = calculate_difference(previous_last_reply, now);
             
+            if (check->status & STATE_DOWN) {
+                current_state = STATE_DOWN;
+            } else {
+                current_state = STATE_DOWN_NEW;
+            }
+
             check->status = STATE_DOWN;
-            current_state = STATE_DOWN;
 
             print_info(logger, "[%s]: %s: Ping FAILED. Now for %0.3fs\n", check->ip, current_time, diff);
         } else if (!running) {
@@ -307,7 +312,8 @@ void run_check(check_arguments_t *args)
             int state_match = current_state & this_action.run;
             int should_run = state_match && 
                     (this_action.run != STATE_UP_NEW || check->actions[i].delay <= prev_downtime) &&
-                    (this_action.run != STATE_DOWN || check->actions[i].delay <= diff);
+                    (this_action.run != STATE_DOWN || check->actions[i].delay <= diff) &&
+                    (this_action.run != STATE_DOWN_NEW || check->actions[i].delay <= diff);
             if (should_run)
             {
                 print_info(logger, "[%s]: Performing action: %s\n", check->ip, check->actions[i].name);
@@ -729,6 +735,8 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                         this_action->run = STATE_ALL;
                     } else if (strcmp(run_if_str, "up-again") == 0) {
                         this_action->run = STATE_UP_NEW;
+                    } else if (strcmp(run_if_str, "down-again") == 0) {
+                        this_action->run = STATE_DOWN_NEW;
                     } else {
                         print_error(logger, "%s: Action %s is has unknown run_if: %s\n", cfg_path, action_name, run_if_str);
                         config_destroy(&cfg);
