@@ -1,7 +1,7 @@
-#include <pthread.h>
-
 #ifndef SRD_PRINTING_H
 #define SRD_PRINTING_H
+
+#include <pthread.h>
 
 /*
  * Log level of each target.
