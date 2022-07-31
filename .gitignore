@@ -7,3 +7,4 @@ arch-pkg/*.zst
 .gitp/
 *.o
 performance.txt
+venv/
