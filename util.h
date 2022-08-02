@@ -35,18 +35,18 @@ char *str_replace(const char *string, const char *substr, const char *replacemen
 char *get_default_gw();
 
 /*
-* Writes the current time into str with the given format
-*/
-void get_current_time(char* str, const int n, const char* format);
+ * Writes the current time into str with the given format
+ */
+void get_current_time(char *str, const int n, const char *format);
 
 /*
-* Replaces all placeholders inside raw_message and returns a pointer to the updated string (which must be free'd).
-*/
-char* insert_placeholders(const char* raw_message, const connectivity_check_t* check, const conn_state_t state, const struct timespec previous_last_reply, const char* datetime_format, const double diff, const int connected);
+ * Replaces all placeholders inside raw_message and returns a pointer to the updated string (which must be free'd).
+ */
+char *insert_placeholders(const char *raw_message, const connectivity_check_t *check, const conn_state_t state, const struct timespec previous_last_reply, const char *datetime_format, const double diff, const int connected);
 
 /*
-* Calculates the difference in seconds of old and new
-*/
+ * Calculates the difference in seconds of old and new
+ */
 double calculate_difference(struct timespec old, struct timespec new);
 
 #endif
