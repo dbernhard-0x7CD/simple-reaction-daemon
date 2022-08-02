@@ -514,7 +514,11 @@ int check_connectivity(connectivity_check_t* cc)
 
     sprint_debug(logger, "[%s]: Ping has success: %d\n", cc->ip, success);
 
-    cc->latency = latency_sum / cc->num_pings;
+    if (success) {
+        cc->latency = latency_sum / cc->num_pings;
+    } else {
+        cc->latency = -1.0;
+    }
 
     return success;
 }
