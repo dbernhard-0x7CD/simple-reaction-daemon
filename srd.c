@@ -260,24 +260,20 @@ void run_check(check_arguments_t *args)
 
         // previous downtime; set when up-again
         double prev_downtime = 0.0;
-
-        // determine current state
-        conn_state_t current_state;
         
         struct timespec previous_last_reply = check->timestamp_last_reply;
         if (connected == 1)
         {
             if (check->status != STATE_UP) {
                 print_info(logger, "[%s]: Reachable %s\n", check->ip,  current_time);
-                if (check->status == STATE_DOWN) {
-                    current_state = STATE_UP_NEW;
+                if (check->status & STATE_DOWN) {
+                    check->status = STATE_UP_NEW;
                     prev_downtime = calculate_difference(previous_last_reply, now);
                 } else {
-                    current_state = STATE_UP;
+                    check->status = STATE_UP;
                 }
-                check->status = STATE_UP;
             } else {
-                current_state = STATE_UP;
+                check->status = STATE_UP;
             }
             check->timestamp_last_reply = now;
             diff = 0;
@@ -287,12 +283,10 @@ void run_check(check_arguments_t *args)
             diff = calculate_difference(previous_last_reply, now);
             
             if (check->status & STATE_DOWN) {
-                current_state = STATE_DOWN;
+                check->status = STATE_DOWN;
             } else {
-                current_state = STATE_DOWN_NEW;
+                check->status = STATE_DOWN_NEW;
             }
-
-            check->status = STATE_DOWN;
 
             print_info(logger, "[%s]: %s: Ping FAILED. Now for %0.3fs\n", check->ip, current_time, diff);
         } else if (!running) {
@@ -303,17 +297,30 @@ void run_check(check_arguments_t *args)
             return;
         }
         fflush(stdout);
+        print_debug(logger, "[%s]: determined state: %d\n", check->ip , check->status);
 
         // check if any action is required
         for (int i = 0; running && i < check->actions_count; i++)
         {
             action_t this_action = check->actions[i];
+            
+            print_debug(logger, "[%s]: action: %s this_action.run %d\n", check->ip, this_action.name, this_action.run);
 
-            int state_match = current_state & this_action.run;
-            int should_run = state_match && 
-                    (this_action.run != STATE_UP_NEW || check->actions[i].delay <= prev_downtime) &&
-                    (this_action.run != STATE_DOWN || check->actions[i].delay <= diff) &&
-                    (this_action.run != STATE_DOWN_NEW || check->actions[i].delay <= diff);
+            unsigned int state_match = check->status & this_action.run;
+            int superior = (state_match >= this_action.run || this_action.run == STATE_ALL);
+
+            int state_up_new_diff = (this_action.run != STATE_UP_NEW || check->actions[i].delay <= prev_downtime);
+
+            int state_down_diff = (this_action.run != STATE_DOWN || check->actions[i].delay <= diff);
+
+            // printf("\tstate_match: %d", state_match);
+            // printf("\tsuperior: %d", superior);
+            // printf("\tstate_up_new: %d ", state_up_new_diff);
+            // printf("\tstate_down_diff: %d\n ", state_down_diff);
+
+            int should_run = state_match && superior &&
+                                    state_up_new_diff &&
+                                    state_down_diff;
             if (should_run)
             {
                 print_info(logger, "[%s]: Performing action: %s\n", check->ip, check->actions[i].name);
@@ -347,13 +354,13 @@ void run_check(check_arguments_t *args)
                     action_cmd_t copy = *cmd;
 
                     double downtime;
-                    if (current_state == STATE_UP_NEW) {
+                    if (check->status == STATE_UP_NEW) {
                         downtime = prev_downtime;
                     } else {
                         downtime = diff; // we are still down (or up)
                     }
 
-                    copy.command = insert_placeholders(cmd->command, check, current_state, previous_last_reply, datetime_format, downtime, connected);
+                    copy.command = insert_placeholders(cmd->command, check, check->status, previous_last_reply, datetime_format, downtime, connected);
                     
                     print_debug(logger, "\tCommand: %s\n", copy.command);
                     fflush(stdout);
@@ -365,13 +372,13 @@ void run_check(check_arguments_t *args)
                     action_log_t* action_log = (action_log_t*) this_action.object;
 
                     double downtime;
-                    if (current_state == STATE_UP_NEW) {
+                    if (check->status == STATE_UP_NEW) {
                         downtime = prev_downtime;
                     } else {
                         downtime = diff; // we are still down (or up)
                     }
 
-                    const char* message = insert_placeholders(action_log->message, check, current_state, previous_last_reply, datetime_format, downtime, connected);
+                    const char* message = insert_placeholders(action_log->message, check, check->status, previous_last_reply, datetime_format, downtime, connected);
 
                     int r = log_to_file(logger, action_log->path, message, action_log->username);
                     if (r == 0) {

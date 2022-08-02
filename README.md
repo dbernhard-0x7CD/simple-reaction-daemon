@@ -187,11 +187,13 @@ Or if he's **up**:
 
 ### Conditional actions - run_if
 Valid values for `run_if`:
-* `down` (default)
-    * After `command.delay` seconds this target is seen as down and this action executed
 * `up` - Run everytime a ping succeeds (approximately every `period` seconds)
 * `up-again` (first ping successfull after one or more failed pings)
     * In this case `command.delay` denotes how long the downtime at least had to be to trigger this action
+* `down` (default)
+    * After `command.delay` seconds this target is seen as down and this action executed
+* `down-again` Executes once if a target was reachable before and now isn't
+    * After `command.delay` seconds this target is seen as down
 * `always`
 
 <br />
