@@ -193,7 +193,6 @@ Valid values for `run_if`:
 * `down` (default)
     * After `command.delay` seconds this target is seen as down and this action executed
 * `down-again` Executes once if a target was reachable before and now isn't
-    * After `command.delay` seconds this target is seen as down
 * `always`
 
 <br />
