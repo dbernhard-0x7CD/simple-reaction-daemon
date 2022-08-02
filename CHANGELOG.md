@@ -7,18 +7,19 @@
     * Own ping
     * Print if a command is ill formed for sh
         * capture stderr?
-    * `down-again` (print how long an IP was online)
-    * `down-start` one message if host went down
+    * `%prev_uptime` (print how long an IP was online for `down-again`)
     * `up-start` one message if host is up
     * print to stdout action `stdout` with message
-    * test concurrent logs
     * time test for actions: `command` versus `log`
+
+    * TODO: test scenarios for all events (inside testfile)
 
 <br />
 
 * [WIP] 0.0.6
     * `%status` placeholder for `success` or `failed` depending if the ping was answered or not
     * datetime_format (from srd.conf) is regarded when printing the current time in stdout
+    * Event `down-again` which runs if a previous ping succeeded and now fails
 
 * 0.0.5
     * new ERROR loglevel (nothing logged regarding connections)
