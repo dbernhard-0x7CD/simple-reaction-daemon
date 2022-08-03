@@ -8,3 +8,4 @@ arch-pkg/*.zst
 *.o
 performance.txt
 venv/
+.sync-exclude.lst
