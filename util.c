@@ -364,8 +364,8 @@ int ping(const logger_t *logger,
     pckt.hdr.un.echo.id = pid;
     unsigned int address_str_len = strlen(address);
     
-    size_t msg_sent_size = sizeof(pckt.msg);
-    sprint_debug(logger, "Message size: %lu\n", msg_sent_size);
+    unsigned int msg_sent_size = sizeof(pckt.msg);
+    sprint_debug(logger, "Message size: %d\n", msg_sent_size);
 
     // fill the message
     for (i = 0; i < sizeof(pckt.msg) - 1; i++) {
