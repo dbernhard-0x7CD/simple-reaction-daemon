@@ -382,7 +382,7 @@ int ping(const logger_t *logger,
     // print entire packet
 #if DEBUG
     for (i = 0; i < PACKETSIZE; i++) {
-        sprint_debug(logger, "packet at %ld: %d\n", i, pckt_ptr[i]);
+        sprint_debug(logger, "packet at %d: %d\n", i, pckt_ptr[i]);
     }
 #endif
 
@@ -431,7 +431,7 @@ int ping(const logger_t *logger,
 #if DEBUG
     // print entire packet
     for (i = 0; i < PACKETSIZE + 20; i++) {
-        printf("rcved message:[%ld]: %d\n", i, rcv_pckt[i]);
+        printf("rcved message:[%d]: %d\n", i, rcv_pckt[i]);
     }
 #endif
 
