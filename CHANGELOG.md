@@ -20,6 +20,7 @@
     * `%status` placeholder for `success` or `failed` depending if the ping was answered or not
     * datetime_format (from srd.conf) is regarded when printing the current time in stdout
     * Event `down-again` which runs if a previous ping succeeded and now fails
+    * Fixed potential very rare race condition when printing
 
 * 0.0.5
     * new ERROR loglevel (nothing logged regarding connections)
