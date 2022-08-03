@@ -1,4 +1,3 @@
-#define _GNU_SOURCE 
 #include <bits/types/struct_tm.h> 
 #include <errno.h>
 #include <stdio.h>
