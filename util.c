@@ -24,7 +24,6 @@ struct packet
     char msg[PACKETSIZE-sizeof(struct icmphdr)];
 };
 
-struct protoent *proto = NULL;
 unsigned int icmp_msgs_count = 1; // sequence number
 
 int needs_escaping(char c)
@@ -328,6 +327,7 @@ int ping(const logger_t *logger,
     int pid = getpid();
     
     unsigned int ms_waited = 0;
+    struct protoent *proto = NULL;
 
     proto = getprotobyname("ICMP");
     hname = gethostbyname(address);
