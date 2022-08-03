@@ -49,4 +49,15 @@ char *insert_placeholders(const char *raw_message, const connectivity_check_t *c
  */
 double calculate_difference(struct timespec old, struct timespec new);
 
+/*
+ * Calculates the checksum for an ICMP packet
+ */
+unsigned short complement_checksum(const void *buffer, const int len);
+
+/*
+* Pings the given adress and updates latency_s.
+* Returns 1 if successful, else 0.
+*/
+int ping(const logger_t *logger, const char *adress, double *latency_s, const double timeout_s);
+
 #endif

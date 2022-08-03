@@ -1,16 +1,31 @@
 #include <arpa/inet.h>
 #include <bits/types/struct_tm.h> 
 #include <errno.h>
+#include <fcntl.h>
+#include <resolv.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/socket.h>
-#include <net/if.h>
-#include <netinet/in.h>
 #include <time.h>
 #include <math.h>
+#include <net/if.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <netinet/ip_icmp.h>
 
 #include "util.h"
+
+
+#define PACKETSIZE  64
+struct packet
+{
+    struct icmphdr hdr;
+    char msg[PACKETSIZE-sizeof(struct icmphdr)];
+};
+
+struct protoent *proto = NULL;
+unsigned int icmp_msgs_count = 1; // sequence number
 
 int needs_escaping(char c)
 {
@@ -272,4 +287,159 @@ char* insert_placeholders(const char* raw_message,
 
 double calculate_difference(struct timespec old, struct timespec new) {
     return (new.tv_sec - old.tv_sec) + (new.tv_nsec - old.tv_nsec) / 1.0e9;
+}
+
+unsigned short complement_checksum(const void *buffer, int len)
+{
+    const unsigned short *ptr = buffer;
+    unsigned int sum = 0;
+
+    for (sum = 0; len > 1; len -= 2) {
+        sum += *ptr++;
+    }
+    if (len == 1) {
+        sum += *(unsigned char *)ptr;
+    }
+    sum = (sum >> 16) + (sum & 0xFFFF);
+    
+    sum += (sum >> 16);
+    
+    return ~sum;
+}
+
+int ping(const logger_t *logger,
+        const char *address,
+        double *latency_s,
+        const double timeout_s)
+{
+    const int ttl = 255;
+
+    pid_t tid = pthread_self();
+
+    printf("I'm pinging %s with tid %d\n", address, (char) tid);
+    
+    struct packet pckt;
+    struct sockaddr_in r_addr;
+    struct hostent *hname;
+    struct sockaddr_in addr_ping;
+
+    size_t i;
+    int sd;
+    int pid = getpid();
+    
+    unsigned int ms_waited = 0;
+
+    proto = getprotobyname("ICMP");
+    hname = gethostbyname(address);
+    memset(&addr_ping, 0, sizeof(addr_ping));
+    addr_ping.sin_family = hname->h_addrtype;
+    addr_ping.sin_port = 0;
+    addr_ping.sin_addr.s_addr = *(long *)hname->h_addr;
+
+    sd = socket(PF_INET, SOCK_RAW, proto->p_proto);
+    if (sd < 0)
+    {
+        sprint_error(logger, "Unable to open socket. %s\n", strerror(errno));
+        return 0;
+    }
+    if (setsockopt(sd, SOL_IP, IP_TTL, &ttl, sizeof(ttl)) != 0)
+    {
+        sprint_error(logger, "Set TTL option\n");
+        return 0;
+    }
+    if (fcntl(sd, F_SETFL, O_NONBLOCK) != 0)
+    {
+        sprint_error(logger, "Request nonblocking I/O\n");
+        return 0;
+    }
+
+    struct timespec sent_time;
+    struct timespec rcvd_time;
+
+    // construct packet and send
+    bzero(&pckt, sizeof(pckt));
+    unsigned char* pckt_ptr = (unsigned char*)&pckt;
+
+    pckt.hdr.type = ICMP_ECHO;
+    pckt.hdr.un.echo.id = pid;
+    unsigned int address_str_len = strlen(address);
+    
+    size_t msg_sent_size = sizeof(pckt.msg);
+    sprint_debug(logger, "Message size: %lu\n", msg_sent_size);
+
+    // fill the message
+    for (i = 0; i < sizeof(pckt.msg) - 1; i++) {
+        if (i < address_str_len) {
+            pckt.msg[i] = address[i];
+        } else {
+            pckt.msg[i] = i - address_str_len + '0';
+        }
+    }
+    pckt.msg[i] = 0; // terminator
+    pckt.hdr.un.echo.sequence = icmp_msgs_count++;
+    pckt.hdr.checksum = complement_checksum(&pckt, sizeof(pckt));
+
+    // print entire packet
+#if DEBUG
+    for (i = 0; i < PACKETSIZE; i++) {
+        sprint_debug(logger, "packet at %ld: %d\n", i, pckt_ptr[i]);
+    }
+#endif
+
+    // sprint_debug(logger, "Sending packet with echo.id: %d, \n", pckt.hdr.un.echo.id);
+
+    // Start the clock
+    clock_gettime(CLOCK_REALTIME, &sent_time);
+    
+    int bytes;
+    if ((bytes = sendto(sd, &pckt, sizeof(pckt), 0, (struct sockaddr *)&addr_ping, sizeof(addr_ping))) <= 0) {
+        sprint_error(logger, "Unable to send\n");
+        return 0;
+    }
+    sprint_debug(logger, "Sent %d bytes\n", bytes);
+
+    // receive
+    // +20 as another header is included
+    int rcv_len = 64 + 20;
+    unsigned char* rcv_pckt = (unsigned char*)malloc(rcv_len);
+    unsigned int len_new = sizeof(r_addr);
+
+    // partial rcvs
+    int rcv = 0;
+    int bytes_rcved = 0;
+    do
+    {
+        rcv = recvfrom(sd, rcv_pckt, rcv_len, 0, &r_addr, &len_new);
+        if (rcv >= 0) {
+            bytes_rcved += rcv;
+        }
+
+        ms_waited++;
+        // print_debug(logger, "waiting 1ms\n");
+        usleep(1e3); // 1ms
+
+        if (ms_waited > timeout_s * 1e3) {
+            print_debug(logger, "Timeout\n");
+            return 0;
+        }
+    } while (bytes_rcved < rcv_len);
+
+    clock_gettime(CLOCK_REALTIME, &rcvd_time);
+
+    sprint_debug(logger, "Read %d bytes\n", bytes_rcved);
+
+#if DEBUG
+    // print entire packet
+    for (i = 0; i < PACKETSIZE + 20; i++) {
+        printf("rcved message:[%ld]: %d\n", i, rcv_pckt[i]);
+    }
+#endif
+
+    // check if correct message
+    int mem_diff = memcmp(&pckt_ptr[8], &rcv_pckt[28], 56);
+
+    sprint_debug(logger, "difference: %d\n", mem_diff);
+
+    *latency_s = calculate_difference(sent_time, rcvd_time);
+    return mem_diff == 0;
 }

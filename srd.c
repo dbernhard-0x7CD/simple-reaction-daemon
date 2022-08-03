@@ -10,7 +10,6 @@
 #include <libconfig.h>
 #include <fts.h>
 #include <pthread.h>
-#include <oping.h>
 #include <sys/socket.h>
 
 // Our includes
@@ -418,107 +417,36 @@ void signal_handler(int s)
     fflush(stdout);
 }
 
-
-pingobj_t* create_pingo(const char* ip, double timeout) {
-    pingobj_t* pingo;
-    int status;
-
-    pingo = ping_construct();
-
-    // set address family
-    int family = AF_INET; // ipv4
-    ping_setopt(pingo, PING_OPT_AF, &family);
-    
-    ping_setopt(pingo, PING_OPT_TIMEOUT, &timeout);
-
-    // set address
-    status = ping_host_add(pingo, ip);
-    if (status < 0) {
-        sprint_error(logger, "Unable to add host %s status %d\n", ip, status);
-        const char* err_msg = ping_get_error(pingo);
-        sprint_error(logger, "Error adding host %s. Message: %s\n", ip, err_msg);
-
-        return NULL;
-    }
-
-    return pingo;
-}
-
 int check_connectivity(connectivity_check_t* cc)
 {
-    pingobj_iter_t *result_iterator;
-
     int success = 0;
-    double latency_sum = 0.0;
+    double latency_sum = 0.0; // in s
+    int ping_count = 0;
+    double latency_s;
 
-    for (int i = 0; i < cc->num_pings; i++) {
-        pingobj_t* pingo = create_pingo(cc->ip, cc->timeout);
+    int i;
+    for (i = 0; i < cc->num_pings; i++) {
+        int ping_success = ping(logger, cc->ip, &latency_s, cc->timeout);
 
-        /* if we cannot create a ping object, we assume this host is down
-        * as if name-resolution does not work we get an error when
-        * adding a host.
-        */
-        if (pingo == NULL) {
-            return 0;
-        }
+        latency_sum += latency_s;
+        ping_count++;
 
-        // send the ping
-        int res = ping_send(pingo);
-
-        if (res < 0) {
-            const char* err_msg = ping_get_error(pingo);
-            sprint_error(logger, "Error sending ping to %s. Message: %s\n", cc->ip, err_msg);
-            ping_destroy(pingo);
-            return (-1);
-        }
-
-        // variables we're interested in
-        uint32_t dropped;
-        double latency;
-
-        // we only ping one target; thus only first ping is interesting
-        result_iterator = ping_iterator_get(pingo);
-        size_t size = sizeof(uint32_t);
-
-        int status = ping_iterator_get_info(result_iterator, PING_INFO_DROPPED, &dropped, &size);
-        if (status < 0) {
-            sprint_error(logger, "Unable to get dropped of ping %d\n", status);
-            ping_destroy(pingo);
-            return 0;
-        }
-
-        size = sizeof(double);
-        status |= ping_iterator_get_info(result_iterator, PING_INFO_LATENCY, &latency, &size);
-
-        if (status < 0) {
-            sprint_error(logger, "Unable to get latency %d\n", status);
-            ping_destroy(pingo);
-            return 0;
-        }
-
-        char addr[16] = "none";
-        size = sizeof(addr) - 1;
-        status |= ping_iterator_get_info(result_iterator, PING_INFO_ADDRESS, addr, &size);
-        
-        sprint_debug(logger, "[%s]: latency %2.4lf ms and dropped: %d to address %s\n", cc->ip, latency, dropped, addr);
-        latency_sum += latency;
-
-        ping_destroy(pingo);
-
-        // sometimes dropped = 0 and latency = -1.0 when the host is down
-        if (dropped == 0 && latency > -1.0) {
+        if (ping_success == 1) {
             success = 1;
             break;
         }
     }
-
-    sprint_debug(logger, "[%s]: Ping has success: %d\n", cc->ip, success);
+    if (i == cc->num_pings && success == 0) {
+        return 0;
+    }
 
     if (success) {
         cc->latency = latency_sum / cc->num_pings;
     } else {
         cc->latency = -1.0;
     }
+
+    sprint_debug(logger, "[%s]: Ping has success: %d with latency: %2.3fms\n", cc->ip, success, cc->latency * 1000);
 
     return success;
 }
