@@ -323,7 +323,7 @@ int ping(const logger_t *logger,
     struct hostent *hname;
     struct sockaddr_in addr_ping;
 
-    size_t i;
+    unsigned int i;
     int sd;
     int pid = getpid();
     
