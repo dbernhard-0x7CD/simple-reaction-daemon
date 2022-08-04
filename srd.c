@@ -419,16 +419,10 @@ void signal_handler(int s)
 int check_connectivity(connectivity_check_t* cc)
 {
     int success = 0;
-    double latency_sum = 0.0; // in s
-    int ping_count = 0;
-    double latency_s;
 
     int i;
     for (i = 0; i < cc->num_pings; i++) {
-        int ping_success = ping(logger, cc->ip, &latency_s, cc->timeout);
-
-        latency_sum += latency_s;
-        ping_count++;
+        int ping_success = ping(logger, cc->ip, &cc->latency, cc->timeout);
 
         if (ping_success == 1) {
             success = 1;
@@ -437,12 +431,6 @@ int check_connectivity(connectivity_check_t* cc)
     }
     if (i == cc->num_pings && success == 0) {
         return 0;
-    }
-
-    if (success) {
-        cc->latency = latency_sum / cc->num_pings;
-    } else {
-        cc->latency = -1.0;
     }
 
     sprint_debug(logger, "[%s]: Ping has success: %d with latency: %2.3fms\n", cc->ip, success, cc->latency * 1000);
