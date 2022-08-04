@@ -11,8 +11,11 @@
     * `up-start` one message if host is up
     * print to stdout action `stdout` with message
     * time test for actions: `command` versus `log`
-
+    * `%uptime` placeholder
+    * Fix `%lat_ms` not always beeing replaced
+    * graph example
     * TODO: test scenarios for all events (inside testfile)
+    * support for ipv6
 
 <br />
 
