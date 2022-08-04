@@ -403,7 +403,7 @@ int ping(const logger_t *logger,
         sprint_error(logger, "Unable to send\n");
         return 0;
     }
-    sprint_debug(logger, "[%s]: Sent %d bytes with echo.id %d\n", address, bytes, pckt.hdr.un.echo.id);
+    sprint_debug(logger, "[%s]: Sent %d bytes with echo.id %d and SEQ %d\n", address, bytes, pckt.hdr.un.echo.id, pckt.hdr.un.echo.sequence);
 
     // receive
     // +20 as another header is included
@@ -437,7 +437,7 @@ int ping(const logger_t *logger,
 
     clock_gettime(CLOCK_REALTIME, &rcvd_time);
 
-    sprint_debug(logger, "[%s]: Read %d bytes with echo.id %d\n", address, bytes_rcved, rcv_pckt2->hdr.un.echo.id);
+    sprint_debug(logger, "[%s]: Read %d bytes with echo.id %d and SEQ %d\n", address, bytes_rcved, rcv_pckt2->hdr.un.echo.id, rcv_pckt2->hdr.un.echo.sequence);
 
 #if DEBUG
     // print entire packet
