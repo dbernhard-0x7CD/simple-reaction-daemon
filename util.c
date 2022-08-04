@@ -416,7 +416,7 @@ int ping(const logger_t *logger,
     int bytes_rcved = 0;
     do
     {
-        rcv = recvfrom(sd, rcv_pckt, rcv_len, 0, &r_addr, &len_new);
+        rcv = recvfrom(sd, rcv_pckt, rcv_len - bytes_rcved, 0, &r_addr, &len_new);
         if (rcv >= 0)
         {
             bytes_rcved += rcv;
