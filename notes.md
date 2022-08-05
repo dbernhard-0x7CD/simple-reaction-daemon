@@ -31,3 +31,6 @@
 
 * kill srd (send SIGALRM)
     * `ps -aux | grep srd | grep -v "grep" | cut -f 5 -d ' ' | xargs kill -SIGALRM`
+
+* checking memory leaks:
+    * `valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./srd`
