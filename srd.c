@@ -164,7 +164,9 @@ int main()
                 free ((char *)cmd->command);
                 free ((char *)cmd->user);
                 free(ptr->actions[i].object);
-            } else if (strcmp(ptr->actions[i].name, "log") == 0) {
+            } else if (strcmp(ptr->actions[i].name, "reboot") == 0) {
+                free(ptr->actions[i].object);
+            } else if (strcmp(ptr->actions[i].name, "service-restart") == 0) {
                 free(ptr->actions[i].object);
             } else if (strcmp(ptr->actions[i].name, "log") == 0) {
                 action_log_t* cmd = (action_log_t*) ptr->actions[i].object;
