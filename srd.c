@@ -182,7 +182,7 @@ int main()
     }
     free(connectivity_checks);
     free(default_gw);
-    free(datetime_format);
+    free((char *) datetime_format);
 
     pthread_mutex_destroy(&stdout_mut);
 
