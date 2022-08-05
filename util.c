@@ -262,7 +262,9 @@ char* insert_placeholders(const char* raw_message,
         free(latency_str);
         free((char *)old);
     } else {
+        const char* old = message;
         message = str_replace(message, "%lat_ms", "-1.0");
+        free((char *)old);
     }
 
     // replace %status
