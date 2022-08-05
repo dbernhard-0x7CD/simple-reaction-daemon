@@ -467,5 +467,8 @@ int ping(const logger_t *logger,
         *latency_s = -1.0;
     }
 
+    // free
+    free(rcv_pckt);
+
     return success;
 }
