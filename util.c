@@ -320,11 +320,13 @@ int ping(const logger_t *logger,
     if (setsockopt(sd, SOL_IP, IP_TTL, &ttl, sizeof(ttl)) != 0)
     {
         sprint_error(logger, "Set TTL option\n");
+        close(sd);
         return 0;
     }
     if (fcntl(sd, F_SETFL, O_NONBLOCK) != 0)
     {
         sprint_error(logger, "Request nonblocking I/O\n");
+        close(sd);
         return 0;
     }
 
@@ -378,6 +380,7 @@ int ping(const logger_t *logger,
     if ((bytes = sendto(sd, &pckt, sizeof(pckt), 0, (struct sockaddr *)&addr_ping, sizeof(addr_ping))) <= 0)
     {
         sprint_error(logger, "Unable to send\n");
+        close(sd);
         return 0;
     }
 
@@ -414,6 +417,7 @@ int ping(const logger_t *logger,
         if (ms_waited > timeout_s * 1e3)
         {
             print_debug(logger, "Timeout\n");
+            close(sd);
             return 0;
         }
     } while (bytes_rcved < rcv_len);
@@ -421,7 +425,7 @@ int ping(const logger_t *logger,
     clock_gettime(CLOCK_REALTIME, &rcvd_time);
 
     struct packet *rcv_pckt2 = (struct packet *)rcv_pckt;
-    
+
     sprint_debug(logger, "[%s]: Read %d bytes with SEQ %d\n", address, bytes_rcved, rcv_pckt2->hdr.un.echo.sequence);
 
 #if DEBUG
@@ -451,6 +455,8 @@ int ping(const logger_t *logger,
 
     // free
     free(rcv_pckt);
+
+    close(sd);
 
     return success;
 }
