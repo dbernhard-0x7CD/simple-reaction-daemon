@@ -18,15 +18,13 @@ The motivation for this service is to log disconnects (or the time an IP is reac
 
 # Building
 
-After cloning this repository you have to run `git submodule init` and `git submodule update`.
-
-Then simply run `make` in the root folder of the project.
+After cloning this repository simply run `make` in the root folder of the project.
 
 You need glibc, libconfig and headers for systemd.
 
-On Debian: `libconfig-dev libsystemd-dev`
+*On Debian*: `libconfig-dev libsystemd-dev`
 
-On Arch: `libconfig systemd`
+*On Arch*: `libconfig systemd`
 
 <br />
 
