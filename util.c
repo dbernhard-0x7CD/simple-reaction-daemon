@@ -304,7 +304,6 @@ int ping(const logger_t *logger,
     const int ttl = 255;
     
     struct packet pckt;
-    struct sockaddr_in r_addr;
     struct sockaddr_in addr_ping;
 
     unsigned int i;
@@ -400,7 +399,7 @@ int ping(const logger_t *logger,
     // +20 as another header is included
     int rcv_len = 64;
     unsigned char *rcv_pckt = (unsigned char *)malloc(rcv_len);
-    unsigned int len_new = sizeof(r_addr);
+    unsigned int len_new = sizeof(addr_ping);
 
     // partial rcvs
     int rcv = 0;
@@ -410,7 +409,7 @@ int ping(const logger_t *logger,
 
     do
     {
-        rcv = recvfrom(sd, rcv_pckt, rcv_len - bytes_rcved, 0, &r_addr, &len_new);
+        rcv = recvfrom(sd, rcv_pckt, rcv_len - bytes_rcved, 0, &addr_ping, &len_new);
         if (rcv < 0) {
             usleep(WAIT_TIME_US);
         }
