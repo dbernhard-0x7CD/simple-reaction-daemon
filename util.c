@@ -299,6 +299,27 @@ int to_sockaddr(const char* address, struct sockaddr_in* socket_addr) {
     return inet_pton(AF_INET, address, &(socket_addr->sin_addr));
 }
 
+int resolve_hostname(const char *hostname, struct sockaddr_in *socket_addr)
+{
+    struct addrinfo hint, *pai;
+    int rv;
+
+    memset(&hint, 0, sizeof(hint));
+    hint.ai_family = AF_UNSPEC;
+    hint.ai_socktype = SOCK_STREAM;
+
+    if ((rv = getaddrinfo(hostname, "http", &hint, &pai)) != 0)
+    {
+        fprintf(stderr, "unable to get address info: %s\n", gai_strerror(rv));
+        return 0;
+    }
+
+    *socket_addr = *(struct sockaddr_in *)pai->ai_addr;
+
+    freeaddrinfo(pai);
+    return 1;
+}
+
 int ping(const logger_t *logger,
          const char *address,
          double *latency_s,
@@ -315,8 +336,10 @@ int ping(const logger_t *logger,
     memset(&addr_ping, 0, sizeof(addr_ping));
     if (!to_sockaddr(address, &addr_ping)) {
         // could be a hostname
-        print_error(logger, "This address may be malformed: %s\n", address);
-        return 0;
+        if (!resolve_hostname(address, &addr_ping)) {
+            print_error(logger, "Unable to get an IP from: %s\n", address);
+            return 0;
+        }
     }
     addr_ping.sin_port = 0;
     addr_ping.sin_family = AF_INET;
