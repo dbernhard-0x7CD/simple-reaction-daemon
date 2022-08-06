@@ -25,7 +25,7 @@ typedef struct connectivity_check_t
 
     int num_pings;
 
-    // Latency of the last ping; -1 if not successful
+    // Latency of the last ping in seconds; -1.0 if not successful
     double latency;
 
     // Status of last ping
