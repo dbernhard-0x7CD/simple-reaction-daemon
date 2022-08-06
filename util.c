@@ -290,23 +290,6 @@ double calculate_difference(struct timespec old, struct timespec new) {
     return (new.tv_sec - old.tv_sec) + (new.tv_nsec - old.tv_nsec) / 1.0e9;
 }
 
-unsigned short complement_checksum(const void *buffer, int len)
-{
-    const unsigned short *ptr = buffer;
-    unsigned int sum = 0;
-
-    for (sum = 0; len > 1; len -= 2) {
-        sum += *ptr++;
-    }
-    if (len == 1) {
-        sum += *(unsigned char *)ptr;
-    }
-    sum = (sum >> 16) + (sum & 0xFFFF);
-    sum += (sum >> 16);
-    
-    return ~sum;
-}
-
 int ping(const logger_t *logger,
          const char *address,
          double *latency_s,
