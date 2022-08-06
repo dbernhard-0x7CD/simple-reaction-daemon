@@ -443,7 +443,7 @@ int ping(const logger_t *logger,
         printf("rcved message:[%d]: %d\n", i, rcv_pckt[i]);
     }
 #endif
-    sprint_debug(logger, "[%s]: Message received: %s\n", address, rcv_pckt2->msg);
+    sprint_debug(logger, "[%s]: Message received: %s with code: %d\n", address, rcv_pckt2->msg, rcv_pckt2->hdr.code);
 
     // check if the message matches
     int mem_diff = memcmp(&pckt_ptr[8], &rcv_pckt[8], 56);
