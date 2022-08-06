@@ -305,8 +305,6 @@ int ping(const logger_t *logger,
     unsigned int i;
     int sd;
 
-    unsigned int ms_waited = 0;
-
     hname = gethostbyname(address);
     memset(&addr_ping, 0, sizeof(addr_ping));
     addr_ping.sin_family = hname->h_addrtype;
@@ -396,19 +394,22 @@ int ping(const logger_t *logger,
     // partial rcvs
     int rcv = 0;
     int bytes_rcved = 0;
+    const int WAIT_TIME_US = 5e2; // 50 µs
+    double ms_waited = 0;
+
     do
     {
         rcv = recvfrom(sd, rcv_pckt, rcv_len - bytes_rcved, 0, &r_addr, &len_new);
         if (rcv < 0) {
-            usleep(1e2);
+            usleep(WAIT_TIME_US);
         }
         if (rcv >= 0)
         {
             bytes_rcved += rcv;
         }
 
-        ms_waited++;
-        usleep(5e2); // 1ms
+        ms_waited += WAIT_TIME_US * 1e-3;
+        usleep(WAIT_TIME_US);
 
         if (ms_waited > timeout_s * 1e3)
         {
@@ -417,10 +418,10 @@ int ping(const logger_t *logger,
         }
     } while (bytes_rcved < rcv_len);
 
-    struct packet *rcv_pckt2 = (struct packet *)rcv_pckt;
-
     clock_gettime(CLOCK_REALTIME, &rcvd_time);
 
+    struct packet *rcv_pckt2 = (struct packet *)rcv_pckt;
+    
     sprint_debug(logger, "[%s]: Read %d bytes with SEQ %d\n", address, bytes_rcved, rcv_pckt2->hdr.un.echo.sequence);
 
 #if DEBUG
