@@ -252,11 +252,13 @@ char* insert_placeholders(const char* raw_message,
         free((void*)old);
     }
     if (check->latency >= 0) {
-        char* latency_str = malloc((log10f(check->latency) + 1) * sizeof(char));
+        // latency +1 to avoid negative logarithms; +2 for null-term and one off by log10
+        int length = log10f(check->latency + 1) + 2;
+        char* latency_str = malloc(length * sizeof(char));
 
         const char* old = message;
 
-        sprintf(latency_str, "%1.0lf", check->latency);
+        snprintf(latency_str, length, "%1.0lf", check->latency);
         message = str_replace(message, "%lat_ms", latency_str);
 
         free(latency_str);
