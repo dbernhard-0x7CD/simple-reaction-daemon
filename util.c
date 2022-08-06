@@ -258,7 +258,7 @@ char* insert_placeholders(const char* raw_message,
 
         const char* old = message;
 
-        snprintf(latency_str, length, "%1.0lf", check->latency);
+        snprintf(latency_str, length, "%1.0lf", check->latency * 1e3);
         message = str_replace(message, "%lat_ms", latency_str);
 
         free(latency_str);
