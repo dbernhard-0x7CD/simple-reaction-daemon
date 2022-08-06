@@ -629,7 +629,7 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                 return 1;
             }
             cc->actions_count = config_setting_length(setting);
-            cc->actions = malloc(cc->actions_count * sizeof(action_t));
+            cc->actions = calloc(cc->actions_count, sizeof(action_t));
 
             // Iterate over all actions
             for (int i = 0; i < cc->actions_count; i++)
