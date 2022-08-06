@@ -290,6 +290,10 @@ double calculate_difference(struct timespec old, struct timespec new) {
     return (new.tv_sec - old.tv_sec) + (new.tv_nsec - old.tv_nsec) / 1.0e9;
 }
 
+int to_sockaddr(const char* address, struct sockaddr_in* socket_addr) {
+    return inet_pton(AF_INET, address, &(socket_addr->sin_addr));
+}
+
 int ping(const logger_t *logger,
          const char *address,
          double *latency_s,
@@ -299,17 +303,19 @@ int ping(const logger_t *logger,
     
     struct packet pckt;
     struct sockaddr_in r_addr;
-    struct hostent *hname;
     struct sockaddr_in addr_ping;
 
     unsigned int i;
     int sd;
-
-    hname = gethostbyname(address);
+    
     memset(&addr_ping, 0, sizeof(addr_ping));
-    addr_ping.sin_family = hname->h_addrtype;
+    if (!to_sockaddr(address, &addr_ping)) {
+        // could be a hostname
+        print_error(logger, "This address may be malformed: %s\n", address);
+        return 0;
+    }
     addr_ping.sin_port = 0;
-    addr_ping.sin_addr.s_addr = *(long *)hname->h_addr;
+    addr_ping.sin_family = AF_INET;
 
     sd = socket(PF_INET, SOCK_DGRAM, IPPROTO_ICMP);
     if (sd < 0)

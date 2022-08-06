@@ -55,4 +55,10 @@ double calculate_difference(struct timespec old, struct timespec new);
 */
 int ping(const logger_t *logger, const char *adress, double *latency_s, const double timeout_s);
 
+/*
+ * Converts the address as string into sockaddr_in.
+ * Returns 1 on success, else 0.
+ */
+int to_sockaddr(const char* address, struct sockaddr_in* socket_addr);
+
 #endif
