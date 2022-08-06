@@ -438,7 +438,7 @@ int ping(const logger_t *logger,
 
 #if DEBUG
     // print entire packet
-    for (i = 0; i < PACKETSIZE + 20; i++)
+    for (i = 0; i < PACKETSIZE; i++)
     {
         printf("rcved message:[%d]: %d\n", i, rcv_pckt[i]);
     }
