@@ -9,3 +9,4 @@ arch-pkg/*.zst
 performance.txt
 venv/
 .sync-exclude.lst
+.gdb_history
