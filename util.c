@@ -387,7 +387,7 @@ int ping(const logger_t *logger,
     const int seq_str_len = (int)(log10f(1.0*pckt.hdr.un.echo.sequence)) + 1;
     char* seq_str = malloc(seq_str_len * sizeof(char));
 
-    sprintf(seq_str, "%d", pckt.hdr.un.echo.sequence);
+    snprintf(seq_str, addr_len, "%d", pckt.hdr.un.echo.sequence);
     // insert sequence number
     strncpy(&pckt.msg[addr_len + 1], seq_str, seq_str_len);
     free(seq_str);
