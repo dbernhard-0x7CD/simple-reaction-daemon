@@ -21,9 +21,7 @@ srd: util.o srd.o actions.o printing.o Makefile
 clean:
 	rm -f *.o srd
 
-completeclean: clean
-	rm -rf liboping && git submodule update
-
 
 .PHONY: all
 .PHONY: clean
+.PHONY: srd
