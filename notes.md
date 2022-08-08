@@ -8,7 +8,7 @@
 * Restart systemd-networkd
     * `busctl call org.freedesktop.systemd1 /org/freedesktop/systemd1/unit/systemd_2dnetworkd_2eservice org.freedesktop.systemd1.Unit Restart s "fail"`
 
-* setting capabilities for srd binary to create sockets
+* setting capabilities for srd binary to create raw sockets (SOCK_RAW)
     * `sudo setcap 'CAP_NET_RAW+eip' ./srd`
 
 # Resources
