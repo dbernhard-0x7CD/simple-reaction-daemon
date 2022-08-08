@@ -382,7 +382,11 @@ int ping(const logger_t *logger,
         pckt.msg[i] = '_';
     }
     int addr_len = strlen(address);
+    
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
     strncpy(&pckt.msg[0], address, addr_len);
+#pragma GCC diagnostic pop
 
     const int seq_str_len = (int)(log10f(1.0*pckt.hdr.un.echo.sequence + 1)) + 1;
     char* seq_str = malloc(seq_str_len * sizeof(char));
