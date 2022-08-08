@@ -388,7 +388,7 @@ int ping(const logger_t *logger,
     strncpy(&pckt.msg[0], address, addr_len);
 #pragma GCC diagnostic pop
 
-    const int seq_str_len = (int)(log10f(1.0*pckt.hdr.un.echo.sequence + 1)) + 1;
+    const int seq_str_len = 5; // maximum size of uint16_t
     char* seq_str = malloc(seq_str_len * sizeof(char));
 
     snprintf(seq_str, seq_str_len, "%d", pckt.hdr.un.echo.sequence);
