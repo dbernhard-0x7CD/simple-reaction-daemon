@@ -118,7 +118,7 @@ See here for the exact format: [https://strftime.org/](https://strftime.org/)
 ## Actions
 **Note**: The `delay` configuration denotes the amount of time passed (in seconds) since the last successful ping (`period + num_pings * timeout`) until this action is performed. `num_pings` is how many pings are sent in sequential order (only one has to succeed) and worst case takes `num_pings * timeout` time. This makes sense if you have a high period but you don't want to have a host labeled as 'down' if a ping gets lost.
 
-* **reboot**:
+### Action **reboot**:
 
 ```
 {
@@ -127,7 +127,9 @@ See here for the exact format: [https://strftime.org/](https://strftime.org/)
 }
 ```
 
-* **restart a service**:
+* User running `srd` needs permissions to send dbus commands
+
+### Action **restart a service**:
 
 ```
 {
@@ -136,15 +138,19 @@ See here for the exact format: [https://strftime.org/](https://strftime.org/)
     delay = 600; # 10 minutes
 }
 ```
+* User running `srd` needs permissions to send dbus commands
 
-* **log to a file**:
+
+### Action **log to a file**:
 ```
 {
     action = "log";
     message = "Host %ip was down from %sdt until %now";
     path = "SOME_PATH/downtimes.log";
+    user = "REPLACEME";
 }
 ```
+
 * Notes for `message`:
     * You can use `%ip` as a placeholder for the actual IP of the current target (if you use multiple destination IPs)
     * When `run_if = "up-again"`: You can use `%sdt` (**s**tart **d**own**t**ime) as a placeholder for the start of the downtime 
@@ -154,7 +160,7 @@ See here for the exact format: [https://strftime.org/](https://strftime.org/)
 * With `user` you can define the owner of the file
     * This is only set when creating the file
 
-* **execute arbitrary command as a user**:
+### Action - **execute arbitrary command as a user**:
 
 If a host is **down**:
 ```
