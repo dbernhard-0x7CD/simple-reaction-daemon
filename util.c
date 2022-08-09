@@ -398,7 +398,7 @@ int ping(const logger_t *logger,
     strncpy(&send_pckt.msg[0], address, addr_len);
 #pragma GCC diagnostic pop
 
-    const int seq_str_len = 5; // maximum size of uint16_t
+    const int seq_str_len = 5; // maximum size of uint16_t as a string
     char seq_str[seq_str_len];
 
 #pragma GCC diagnostic push
@@ -411,12 +411,11 @@ int ping(const logger_t *logger,
 
     send_pckt.msg[i] = 0; // terminator
 
+    // Send the message
 #if DEBUG
     sprint_debug(logger, "[%s]: Message sent: %s\n", address, send_pckt.msg);
-#endif
 
     // print entire packet
-#if DEBUG
     unsigned char *pckt_ptr = (unsigned char *)&send_pckt;
 
     for (i = 0; i < PACKETSIZE; i++)
@@ -459,7 +458,9 @@ int ping(const logger_t *logger,
     }
 
     if(events[0].events & EPOLLIN) {
-        // printf("Socket %d got some data\n", events[0].data.fd);
+#if DEBUG
+        printf("Socket %d got some data\n", events[0].data.fd);
+#endif
         recv(sd, &rcv_pckt, rcv_len, 0);
         print_debug(logger, "Received: %s\n", rcv_pckt.msg);
     }
