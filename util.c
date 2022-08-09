@@ -6,6 +6,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/epoll.h>
 #include <sys/socket.h>
 #include <time.h>
 #include <math.h>
@@ -327,8 +328,12 @@ int ping(const logger_t *logger,
 {
     const int ttl = 255;
     
-    struct packet pckt;
+    struct packet send_pckt;
     struct sockaddr_in addr_ping;
+
+    // for receiving
+    const int rcv_len = 64;
+    struct packet* rcv_pckt = (struct packet*) malloc(sizeof(struct packet));
 
     unsigned int i;
     int sd;
@@ -344,8 +349,7 @@ int ping(const logger_t *logger,
     addr_ping.sin_port = 0;
     addr_ping.sin_family = AF_INET;
 
-    sd = socket(PF_INET, SOCK_DGRAM, IPPROTO_ICMP);
-    if (sd < 0)
+    if ((sd = socket(PF_INET, SOCK_DGRAM | SOCK_NONBLOCK, IPPROTO_ICMP)) < 0)
     {
         sprint_error(logger, "[%s]: Unable to open socket. %s\n", address, strerror(errno));
         return 0;
@@ -356,47 +360,52 @@ int ping(const logger_t *logger,
         close(sd);
         return 0;
     }
-    if (fcntl(sd, F_SETFL, O_NONBLOCK) != 0)
-    {
-        sprint_error(logger, "Request nonblocking I/O\n");
-        close(sd);
-        return 0;
-    }
+
+    // epoll on socket sd
+    int epfd = epoll_create(1);
+    struct epoll_event event;
+
+    event.events = EPOLLIN;
+    event.data.fd = sd;
+    epoll_ctl(epfd, EPOLL_CTL_ADD, sd, &event);
 
     struct timespec sent_time;
     struct timespec rcvd_time;
 
     // construct packet and send
-    bzero(&pckt, sizeof(pckt));
-    unsigned char *pckt_ptr = (unsigned char *)&pckt;
+    bzero(&send_pckt, sizeof(send_pckt));
 
-    pckt.hdr.type = ICMP_ECHO;
-    pckt.hdr.un.echo.sequence = icmp_msgs_count++;
+    send_pckt.hdr.type = ICMP_ECHO;
+    send_pckt.hdr.un.echo.sequence = icmp_msgs_count++;
 
     // unsigned int msg_sent_size = sizeof(pckt.msg);
     // sprint_debug(logger, "[%s]: Message size: %d\n", address, msg_sent_size);
 
     // fill the message
-    for (i = 0; i < sizeof(pckt.msg) - 1; i++)
+    for (i = 0; i < sizeof(send_pckt.msg) - 1; i++)
     {
-        pckt.msg[i] = '_';
+        send_pckt.msg[i] = '_';
     }
     int addr_len = strlen(address);
     
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstringop-truncation"
-    strncpy(&pckt.msg[0], address, addr_len);
+    strncpy(&send_pckt.msg[0], address, addr_len);
 #pragma GCC diagnostic pop
 
     const int seq_str_len = 5; // maximum size of uint16_t
     char* seq_str = malloc(seq_str_len * sizeof(char));
 
-    snprintf(seq_str, seq_str_len, "%d", pckt.hdr.un.echo.sequence);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-truncation"
+    snprintf(seq_str, seq_str_len, "%d", send_pckt.hdr.un.echo.sequence);
+#pragma GCC diagnostic pop
+
     // insert sequence number
-    strncpy(&pckt.msg[addr_len + 1], seq_str, seq_str_len);
+    strncpy(&send_pckt.msg[addr_len + 1], seq_str, seq_str_len);
     free(seq_str);
 
-    pckt.msg[i] = 0; // terminator
+    send_pckt.msg[i] = 0; // terminator
 
 #if DEBUG
     sprint_debug(logger, "[%s]: Message sent: %s\n", address, pckt.msg);
@@ -404,6 +413,8 @@ int ping(const logger_t *logger,
 
     // print entire packet
 #if DEBUG
+    unsigned char *pckt_ptr = (unsigned char *)&send_pckt;
+    
     for (i = 0; i < PACKETSIZE; i++)
     {
         sprint_debug(logger, "packet at %d: %d\n", i, pckt_ptr[i]);
@@ -414,7 +425,7 @@ int ping(const logger_t *logger,
     clock_gettime(CLOCK_REALTIME, &sent_time);
 
     int bytes;
-    if ((bytes = sendto(sd, &pckt, sizeof(pckt), 0, (struct sockaddr *)&addr_ping, sizeof(addr_ping))) <= 0)
+    if ((bytes = sendto(sd, &send_pckt, sizeof(send_pckt), 0, (struct sockaddr *)&addr_ping, sizeof(addr_ping))) <= 0)
     {
         sprint_error(logger, "Unable to send\n");
         close(sd);
@@ -425,57 +436,37 @@ int ping(const logger_t *logger,
     sprint_debug(logger, "[%s]: Sent %d bytes with echo.id %d and SEQ %d\n", address, bytes, pckt.hdr.un.echo.id, pckt.hdr.un.echo.sequence);
 #endif
 
-    // receive
-    // +20 as another header is included
-    int rcv_len = 64;
-    unsigned char *rcv_pckt = (unsigned char *)malloc(rcv_len);
-    unsigned int len_new = sizeof(addr_ping);
+    struct epoll_event events[1];
 
-    // partial rcvs
-    int rcv = 0;
-    int bytes_rcved = 0;
-    const int WAIT_TIME_US = 5e2; // 50 µs
-    double ms_waited = 0;
+    int num_ready = epoll_wait(epfd, events, 1, timeout_s * 1e3);
 
-    do
-    {
-        rcv = recvfrom(sd, rcv_pckt, rcv_len - bytes_rcved, 0, &addr_ping, &len_new);
-        if (rcv < 0) {
-            usleep(WAIT_TIME_US);
-        }
-        if (rcv >= 0)
-        {
-            bytes_rcved += rcv;
-        }
-
-        ms_waited += WAIT_TIME_US * 1e-3;
-        usleep(WAIT_TIME_US);
-
-        if (ms_waited > timeout_s * 1e3)
-        {
-            print_debug(logger, "Timeout\n");
-            close(sd);
-            return 0;
-        }
-    } while (bytes_rcved < rcv_len);
+    if (num_ready == 0) {
+        print_error(logger, "No events occured\n");
+    }
+    if(events[0].events & EPOLLIN) {
+        printf("Socket %d got some data\n", events[0].data.fd);
+        bzero(rcv_pckt, 64);
+        recv(sd, rcv_pckt, rcv_len, 0);
+        printf("Received: %s\n", rcv_pckt->msg);
+    }
 
     clock_gettime(CLOCK_REALTIME, &rcvd_time);
 
-    struct packet *rcv_pckt2 = (struct packet *)rcv_pckt;
-
-    sprint_debug(logger, "[%s]: Read %d bytes with SEQ %d\n", address, bytes_rcved, rcv_pckt2->hdr.un.echo.sequence);
+    sprint_debug(logger, "[%s]: Read %d bytes with SEQ %d\n", address, 64, rcv_pckt->hdr.un.echo.sequence);
 
 #if DEBUG
+    unsigned char *rcvd_pckt_ptr = (unsigned char *)&rcv_pckt;
+
     // print entire packet
     for (i = 0; i < PACKETSIZE; i++)
     {
-        printf("rcved message:[%d]: %d\n", i, rcv_pckt[i]);
+        printf("rcved message:[%d]: %d\n", i, rcvd_pckt_ptr[i]);
     }
 #endif
-    sprint_debug(logger, "[%s]: Message received: %s with code: %d\n", address, rcv_pckt2->msg, rcv_pckt2->hdr.code);
+    sprint_debug(logger, "[%s]: Message received: %s with code: %d\n", address, rcv_pckt->msg, rcv_pckt->hdr.code);
 
     // check if the message matches
-    int mem_diff = memcmp(&pckt_ptr[8], &rcv_pckt[8], 56);
+    int mem_diff = memcmp(send_pckt.msg, rcv_pckt->msg, 56);
 
     sprint_debug(logger, "[%s]: difference: %d\n", address, mem_diff);
 
