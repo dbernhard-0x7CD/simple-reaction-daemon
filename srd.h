@@ -39,6 +39,9 @@ typedef struct connectivity_check_t
 
     // Actions if the target is not reachable
     action_t *actions;
+
+    // Socket used
+    int socket;
 } connectivity_check_t;
 
 /*

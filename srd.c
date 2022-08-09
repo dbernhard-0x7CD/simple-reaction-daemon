@@ -224,6 +224,9 @@ void run_check(check_arguments_t *args)
 
     pthread_setname_np(pthread_self(), check->ip);
 
+    // create socket
+    check->socket = create_socket(logger);
+
     // main loop: check connectivity repeatedly
     while (running)
     {
@@ -425,7 +428,7 @@ int check_connectivity(connectivity_check_t* cc)
 
     int i;
     for (i = 0; i < cc->num_pings; i++) {
-        int ping_success = ping(logger, cc->ip, &cc->latency, cc->timeout);
+        int ping_success = ping(logger, cc->socket, cc->ip, &cc->latency, cc->timeout);
 
         if (ping_success == 1) {
             success = 1;

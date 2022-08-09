@@ -321,19 +321,36 @@ int resolve_hostname(const char *hostname, struct sockaddr_in *socket_addr)
     return 1;
 }
 
+int create_socket(logger_t* logger) {
+    const int ttl = 255;
+    int sd;
+
+    if ((sd = socket(PF_INET, SOCK_DGRAM | SOCK_NONBLOCK, IPPROTO_ICMP)) < 0)
+    {
+        sprint_error(logger, "Unable to open socket. %s\n", strerror(errno));
+        return 0;
+    }
+    if (setsockopt(sd, SOL_IP, IP_TTL, &ttl, sizeof(ttl)) != 0)
+    {
+        sprint_error(logger, "Unable to set TTL option\n");
+        close(sd);
+        return 0;
+    }
+
+    return sd;
+}
+
 int ping(const logger_t *logger,
+         const int sd,
          const char *address,
          double *latency_s,
          const double timeout_s)
-{
-    const int ttl = 255;
-    
+{   
     struct packet send_pckt, rcv_pckt;
     struct sockaddr_in addr_ping;
 
     // for receiving
     const int rcv_len = 64;
-    int sd;
     
     memset(&addr_ping, 0, sizeof(addr_ping));
     if (!to_sockaddr(address, &addr_ping)) {
@@ -345,18 +362,6 @@ int ping(const logger_t *logger,
     }
     addr_ping.sin_port = 0;
     addr_ping.sin_family = AF_INET;
-
-    if ((sd = socket(PF_INET, SOCK_DGRAM | SOCK_NONBLOCK, IPPROTO_ICMP)) < 0)
-    {
-        sprint_error(logger, "[%s]: Unable to open socket. %s\n", address, strerror(errno));
-        return 0;
-    }
-    if (setsockopt(sd, SOL_IP, IP_TTL, &ttl, sizeof(ttl)) != 0)
-    {
-        sprint_error(logger, "Set TTL option\n");
-        close(sd);
-        return 0;
-    }
 
     // epoll on socket sd
     int epfd = epoll_create(1);
@@ -426,8 +431,7 @@ int ping(const logger_t *logger,
     int bytes;
     if ((bytes = sendto(sd, &send_pckt, sizeof(send_pckt), 0, (struct sockaddr *)&addr_ping, sizeof(addr_ping))) <= 0)
     {
-        sprint_error(logger, "Unable to send\n");
-        close(sd);
+        sprint_error(logger, "Unable to send: %s\n", strerror(errno));
         return 0;
     }
 
@@ -440,7 +444,6 @@ int ping(const logger_t *logger,
     if (num_ready < 0) {
         print_error(logger, "[%s]: Unable to receive: %s\n", address, strerror(errno));
         
-        close(sd);
         close(epfd);
 
         return 0;
@@ -451,13 +454,12 @@ int ping(const logger_t *logger,
 
         print_debug(logger, "[%s]: Timeout after %1.2f", address, diff * 1e3);
 
-        close(sd);
         close(epfd);
         return 0;
     }
 
     if(events[0].events & EPOLLIN) {
-        printf("Socket %d got some data\n", events[0].data.fd);
+        // printf("Socket %d got some data\n", events[0].data.fd);
         recv(sd, &rcv_pckt, rcv_len, 0);
         print_debug(logger, "Received: %s\n", rcv_pckt.msg);
     }
@@ -486,7 +488,6 @@ int ping(const logger_t *logger,
 
     *latency_s = calculate_difference(sent_time, rcvd_time);
 
-    close(sd);
     close(epfd);
 
     return success;
