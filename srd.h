@@ -42,6 +42,9 @@ typedef struct connectivity_check_t
 
     // Socket used to ping the target
     int socket;
+
+    // On epoll filedescriptor for receiving from socket
+    int epoll_fd;
 } connectivity_check_t;
 
 /*

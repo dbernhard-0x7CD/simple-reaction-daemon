@@ -58,7 +58,17 @@ int create_socket(logger_t* logger);
 * Pings the given adress and updates latency_s.
 * Returns 1 if successful, else 0.
 */
-int ping(const logger_t *logger, const int sd, const char *adress, double *latency_s, const double timeout_s);
+int ping(const logger_t *logger,
+        const int sd,
+        const int epoll_fd,
+        const char *adress,
+        double *latency_s,
+        const double timeout_s);
+
+/*
+ * Creates an epoll fd used to get notified when a message was received on the fd.
+ */
+int create_epoll(const int fd);
 
 /*
  * Converts the address as string into sockaddr_in.

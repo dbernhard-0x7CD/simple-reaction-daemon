@@ -340,8 +340,22 @@ int create_socket(logger_t* logger) {
     return sd;
 }
 
+int create_epoll(const int fd) {
+    // epoll on socket sd
+    int epfd = epoll_create(1);
+
+    struct epoll_event event;
+
+    event.events = EPOLLIN;
+    event.data.fd = fd;
+    epoll_ctl(epfd, EPOLL_CTL_ADD, fd, &event);
+
+    return epfd;
+}
+
 int ping(const logger_t *logger,
          const int sd,
+         const int epoll_fd,
          const char *address,
          double *latency_s,
          const double timeout_s)
@@ -362,15 +376,6 @@ int ping(const logger_t *logger,
     }
     addr_ping.sin_port = 0;
     addr_ping.sin_family = AF_INET;
-
-    // epoll on socket sd
-    int epfd = epoll_create(1);
-    struct epoll_event event;
-    struct epoll_event events[1];
-
-    event.events = EPOLLIN;
-    event.data.fd = sd;
-    epoll_ctl(epfd, EPOLL_CTL_ADD, sd, &event);
 
     struct timespec sent_time;
     struct timespec rcvd_time;
@@ -431,7 +436,6 @@ int ping(const logger_t *logger,
     if ((bytes = sendto(sd, &send_pckt, sizeof(send_pckt), 0, (struct sockaddr *)&addr_ping, sizeof(addr_ping))) <= 0)
     {
         sprint_error(logger, "Unable to send: %s\n", strerror(errno));
-        close(epfd);
         return 0;
     }
 
@@ -439,12 +443,11 @@ int ping(const logger_t *logger,
     sprint_debug(logger, "[%s]: Sent %d bytes with echo.id %d and SEQ %d\n", address, bytes, send_pckt.hdr.un.echo.id, send_pckt.hdr.un.echo.sequence);
 #endif
 
-    int num_ready = epoll_wait(epfd, events, 1, timeout_s * 1e3);
+    struct epoll_event events[1];
+    int num_ready = epoll_wait(epoll_fd, events, 1, timeout_s * 1e3);
 
     if (num_ready < 0) {
         print_error(logger, "[%s]: Unable to receive: %s\n", address, strerror(errno));
-        
-        close(epfd);
 
         return 0;
     } else if (num_ready == 0) { // timeout
@@ -453,8 +456,6 @@ int ping(const logger_t *logger,
         double diff = calculate_difference(sent_time, rcvd_time);
 
         print_debug(logger, "[%s]: Timeout after %1.2f", address, diff * 1e3);
-
-        close(epfd);
         return 0;
     }
 
@@ -489,8 +490,6 @@ int ping(const logger_t *logger,
     int success = mem_diff == 0;
 
     *latency_s = calculate_difference(sent_time, rcvd_time);
-
-    close(epfd);
 
     return success;
 }

@@ -157,6 +157,7 @@ int main()
         free((char *)ptr->ip);
         free((char *)ptr->depend_ip);
 
+        close(ptr->epoll_fd);
         close(ptr->socket);
 
         // free cmd if it is a command (contains the command) or service-restart (contains service name)
@@ -234,6 +235,8 @@ void run_check(check_arguments_t *args)
  #ifndef DEBUG
     // create socket
     check->socket = create_socket(logger);
+    check->epoll_fd = create_epoll(check->socket);
+
 #endif
 
     // main loop: check connectivity repeatedly
@@ -259,12 +262,14 @@ void run_check(check_arguments_t *args)
 
 #if DEBUG
         check->socket = create_socket(logger);
+        check->epoll_fd = create_epoll(check->socket);
 #endif
 
         int connected = check_connectivity(check);
 
 #if DEBUG
         close(check->socket);
+        close(check->epoll_fd)
 #endif
     
         char current_time[32];
@@ -445,7 +450,7 @@ int check_connectivity(connectivity_check_t* cc)
 
     int i;
     for (i = 0; i < cc->num_pings; i++) {
-        int ping_success = ping(logger, cc->socket, cc->ip, &cc->latency, cc->timeout);
+        int ping_success = ping(logger, cc->socket, cc->epoll_fd, cc->ip, &cc->latency, cc->timeout);
 
         if (ping_success == 1) {
             success = 1;
