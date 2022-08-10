@@ -34,3 +34,9 @@
 
 * checking memory leaks:
     * `valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./srd`
+
+* flamegraph
+    * `perf record -F 99 -a -g -- ./srd `
+    * `perf script > out.perf`
+    * `stackcollapse-perf out.perf > perf.data_collapsed`
+    * `flamegraph perf.data_collapsed > out.svg`
