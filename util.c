@@ -382,9 +382,6 @@ int ping(const logger_t *logger,
     send_pckt.hdr.type = ICMP_ECHO;
     send_pckt.hdr.un.echo.sequence = icmp_msgs_count++;
 
-    // unsigned int msg_sent_size = sizeof(pckt.msg);
-    // sprint_debug(logger, "[%s]: Message size: %d\n", address, msg_sent_size);
-
     // fill the message. `target IP`_`icmp_msgs_count`__..__
     unsigned int i;
     for (i = 0; i < sizeof(send_pckt.msg) - 1; i++)
