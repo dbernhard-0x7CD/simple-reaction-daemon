@@ -224,8 +224,15 @@ void run_check(check_arguments_t *args)
 
     pthread_setname_np(pthread_self(), check->ip);
 
+    /* We create a new socket per ping in DEBUG mode. 
+    * This allows to create a firewall rule to stop
+    * a new socket from connecting to simulate
+    *  a host beeing down.
+    */
+ #ifndef DEBUG
     // create socket
     check->socket = create_socket(logger);
+#endif
 
     // main loop: check connectivity repeatedly
     while (running)
@@ -248,7 +255,15 @@ void run_check(check_arguments_t *args)
             }
         }
 
+#if DEBUG
+        check->socket = create_socket(logger);
+#endif
+
         int connected = check_connectivity(check);
+
+#if DEBUG
+        close(check->socket);
+#endif
     
         char current_time[32];
         struct tm tm;
