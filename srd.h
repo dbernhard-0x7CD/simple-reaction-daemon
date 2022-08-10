@@ -40,7 +40,7 @@ typedef struct connectivity_check_t
     // Actions if the target is not reachable
     action_t *actions;
 
-    // Socket used
+    // Socket used to ping the target
     int socket;
 } connectivity_check_t;
 

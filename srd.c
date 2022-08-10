@@ -157,6 +157,8 @@ int main()
         free((char *)ptr->ip);
         free((char *)ptr->depend_ip);
 
+        close(ptr->socket);
+
         // free cmd if it is a command (contains the command) or service-restart (contains service name)
         for (int i = 0; i < ptr->actions_count; i++) {
             if (strcmp(ptr->actions[i].name, "command") == 0) {
