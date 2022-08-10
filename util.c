@@ -431,6 +431,7 @@ int ping(const logger_t *logger,
     if ((bytes = sendto(sd, &send_pckt, sizeof(send_pckt), 0, (struct sockaddr *)&addr_ping, sizeof(addr_ping))) <= 0)
     {
         sprint_error(logger, "Unable to send: %s\n", strerror(errno));
+        close(epfd);
         return 0;
     }
 
