@@ -537,7 +537,6 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
     if (!config_read_file(&cfg, cfg_path))
     {
         print_error(logger, "%s:%d - %s\n", config_error_file(&cfg), config_error_line(&cfg), config_error_text(&cfg));
-        fflush(stderr);
         config_destroy(&cfg);
         
         return 0;
