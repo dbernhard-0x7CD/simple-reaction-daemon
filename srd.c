@@ -269,7 +269,7 @@ void run_check(check_arguments_t *args)
 
 #if DEBUG
         close(check->socket);
-        close(check->epoll_fd)
+        close(check->epoll_fd);
 #endif
     
         char current_time[32];
