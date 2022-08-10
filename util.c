@@ -407,7 +407,10 @@ int ping(const logger_t *logger,
 #pragma GCC diagnostic pop
 
     // insert sequence number
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-truncation"
     strncpy(&send_pckt.msg[addr_len + 1], seq_str, strlen(seq_str));
+#pragma GCC diagnostic pop
 
     send_pckt.msg[i] = 0; // terminator
 
