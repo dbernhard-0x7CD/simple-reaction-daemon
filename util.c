@@ -1,8 +1,6 @@
 #include <arpa/inet.h>
 #include <bits/types/struct_tm.h> 
 #include <errno.h>
-#include <fcntl.h>
-#include <resolv.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -14,6 +12,7 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/ip_icmp.h>
+#include <unistd.h>
 
 #include "util.h"
 
@@ -381,8 +380,8 @@ int ping(const logger_t *logger,
     struct timespec rcvd_time;
 
     // construct packet and send
-    bzero(&send_pckt, sizeof(send_pckt));
-    bzero(&rcv_pckt, sizeof(rcv_pckt));
+    memset(&send_pckt, 0, sizeof(send_pckt));
+    memset(&rcv_pckt, 0, sizeof(rcv_pckt));
 
     send_pckt.hdr.type = ICMP_ECHO;
     send_pckt.hdr.un.echo.sequence = icmp_msgs_count++;

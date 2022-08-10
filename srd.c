@@ -1,7 +1,6 @@
 #include <bits/types/struct_tm.h> 
 #include <errno.h>
 #include <stdio.h>
-#include <stdint.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <signal.h>
@@ -9,7 +8,6 @@
 #include <libconfig.h>
 #include <fts.h>
 #include <pthread.h>
-#include <sys/socket.h>
 
 // Our includes
 #include "util.h"

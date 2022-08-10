@@ -1,6 +1,8 @@
 #include "srd.h"
 #include "actions.h"
+#include "printing.h"
 struct timespec;
+struct sockaddr_in;
 
 #ifndef SRD_UTIL_H
 #define SRD_UTIL_H
