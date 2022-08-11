@@ -4,17 +4,15 @@
 
 * (Planned) 1.0
     * Support config name as dependencies
-    * Own ping
     * Print if a command is ill formed for sh
         * capture stderr?
     * `%prev_uptime` (print how long an IP was online for `down-again`)
-    * `up-start` one message if host is up
     * print to stdout action `stdout` with message
     * time test for actions: `command` versus `log`
-    * `%uptime` placeholder
-    * Fix `%lat_ms` not always beeing replaced
+    * `%uptime` placeholder (replaced when STATE_UP)
     * graph example
-    * TODO: test scenarios for all events (inside testfile)
+    * test scenarios for all events (inside testfile)
+    * test with no replacements done
     * support for ipv6
 
 <br />
@@ -24,7 +22,10 @@
     * datetime_format (from srd.conf) is regarded when printing the current time in stdout
     * Event `down-again` which runs if a previous ping succeeded and now fails
     * Fixed potential very rare race condition when printing
-    * Own ping implementation (running as root is no longer needed)
+    * Own ping implementation (running as root is no longer needed to ping)
+        * We now use approximately 2.5 times less CPU time (userspace and kernel times)
+    * Fix `%lat_ms` not always beeing replaced
+    * Make `datetime_format` optional in `srd.conf`
 
 * 0.0.5
     * new ERROR loglevel (nothing logged regarding connections)
