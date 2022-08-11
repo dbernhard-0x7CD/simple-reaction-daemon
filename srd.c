@@ -229,18 +229,6 @@ void run_check(check_arguments_t *args)
 
     pthread_setname_np(pthread_self(), check->ip);
 
-    /* We create a new socket per ping in DEBUG mode. 
-    * This allows to create a firewall rule to stop
-    * a new socket from connecting to simulate
-    *  a host beeing down.
-    */
- #ifndef DEBUG
-    // create socket
-    check->socket = create_socket(logger);
-    check->epoll_fd = create_epoll(check->socket);
-
-#endif
-
     // main loop: check connectivity repeatedly
     while (running)
     {
@@ -448,6 +436,22 @@ void signal_handler(int s)
 int check_connectivity(connectivity_check_t* cc)
 {
     int success = 0;
+
+    /* We create a new socket per ping in DEBUG mode. 
+    * This allows to create a firewall rule to stop
+    * a new socket from connecting to simulate
+    *  a host beeing down.
+    */
+ #ifndef DEBUG
+    // create socket
+    if ((cc->status & STATE_UP) == 0) {
+        // printf("new \n");
+        cc->socket = create_socket(logger);
+        cc->epoll_fd = create_epoll(cc->socket);
+    } else {
+        // printf("state is %d\n", cc->status);
+    }
+#endif
 
     int i;
     for (i = 0; i < cc->num_pings; i++) {
