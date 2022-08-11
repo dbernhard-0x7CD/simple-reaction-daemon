@@ -439,13 +439,17 @@ int ping(const logger_t *logger,
     if (num_ready < 0) {
         print_error(logger, "[%s]: Unable to receive: %s\n", address, strerror(errno));
 
+        *latency_s = -1.0;
+
         return 0;
     } else if (num_ready == 0) { // timeout
         clock_gettime(CLOCK_REALTIME, &rcvd_time);
 
         double diff = calculate_difference(sent_time, rcvd_time);
 
-        print_debug(logger, "[%s]: Timeout after %1.2f", address, diff * 1e3);
+        print_debug(logger, "[%s]: Timeout after %1.2fms\n", address, diff * 1e3);
+
+        *latency_s = -1.0;
         return 0;
     }
 
@@ -469,7 +473,11 @@ int ping(const logger_t *logger,
 
     int success = mem_diff == 0;
 
-    *latency_s = calculate_difference(sent_time, rcvd_time);
+    if (success) {
+        *latency_s = calculate_difference(sent_time, rcvd_time);
+    } else {
+        *latency_s = -1.0;
+    }
 
     return success;
 }
