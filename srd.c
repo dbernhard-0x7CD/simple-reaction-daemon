@@ -314,14 +314,14 @@ void run_check(check_arguments_t *args)
             return;
         }
         fflush(stdout);
-        print_debug(logger, "[%s]: determined state: %d\n", check->ip , check->status);
+        // print_debug(logger, "[%s]: determined state: %d\n", check->ip , check->status);
 
         // check if any action is required
         for (int i = 0; running && i < check->actions_count; i++)
         {
             action_t this_action = check->actions[i];
             
-            print_debug(logger, "[%s]: action: %s this_action.run %d\n", check->ip, this_action.name, this_action.run);
+            // print_debug(logger, "[%s]: action: %s this_action.run %d\n", check->ip, this_action.name, this_action.run);
 
             unsigned int state_match = check->status & this_action.run;
             int superior = (state_match >= this_action.run || this_action.run == STATE_ALL);
