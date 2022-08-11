@@ -417,14 +417,6 @@ int ping(const logger_t *logger,
     // Send the message
 #if DEBUG
     sprint_debug(logger, "[%s]: Message sent: %s\n", address, send_pckt.msg);
-
-    // print entire packet
-    unsigned char *pckt_ptr = (unsigned char *)&send_pckt;
-
-    for (i = 0; i < PACKETSIZE; i++)
-    {
-        sprint_debug(logger, "packet at %d: %d\n", i, pckt_ptr[i]);
-    }
 #endif
 
     // Start the clock
@@ -462,22 +454,12 @@ int ping(const logger_t *logger,
         printf("Socket %d got some data\n", events[0].data.fd);
 #endif
         recv(sd, &rcv_pckt, rcv_len, 0);
-        print_debug(logger, "Received: %s\n", rcv_pckt.msg);
     }
 
     clock_gettime(CLOCK_REALTIME, &rcvd_time);
 
     sprint_debug(logger, "[%s]: Read %d bytes with SEQ %d\n", address, 64, rcv_pckt.hdr.un.echo.sequence);
 
-#if DEBUG
-    unsigned char *rcvd_pckt_ptr = (unsigned char *)&rcv_pckt;
-
-    // print entire packet
-    for (i = 0; i < PACKETSIZE; i++)
-    {
-        printf("rcved message:[%d]: %d\n", i, rcvd_pckt_ptr[i]);
-    }
-#endif
     sprint_debug(logger, "[%s]: Message received: %s with code: %d\n", address, rcv_pckt.msg, rcv_pckt.hdr.code);
 
     // check if the message matches
