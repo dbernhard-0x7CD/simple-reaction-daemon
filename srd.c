@@ -289,7 +289,7 @@ void run_check(check_arguments_t *args)
         if (connected == 1)
         {
             if (check->status != STATE_UP) {
-                print_info(logger, "[%s]: Reachable %s\n", check->ip,  current_time);
+                sprint_info(logger, "[%s]: Reachable %s\n", check->ip,  current_time);
                 if (check->status & STATE_DOWN) {
                     check->status = STATE_UP_NEW;
                     prev_downtime = calculate_difference(previous_last_reply, now);
@@ -312,7 +312,7 @@ void run_check(check_arguments_t *args)
                 check->status = STATE_DOWN_NEW;
             }
 
-            print_info(logger, "[%s]: %s: Ping FAILED. Now for %0.3fs\n", check->ip, current_time, diff);
+            sprint_info(logger, "[%s]: %s: Ping FAILED. Now for %0.3fs\n", check->ip, current_time, diff);
         } else if (!running) {
             break; 
         } else {
