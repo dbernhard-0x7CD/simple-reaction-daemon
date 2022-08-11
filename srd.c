@@ -413,9 +413,6 @@ void run_check(check_arguments_t *args)
                     int r = log_to_file(logger, action_log->path, message, action_log->username);
                     if (r == 0) {
                         print_error(logger, "Unable to log to file %s\n", action_log->path);
-                        free((char *)message);
-                        kill(getpid(), SIGALRM);
-                        return;
                     }
                     
                     free((char *)message);

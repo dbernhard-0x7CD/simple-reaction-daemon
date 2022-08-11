@@ -182,7 +182,7 @@ int log_to_file(const logger_t* logger, const char *path, const char *message, c
 
     if (file == NULL)
     {
-        print_error(logger, "Unable to open file: %s\n", path);
+        print_error(logger, "Unable to open file: %s (Reason: %s)\n", path, strerror(errno));
         return 0;
     }
 
