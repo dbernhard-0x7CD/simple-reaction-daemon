@@ -551,7 +551,6 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
         return 0;
     }
 
-    const char *setting_loglevel;
     config_setting_t *setting;
     const char* ip_field;
 
@@ -625,6 +624,9 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
 
             // check if this is "srd.conf" (config_main)
             if (ends_with(cfg_path, config_main)) {
+
+#ifndef DEBUG
+                const char *setting_loglevel;
                 // loglevel of srd
                 if (config_lookup_string(&cfg, "loglevel", &setting_loglevel))
                 {
@@ -638,7 +640,7 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                 } else {
                     print_error(logger, "No loglevel defined in %s.\n", cfg_path);
                 }
-
+#endif
                 // datetime_format
                 const char* format;
                 if (config_lookup_string(&cfg, "datetime_format", &format)) {
