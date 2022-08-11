@@ -103,7 +103,7 @@ int main()
         args[i] = (check_arguments_t) { connectivity_checks, i, connectivity_targets };
         pthread_create(&threads[i], NULL, (void *)run_check, (void *)&args[i]);
     }
-    print_error(logger, "Started all target checks.\n");
+    print_error(logger, "Started all target checks (%d).\n", connectivity_targets);
 
     // used to await only specific signals
     sigset_t waitset;
