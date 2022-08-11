@@ -299,7 +299,7 @@ int to_sockaddr(const char* address, struct sockaddr_in* socket_addr) {
     return inet_pton(AF_INET, address, &(socket_addr->sin_addr));
 }
 
-int resolve_hostname(const char *hostname, struct sockaddr_in *socket_addr)
+int resolve_hostname(const logger_t* logger, const char *hostname, struct sockaddr_in *socket_addr)
 {
     struct addrinfo hint, *pai;
     int rv;
@@ -310,7 +310,7 @@ int resolve_hostname(const char *hostname, struct sockaddr_in *socket_addr)
 
     if ((rv = getaddrinfo(hostname, "http", &hint, &pai)) != 0)
     {
-        fprintf(stderr, "unable to get address info: %s\n", gai_strerror(rv));
+        sprint_error(logger, "[%s]: Unable to get address info: %s\n", hostname, gai_strerror(rv));
         return 0;
     }
 
@@ -368,9 +368,8 @@ int ping(const logger_t *logger,
     memset(&addr_ping, 0, sizeof(addr_ping));
     if (!to_sockaddr(address, &addr_ping)) {
         // could be a hostname
-        if (!resolve_hostname(address, &addr_ping)) {
-            print_error(logger, "Unable to get an IP from: %s\n", address);
-            return 0;
+        if (!resolve_hostname(logger, address, &addr_ping)) {
+            return (-1);
         }
     }
     addr_ping.sin_port = 0;
@@ -435,7 +434,7 @@ int ping(const logger_t *logger,
     if ((bytes = sendto(sd, &send_pckt, sizeof(send_pckt), 0, (struct sockaddr *)&addr_ping, sizeof(addr_ping))) <= 0)
     {
         sprint_error(logger, "Unable to send: %s\n", strerror(errno));
-        return 0;
+        return (-1);
     }
 
 #if DEBUG

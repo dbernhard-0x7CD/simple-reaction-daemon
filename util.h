@@ -57,8 +57,10 @@ double calculate_difference(struct timespec old, struct timespec new);
 int create_socket(logger_t* logger);
 
 /*
-* Pings the given adress and updates latency_s.
-* Returns 1 if successful, else 0.
+* Pings the given address and updates latency_s.
+* Returns 1 if the ping was successfully returned. 
+* If nothing was returned 0 is returned. Errors are
+* indicated by any negative value.
 */
 int ping(const logger_t *logger,
         const int sd,

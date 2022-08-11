@@ -316,8 +316,10 @@ void run_check(check_arguments_t *args)
         } else if (!running) {
             break; 
         } else {
-            print_info(logger, "Error when checking connectivity. (connected: %d)\n", connected);
-            kill(getpid(), SIGALRM);
+            sprint_error(logger, "[%s]: %s: Error when checking connectivity. (connected: %d)\n", check->ip, current_time, connected);
+
+            check->status = STATE_NONE;
+            
             return;
         }
         fflush(stdout);
@@ -453,6 +455,8 @@ int check_connectivity(connectivity_check_t* cc)
         if (ping_success == 1) {
             success = 1;
             break;
+        } else if (ping_success < 0) {
+            return (-1);
         }
     }
     if (i == cc->num_pings && success == 0) {
