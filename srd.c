@@ -280,17 +280,16 @@ void run_check(check_arguments_t *args)
         struct timespec previous_last_reply = check->timestamp_last_reply;
         if (connected == 1)
         {
-            if (check->status != STATE_UP) {
+            if ((check->status & STATE_UP) == 0) {
                 sprint_info(logger, "[%s]: Reachable %s\n", check->ip,  current_time);
                 if (check->status & STATE_DOWN) {
-                    check->status = STATE_UP_NEW;
                     prev_downtime = calculate_difference(previous_last_reply, now);
-                } else {
-                    check->status = STATE_UP;
                 }
+                check->status = STATE_UP_NEW;
             } else {
                 check->status = STATE_UP;
             }
+
             check->timestamp_last_reply = now;
             diff = 0;
         }
