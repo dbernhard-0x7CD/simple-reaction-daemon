@@ -33,6 +33,7 @@ char* default_gw;
 
 // format used for datetimes
 const char* datetime_format = "%Y-%m-%d %H:%M:%S";
+int use_custom_datetime_format = 0;
 
 // used for printing to stdout
 logger_t* logger;
@@ -183,7 +184,10 @@ int main()
     }
     free(connectivity_checks);
     free(default_gw);
-    free((char *) datetime_format);
+
+    if (use_custom_datetime_format) {
+        free((char *) datetime_format);
+    }
 
     pthread_mutex_destroy(&stdout_mut);
 
@@ -645,6 +649,7 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                 const char* format;
                 if (config_lookup_string(&cfg, "datetime_format", &format)) {
                     datetime_format = strdup(format);
+                    use_custom_datetime_format = 1;
                 }
             } // end if for "srd.conf"
 
