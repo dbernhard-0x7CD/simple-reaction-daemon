@@ -1,6 +1,6 @@
 # Simple Reaction Daemon
 
-This program allows to configure certain actions which will be executed if pings to a certain host fail/succeed for a given amount of time. Currently implemented actions are:
+This program allows to monitor hosts and define actions that will be executed if a ping to some host fail (or succeed). Currently implemented actions are:
 
 * restart another systemd-service (f.ex: systemd-networkd, iwd or wpa_supplicant)
 * log to a file
@@ -12,7 +12,7 @@ This program allows to configure certain actions which will be executed if pings
 It can be installed as a systemd service to run in the background (see Installation).
 Do not forget to enable and start (`systemctl enable srd`, `systemctl start srd` respectively) the service.
 
-The motivation for this service is to log disconnects (or the time an IP is reachable) or have some actions in place which may bring the device back online or act as a dead man's switch.
+The motivation for this service is to log disconnects (or the time an IP is reachable) and have some actions in place which may bring the device back online or act as a dead man's switch.
 
 <br />
 
@@ -35,7 +35,7 @@ There are two available installation methods:
 * ## Installation - ArchLinux
     * AUR: `[paru|yay|your-favourite-aur-helper] simple-reaction-daemon` 
     * Manual: <br />
-        Enter the folder `arch-pkg` and run `makepkg` and then you can install the packaged \*.tar.zst file (or simply run `makepkg -si`).
+    Enter the folder `arch-pkg` and run `makepkg` and then you can install the packaged \*.tar.zst file (or simply run `makepkg -si`).
 
 * ## Installation - Manual
 
@@ -46,7 +46,7 @@ There are two available installation methods:
 # Configuration
 
 The service is configured by so called **target files** in `/etc/srd/NAME.conf` (with arbitrary name) which follow the following format:
-They can be dependent on eachother by configuring `depends`.
+They can be dependent on eachother by configuring `depends`. If a dependency is unreachable then the current target won't be checked and no action will be taken.
 
 ```
 # destination IP
@@ -76,24 +76,24 @@ actions = (
 
 ```
 
-**destination**: IP or domain to ping regularly
+`destination`: IP or domain to ping regularly
     
 * Can also be `%gw` to ping the gateway
 * **Note**: this is currently only set at startup. So changes of the gateway are not yet supported
 
 <br />
 
-**period**: Delay between the pings in seconds
+`period`: Delay between the pings in seconds. Must be an integer.
 
 <br />
 
-**timeout**: Time to wait for a ping response in seconds
+`timeout`: Time to wait for a ping response in seconds. Must be an integer.
 
 <br />
 
-[optional] **num_pings**: Amount of sequential pings sent. Defaults to 1. This should be used if the period is high. If one of the pings succeeds we deem the host as UP.
+[optional] `num_pings`: Amount of sequential pings sent. Defaults to 1. This should be used if `period` is large. If one of the pings succeeds we deem the host as UP.
 
-**depends**: IP of another target. If the ping to depends is not successful, then this target won't get checked and no actions performed.
+`depends`: IP of another target (must be its own target). If the ping to depends is not successful, then this target won't get checked and no actions performed.
 
 * Can also be `%gw` to ping the gateway
 * **Note**: this is currently only set at startup. So changes of the gateway are not yet supported
@@ -116,10 +116,11 @@ See here for the exact format: [https://strftime.org/](https://strftime.org/)
 <br />
 
 ## Actions
-**Note**: The `delay` configuration denotes the amount of time passed (in seconds) since the last successful ping (`period + num_pings * timeout`) until this action is performed. `num_pings` is how many pings are sent in sequential order (only one has to succeed) and worst case takes `num_pings * timeout` time. This makes sense if you have a high period but you don't want to have a host labeled as 'down' if a ping gets lost.
+**Note**: The `delay` configuration denotes the amount of time passed (in seconds) since the last successful ping (at least `period + num_pings * timeout` seconds) until this action is performed. `num_pings` is how many pings are sent in sequential order (only one has to succeed) and worst case takes `num_pings * timeout` time. This makes sense if you have a high period but you don't want to have a host labeled as 'down' if a ping gets lost.
 
 ### Action **reboot**:
 
+* Reboots the current machine.
 ```
 {
     action = "reboot";
@@ -131,6 +132,7 @@ See here for the exact format: [https://strftime.org/](https://strftime.org/)
 
 ### Action **restart a service**:
 
+* Restarts the given systemd service.
 ```
 {
     action = "service-restart";
