@@ -314,8 +314,9 @@ void run_check(check_arguments_t *args)
             sprint_error(logger, "[%s]: %s: Error when checking connectivity. (connected: %d)\n", check->ip, current_time, connected);
 
             check->status = STATE_NONE;
-            
-            return;
+
+            sleep(check->period);
+            continue;
         }
         fflush(stdout);
         // print_debug(logger, "[%s]: determined state: %d\n", check->ip , check->status);
