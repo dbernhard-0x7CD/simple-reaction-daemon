@@ -437,7 +437,12 @@ int ping(const logger_t *logger,
     int num_ready = epoll_wait(epoll_fd, events, 1, timeout_s * 1e3);
 
     if (num_ready < 0) {
-        print_error(logger, "[%s]: Unable to receive: %s\n", address, strerror(errno));
+        // Do not print if we got interrupted
+        if (errno != EINTR) {
+            print_error(logger, "[%s]: Unable to receive: %s\n", address, strerror(errno));
+        } else {
+            // TODO: maybe return that an interrupt occured
+        }
 
         *latency_s = -1.0;
         
