@@ -1,13 +1,17 @@
 #include <bits/types/struct_tm.h> 
 #include <errno.h>
+#include <fcntl.h>
+#include <fts.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <libconfig.h>
 #include <signal.h>
 #include <string.h>
-#include <libconfig.h>
-#include <fts.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <pthread.h>
+
 
 // Our includes
 #include "util.h"
@@ -443,12 +447,10 @@ int check_connectivity(connectivity_check_t* cc)
     */
  #ifndef DEBUG
     // create socket
-    if ((cc->status & STATE_UP) == 0) {
-        // printf("new \n");
+    struct stat buffer;
+    if (cc->status & STATE_DOWN || fstat(cc->socket, &buffer) < 0 || fstat(cc->epoll_fd, &buffer) < 0) {
         cc->socket = create_socket(logger);
         cc->epoll_fd = create_epoll(cc->socket);
-    } else {
-        // printf("state is %d\n", cc->status);
     }
 #endif
 
@@ -574,6 +576,11 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
         if (*(cur_char) == '\0' || *cur_char == ',') {
 
             connectivity_check_t* cc = (connectivity_check_t* )malloc(sizeof(connectivity_check_t));
+
+            // initial values for a target
+            cc->socket = -1;
+            cc->epoll_fd = -1;
+
             int length = cur_char - cur_ip_start;
 
             // one more allocated, for null delimiter
