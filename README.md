@@ -155,7 +155,7 @@ See here for the exact format: [https://strftime.org/](https://strftime.org/)
 
 * Notes for `message`:
     * You can use `%ip` as a placeholder for the actual IP of the current target (if you use multiple destination IPs)
-    * When `run_if = "up-again"`: You can use `%sdt` (**s**tart **d**own**t**ime) as a placeholder for the start of the downtime 
+    * When `run_if = "up-new"`: You can use `%sdt` (**s**tart **d**own**t**ime) as a placeholder for the start of the downtime 
     * You can use `%lat_ms` as a placeholder for the latency in milliseconds
     * You can use `%downtime` as a placeholder for the downtime in days,hours, minutes and seconds
     * `%status` is a placeholder for `success` or `failed` depending if a ping succeeded
@@ -184,7 +184,7 @@ Or if he's **up**:
 ```
 * Notes for `cmd`
     * You can use `%ip` as a placeholder for the actual IP of the current target (if you use multiple destination IPs)
-    * When `run_if = "up-again"`: You can use `%sdt` (**s**tart **d**own**t**ime) as a placeholder for the start of the downtime 
+    * When `run_if = "up-new"`: You can use `%sdt` (**s**tart **d**own**t**ime) as a placeholder for the start of the downtime 
     * You can use `%lat_ms` as a placeholder for the latency in milliseconds
     * You can use `%downtime` as a placeholder for the downtime in days,hours, minutes and seconds
     * `%status` is a placeholder for `success` or `failed` depending if a ping succeeded
@@ -194,11 +194,11 @@ Or if he's **up**:
 ### Conditional actions - run_if
 Valid values for `run_if`:
 * `up` - Run everytime a ping succeeds (approximately every `period` seconds)
-* `up-again` (first ping successfull after one or more failed pings)
+* `up-new` (first ping successfull after one or more failed pings)
     * In this case `command.delay` denotes how long the downtime at least had to be to trigger this action
 * `down` (default)
     * After `command.delay` seconds this target is seen as down and this action executed
-* `down-again` Executes once if a target was reachable before and now isn't
+* `down-new` Executes once if a target was reachable before and now isn't
 * `always`
 
 <br />

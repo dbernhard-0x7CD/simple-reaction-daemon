@@ -278,7 +278,7 @@ void run_check(check_arguments_t *args)
         // downtime in seconds
         double diff;
 
-        // previous downtime; set when up-again
+        // previous downtime; set when up-new
         double prev_downtime = 0.0;
         
         struct timespec previous_last_reply = check->timestamp_last_reply;
@@ -703,9 +703,9 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                         this_action->run = STATE_UP;
                     } else if (strcmp(run_if_str, "always") == 0) {
                         this_action->run = STATE_ALL;
-                    } else if (strcmp(run_if_str, "up-again") == 0) {
+                    } else if (strcmp(run_if_str, "up-new") == 0) {
                         this_action->run = STATE_UP_NEW;
-                    } else if (strcmp(run_if_str, "down-again") == 0) {
+                    } else if (strcmp(run_if_str, "down-new") == 0) {
                         this_action->run = STATE_DOWN_NEW;
                     } else {
                         print_error(logger, "%s: Action %s is has unknown run_if: %s\n", cfg_path, action_name, run_if_str);
