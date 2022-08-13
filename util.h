@@ -54,7 +54,7 @@ double calculate_difference(struct timespec old, struct timespec new);
 /*
  * Creates a default socket used for pinging. 
  */
-int create_socket(logger_t* logger);
+int create_socket(const logger_t* logger);
 
 /*
 * Pings the given address and updates latency_s.

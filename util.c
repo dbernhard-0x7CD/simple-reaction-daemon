@@ -320,7 +320,7 @@ int resolve_hostname(const logger_t* logger, const char *hostname, struct sockad
     return 1;
 }
 
-int create_socket(logger_t* logger) {
+int create_socket(const logger_t* logger) {
     const int ttl = 255;
     int sd;
 
