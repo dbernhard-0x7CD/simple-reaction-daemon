@@ -276,7 +276,7 @@ void run_check(check_arguments_t *args)
         clock_gettime(CLOCK_REALTIME, &now);
 
         // downtime in seconds
-        double diff;
+        double downtime_s;
 
         // previous downtime; set when up-new
         double prev_downtime = 0.0;
@@ -295,11 +295,11 @@ void run_check(check_arguments_t *args)
             }
 
             check->timestamp_last_reply = now;
-            diff = 0;
+            downtime_s = 0;
         }
         else if (connected == 0)
         {
-            diff = calculate_difference(previous_last_reply, now);
+            downtime_s = calculate_difference(previous_last_reply, now);
             
             if (check->status & STATE_DOWN) {
                 check->status = STATE_DOWN;
@@ -307,7 +307,7 @@ void run_check(check_arguments_t *args)
                 check->status = STATE_DOWN_NEW;
             }
 
-            sprint_info(logger, "[%s]: %s: Ping FAILED. Now for %0.3fs\n", check->ip, current_time, diff);
+            sprint_info(logger, "[%s]: %s: Ping FAILED. Now for %0.3fs\n", check->ip, current_time, downtime_s);
         } else if (!running) {
             break; 
         } else {
@@ -333,7 +333,7 @@ void run_check(check_arguments_t *args)
 
             int state_up_new_diff = (this_action.run != STATE_UP_NEW || check->actions[i].delay <= prev_downtime);
 
-            int state_down_diff = (this_action.run != STATE_DOWN || check->actions[i].delay <= diff);
+            int state_down_diff = (this_action.run != STATE_DOWN || check->actions[i].delay <= downtime_s);
 
             // printf("\tstate_match: %d", state_match);
             // printf("\tsuperior: %d", superior);
@@ -379,7 +379,7 @@ void run_check(check_arguments_t *args)
                     if (check->status == STATE_UP_NEW) {
                         downtime = prev_downtime;
                     } else {
-                        downtime = diff; // we are still down (or up)
+                        downtime = downtime_s; // we are still down (or up)
                     }
 
                     copy.command = insert_placeholders(cmd->command, check, check->status, previous_last_reply, datetime_format, downtime, connected);
@@ -397,7 +397,7 @@ void run_check(check_arguments_t *args)
                     if (check->status == STATE_UP_NEW) {
                         downtime = prev_downtime;
                     } else {
-                        downtime = diff; // we are still down (or up)
+                        downtime = downtime_s; // we are still down (or up)
                     }
 
                     const char* message = insert_placeholders(action_log->message, check, check->status, previous_last_reply, datetime_format, downtime, connected);
