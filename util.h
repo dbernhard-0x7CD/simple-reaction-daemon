@@ -37,6 +37,13 @@ char *str_replace(const char *string, const char *substr, const char *replacemen
 char *get_default_gw();
 
 /*
+ * Converts seconds to a string in the following format:
+ * [%d days] %h:%m:%s. Where %d is only contained if it's
+ * more than one day.
+ */
+void seconds_to_string(int seconds, char* dt_string);
+
+/*
  * Writes the current time into str with the given format
  */
 void get_current_time(char *str, const int n, const char *format);
@@ -44,7 +51,7 @@ void get_current_time(char *str, const int n, const char *format);
 /*
  * Replaces all placeholders inside raw_message and returns a pointer to the updated string (which must be free'd).
  */
-char *insert_placeholders(const char *raw_message, const connectivity_check_t *check, const conn_state_t state, const struct timespec previous_last_reply, const char *datetime_format, const double diff, const int connected);
+char *insert_placeholders(const char *raw_message, const connectivity_check_t *check, const conn_state_t state, const struct timespec previous_last_reply, const char *datetime_format, const double downtime_s, const double uptime_s, const int connected);
 
 /*
  * Calculates the difference in seconds of old and new

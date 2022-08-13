@@ -277,6 +277,7 @@ void run_check(check_arguments_t *args)
 
         // downtime in seconds
         double downtime_s;
+        double uptime_s = -1.0;
 
         // previous downtime; set when up-new
         double prev_downtime = 0.0;
@@ -289,6 +290,8 @@ void run_check(check_arguments_t *args)
                 if (check->status & STATE_DOWN) {
                     prev_downtime = calculate_difference(previous_last_reply, now);
                 }
+                check->timestamp_first_reply = now;
+                
                 check->status = STATE_UP_NEW;
             } else {
                 check->status = STATE_UP;
@@ -296,6 +299,8 @@ void run_check(check_arguments_t *args)
 
             check->timestamp_last_reply = now;
             downtime_s = 0;
+
+            uptime_s = calculate_difference(check->timestamp_first_reply, now);
         }
         else if (connected == 0)
         {
@@ -382,7 +387,7 @@ void run_check(check_arguments_t *args)
                         downtime = downtime_s; // we are still down (or up)
                     }
 
-                    copy.command = insert_placeholders(cmd->command, check, check->status, previous_last_reply, datetime_format, downtime, connected);
+                    copy.command = insert_placeholders(cmd->command, check, check->status, previous_last_reply, datetime_format, downtime, uptime_s, connected);
                     
                     print_debug(logger, "\tCommand: %s\n", copy.command);
                     fflush(stdout);
@@ -400,7 +405,7 @@ void run_check(check_arguments_t *args)
                         downtime = downtime_s; // we are still down (or up)
                     }
 
-                    const char* message = insert_placeholders(action_log->message, check, check->status, previous_last_reply, datetime_format, downtime, connected);
+                    const char* message = insert_placeholders(action_log->message, check, check->status, previous_last_reply, datetime_format, downtime, uptime_s, connected);
 
                     int r = log_to_file(logger, action_log->path, message, action_log->username);
                     if (r == 0) {

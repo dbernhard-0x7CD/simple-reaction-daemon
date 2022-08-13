@@ -34,6 +34,9 @@ typedef struct connectivity_check_t
     // Timestamp of the last successfull ping
     struct timespec timestamp_last_reply;
 
+    // Timestamp of the first successfull ping
+    struct timespec timestamp_first_reply;
+
     // Count of actions if this target is not reachable
     int actions_count;
 

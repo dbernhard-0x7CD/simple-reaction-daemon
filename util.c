@@ -202,14 +202,46 @@ void get_current_time(char* str, const int n, const char* format) {
     strftime(str, n, format, &tm);
 }
 
+void seconds_to_string(int seconds, char* dt_string) {
+    int remainingSeconds = seconds;
+
+    int days = remainingSeconds / (60*60*24);
+    remainingSeconds = remainingSeconds % (60*60*24);
+    
+    int hours = remainingSeconds / (60*60);
+    remainingSeconds = remainingSeconds % (60*60);
+    
+    int minutes = remainingSeconds / 60;
+    int sec = remainingSeconds % 60;
+
+    if (days != 0) {
+        sprintf(dt_string, "%d days %02d:%02d:%02d", days, hours, minutes, sec);
+    } else { // exclude days
+        sprintf(dt_string, "%02d:%02d:%02d", hours, minutes, sec);
+    }
+}
+
 char* insert_placeholders(const char* raw_message, 
                         const connectivity_check_t* check,
                         const conn_state_t state,
                         const struct timespec previous_last_reply,
                         const char* datetime_format,
-                        const double diff,
+                        const double downtime,
+                        const double uptime,
                         const int connected) {
     char* message = strdup(raw_message);
+
+    // replace %uptime
+    if (state & STATE_UP) {
+        char dt_string[24];
+        seconds_to_string((int)uptime, dt_string);
+
+        const char* old = message;
+
+        message = str_replace(message, "%uptime", dt_string);
+
+        free((void*)old);
+    }
 
     // replace %sdt
     if (state == STATE_UP_NEW) {
@@ -228,23 +260,9 @@ char* insert_placeholders(const char* raw_message,
     // replace %downtime
     if (state == STATE_UP_NEW || state & STATE_DOWN) {
         // difference string
-        int remainingSeconds = (int) diff;
-
-        int days = remainingSeconds / (60*60*24);
-        remainingSeconds = remainingSeconds % (60*60*24);
         
-        int hours = remainingSeconds / (60*60);
-        remainingSeconds = remainingSeconds % (60*60);
-        
-        int minutes = remainingSeconds / 60;
-        int seconds = remainingSeconds % 60;
-
         char dt_string[24];
-        if (days != 0) {
-            sprintf(dt_string, "%d days %02d:%02d:%02d", days, hours, minutes, seconds);
-        } else { // exclude days
-            sprintf(dt_string, "%02d:%02d:%02d", hours, minutes, seconds);
-        }
+        seconds_to_string((int)downtime, dt_string);
         
         const char* old = message;
         message = str_replace(message, "%downtime", dt_string);
