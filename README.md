@@ -157,7 +157,7 @@ See here for the exact format: [https://strftime.org/](https://strftime.org/)
     * You can use `%ip` as a placeholder for the actual IP of the current target (if you use multiple destination IPs)
     * When `run_if = "up-new"`: You can use `%sdt` (**s**tart **d**own**t**ime) as a placeholder for the start of the downtime 
     * You can use `%lat_ms` as a placeholder for the latency in milliseconds
-    * You can use `%downtime` as a placeholder for the downtime in days,hours, minutes and seconds
+    * You can use `%downtime` as a placeholder for the downtime in days, hours, minutes and seconds
     * `%status` is a placeholder for `success` or `failed` depending if a ping succeeded
 * With `user` you can define the owner of the file
     * This is only set when creating the file
@@ -186,7 +186,7 @@ Or if he's **up**:
     * You can use `%ip` as a placeholder for the actual IP of the current target (if you use multiple destination IPs)
     * When `run_if = "up-new"`: You can use `%sdt` (**s**tart **d**own**t**ime) as a placeholder for the start of the downtime 
     * You can use `%lat_ms` as a placeholder for the latency in milliseconds
-    * You can use `%downtime` as a placeholder for the downtime in days,hours, minutes and seconds
+    * You can use `%downtime` as a placeholder for the downtime in days, hours, minutes and seconds
     * `%status` is a placeholder for `success` or `failed` depending if a ping succeeded
 
 <br />
