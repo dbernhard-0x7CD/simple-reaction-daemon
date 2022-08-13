@@ -63,8 +63,8 @@ int create_socket(const logger_t* logger);
 * indicated by any negative value.
 */
 int ping(const logger_t *logger,
-        const int sd,
-        const int epoll_fd,
+        int* sd,
+        int* epoll_fd,
         const char *adress,
         double *latency_s,
         const double timeout_s);

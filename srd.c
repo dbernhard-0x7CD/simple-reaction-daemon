@@ -441,23 +441,9 @@ int check_connectivity(connectivity_check_t* cc)
 {
     int success = 0;
 
-    /* We create a new socket per ping in DEBUG mode. 
-    * This allows to create a firewall rule to stop
-    * a new socket from connecting to simulate
-    *  a host beeing down.
-    */
- #ifndef DEBUG
-    // create socket
-    struct stat buffer;
-    if (cc->status & STATE_DOWN || fstat(cc->socket, &buffer) < 0 || fstat(cc->epoll_fd, &buffer) < 0) {
-        cc->socket = create_socket(logger);
-        cc->epoll_fd = create_epoll(cc->socket);
-    }
-#endif
-
     int i;
     for (i = 0; i < cc->num_pings; i++) {
-        int ping_success = ping(logger, cc->socket, cc->epoll_fd, cc->ip, &cc->latency, cc->timeout);
+        int ping_success = ping(logger, &cc->socket, &cc->epoll_fd, cc->ip, &cc->latency, cc->timeout);
 
         if (ping_success == 1) {
             success = 1;

@@ -353,8 +353,8 @@ int create_epoll(const int fd) {
 }
 
 int ping(const logger_t *logger,
-         const int sd,
-         const int epoll_fd,
+         int* sd,
+         int* epoll_fd,
          const char *address,
          double *latency_s,
          const double timeout_s)
@@ -423,18 +423,31 @@ int ping(const logger_t *logger,
     clock_gettime(CLOCK_REALTIME, &sent_time);
 
     int bytes;
-    if ((bytes = sendto(sd, &send_pckt, sizeof(send_pckt), 0, (struct sockaddr *)&addr_ping, sizeof(addr_ping))) <= 0)
-    {
-        sprint_error(logger, "Unable to send: %s\n", strerror(errno));
-        return (-1);
-    }
+    int tries = 0;
+
+    do {
+        bytes = sendto(*sd, &send_pckt, sizeof(send_pckt), 0, (struct sockaddr *)&addr_ping, sizeof(addr_ping));
+
+        if (bytes < 0) {
+            if (errno == EBADF && tries < 3) {
+                *sd = create_socket(logger);
+                *epoll_fd = create_epoll(*sd);
+            } else {
+                sprint_error(logger, "Unable to send: %s\n", strerror(errno));
+                return (-1);
+            }
+        } else {
+            break;
+        }
+        tries++;
+    } while(1);
 
 #if DEBUG
     sprint_debug(logger, "[%s]: Sent %d bytes with echo.id %d and SEQ %d\n", address, bytes, send_pckt.hdr.un.echo.id, send_pckt.hdr.un.echo.sequence);
 #endif
 
     struct epoll_event events[1];
-    int num_ready = epoll_wait(epoll_fd, events, 1, timeout_s * 1e3);
+    int num_ready = epoll_wait(*epoll_fd, events, 1, timeout_s * 1e3);
 
     if (num_ready < 0) {
         // Do not print if we got interrupted
@@ -446,8 +459,8 @@ int ping(const logger_t *logger,
 
         *latency_s = -1.0;
         
-        close(sd);
-        close(epoll_fd);
+        close(*sd);
+        close(*epoll_fd);
         return 0;
     } else if (num_ready == 0) { // timeout
         clock_gettime(CLOCK_REALTIME, &rcvd_time);
@@ -458,8 +471,8 @@ int ping(const logger_t *logger,
 
         *latency_s = -1.0;
 
-        close(sd);
-        close(epoll_fd);
+        close(*sd);
+        close(*epoll_fd);
         return 0;
     }
 
@@ -467,7 +480,7 @@ int ping(const logger_t *logger,
 #if DEBUG
         printf("Socket %d got some data\n", events[0].data.fd);
 #endif
-        recv(sd, &rcv_pckt, rcv_len, 0);
+        recv(*sd, &rcv_pckt, rcv_len, 0);
     }
 
     clock_gettime(CLOCK_REALTIME, &rcvd_time);
@@ -488,8 +501,8 @@ int ping(const logger_t *logger,
     } else {
         *latency_s = -1.0;
         
-        close(sd);
-        close(epoll_fd);
+        close(*sd);
+        close(*epoll_fd);
     }
 
     return success;
