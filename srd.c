@@ -281,8 +281,6 @@ void run_check(check_arguments_t *args)
 
         // previous downtime; set when up-new
         double prev_downtime = 0.0;
-
-        struct timespec prev_last_reply = check->timestamp_last_reply;
         
         if (connected == 1)
         {
@@ -311,6 +309,8 @@ void run_check(check_arguments_t *args)
                 check->status = STATE_DOWN;
             } else {
                 check->status = STATE_DOWN_NEW;
+
+                check->timestamp_first_failed = now;
             }
 
             sprint_info(logger, "[%s]: %s: Ping FAILED. Now for %0.3fs\n", check->ip, current_time, downtime_s);
@@ -388,7 +388,7 @@ void run_check(check_arguments_t *args)
                         downtime = downtime_s; // we are still down (or up)
                     }
 
-                    copy.command = insert_placeholders(cmd->command, check, check->status, prev_last_reply, datetime_format, downtime, uptime_s, connected);
+                    copy.command = insert_placeholders(cmd->command, check, check->status, check->timestamp_first_failed, datetime_format, downtime, uptime_s, connected);
                     
                     print_debug(logger, "\tCommand: %s\n", copy.command);
                     fflush(stdout);
@@ -406,7 +406,7 @@ void run_check(check_arguments_t *args)
                         downtime = downtime_s; // we are still down (or up)
                     }
 
-                    const char* message = insert_placeholders(action_log->message, check, check->status, prev_last_reply, datetime_format, downtime, uptime_s, connected);
+                    const char* message = insert_placeholders(action_log->message, check, check->status, check->timestamp_first_failed, datetime_format, downtime, uptime_s, connected);
 
                     int r = log_to_file(logger, action_log->path, message, action_log->username);
                     if (r == 0) {

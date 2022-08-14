@@ -34,8 +34,11 @@ typedef struct connectivity_check_t
     // Timestamp of the last successfull ping
     struct timespec timestamp_last_reply;
 
-    // Timestamp of the first successfull ping
+    // Timestamp of the first successfull ping. Set when we switch from any state to STATE_UP_NEW
     struct timespec timestamp_first_reply;
+
+    // Timestamp of the first failing ping, set when we switch from STATE_UP to STATE_DOWN_NEW
+    struct timespec timestamp_first_failed;
 
     // Count of actions if this target is not reachable
     int actions_count;
