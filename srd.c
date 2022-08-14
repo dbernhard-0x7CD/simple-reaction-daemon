@@ -303,7 +303,7 @@ void run_check(check_arguments_t *args)
         }
         else if (connected == 0)
         {
-            downtime_s = calculate_difference(check->timestamp_last_reply, now);
+            downtime_s = calculate_difference(check->timestamp_first_failed, now);
             
             if (check->status & STATE_DOWN) {
                 check->status = STATE_DOWN;
