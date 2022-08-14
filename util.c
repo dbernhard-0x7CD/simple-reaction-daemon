@@ -224,7 +224,7 @@ void seconds_to_string(int seconds, char* dt_string) {
 char* insert_placeholders(const char* raw_message, 
                         const connectivity_check_t* check,
                         const conn_state_t state,
-                        const struct timespec previous_last_reply,
+                        const struct timespec start_downtime,
                         const char* datetime_format,
                         const double downtime,
                         const double uptime,
@@ -247,7 +247,7 @@ char* insert_placeholders(const char* raw_message,
     if (state == STATE_UP_NEW) {
         char str_time[32];
         struct tm time;
-        localtime_r(&previous_last_reply.tv_sec, &time);
+        localtime_r(&start_downtime.tv_sec, &time);
 
         strftime(str_time, 32, datetime_format, &time);
 

@@ -51,7 +51,7 @@ void get_current_time(char *str, const int n, const char *format);
 /*
  * Replaces all placeholders inside raw_message and returns a pointer to the updated string (which must be free'd).
  */
-char *insert_placeholders(const char *raw_message, const connectivity_check_t *check, const conn_state_t state, const struct timespec previous_last_reply, const char *datetime_format, const double downtime_s, const double uptime_s, const int connected);
+char *insert_placeholders(const char *raw_message, const connectivity_check_t *check, const conn_state_t state, const struct timespec start_downtime, const char *datetime_format, const double downtime_s, const double uptime_s, const int connected);
 
 /*
  * Calculates the difference in seconds of old and new
