@@ -281,17 +281,18 @@ void run_check(check_arguments_t *args)
 
         // previous downtime; set when up-new
         double prev_downtime = 0.0;
+
+        struct timespec prev_last_reply = check->timestamp_last_reply;
         
-        struct timespec previous_last_reply = check->timestamp_last_reply;
         if (connected == 1)
         {
             if ((check->status & STATE_UP) == 0) {
                 sprint_info(logger, "[%s]: Reachable %s\n", check->ip,  current_time);
                 if (check->status & STATE_DOWN) {
-                    prev_downtime = calculate_difference(previous_last_reply, now);
+                    prev_downtime = calculate_difference(check->timestamp_last_reply, now);
                 }
                 check->timestamp_first_reply = now;
-                
+
                 check->status = STATE_UP_NEW;
             } else {
                 check->status = STATE_UP;
@@ -304,7 +305,7 @@ void run_check(check_arguments_t *args)
         }
         else if (connected == 0)
         {
-            downtime_s = calculate_difference(previous_last_reply, now);
+            downtime_s = calculate_difference(check->timestamp_last_reply, now);
             
             if (check->status & STATE_DOWN) {
                 check->status = STATE_DOWN;
@@ -387,7 +388,7 @@ void run_check(check_arguments_t *args)
                         downtime = downtime_s; // we are still down (or up)
                     }
 
-                    copy.command = insert_placeholders(cmd->command, check, check->status, previous_last_reply, datetime_format, downtime, uptime_s, connected);
+                    copy.command = insert_placeholders(cmd->command, check, check->status, prev_last_reply, datetime_format, downtime, uptime_s, connected);
                     
                     print_debug(logger, "\tCommand: %s\n", copy.command);
                     fflush(stdout);
@@ -405,7 +406,7 @@ void run_check(check_arguments_t *args)
                         downtime = downtime_s; // we are still down (or up)
                     }
 
-                    const char* message = insert_placeholders(action_log->message, check, check->status, previous_last_reply, datetime_format, downtime, uptime_s, connected);
+                    const char* message = insert_placeholders(action_log->message, check, check->status, prev_last_reply, datetime_format, downtime, uptime_s, connected);
 
                     int r = log_to_file(logger, action_log->path, message, action_log->username);
                     if (r == 0) {
