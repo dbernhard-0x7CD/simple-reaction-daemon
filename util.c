@@ -244,7 +244,7 @@ char* insert_placeholders(const char* raw_message,
     }
 
     // replace %sdt
-    if (state == STATE_UP_NEW) {
+    if (state == STATE_UP_NEW || state & STATE_DOWN) {
         char str_time[32];
         struct tm time;
         localtime_r(&start_downtime.tv_sec, &time);
