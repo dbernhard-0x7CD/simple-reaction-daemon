@@ -302,9 +302,7 @@ void run_check(check_arguments_t *args)
             uptime_s = calculate_difference(check->timestamp_first_reply, now);
         }
         else if (connected == 0)
-        {
-            downtime_s = calculate_difference(check->timestamp_first_failed, now);
-            
+        {   
             if (check->status & STATE_DOWN) {
                 check->status = STATE_DOWN;
             } else {
@@ -312,6 +310,8 @@ void run_check(check_arguments_t *args)
 
                 check->timestamp_first_failed = now;
             }
+
+            downtime_s = calculate_difference(check->timestamp_first_failed, now);
 
             sprint_info(logger, "[%s]: %s: Ping FAILED. Now for %0.3fs\n", check->ip, current_time, downtime_s);
         } else if (!running) {
