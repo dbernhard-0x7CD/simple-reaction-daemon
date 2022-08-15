@@ -1,11 +1,13 @@
 #include <arpa/inet.h>
 #include <bits/types/struct_tm.h> 
 #include <errno.h>
+#include <fcntl.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
 #include <time.h>
 #include <math.h>
 #include <net/if.h>
@@ -451,7 +453,12 @@ int ping(const logger_t *logger,
                 *sd = create_socket(logger);
                 *epoll_fd = create_epoll(*sd);
             } else {
-                sprint_error(logger, "Unable to send: %s\n", strerror(errno));
+                struct stat info;
+
+                int res = fstat(*sd, &info);
+
+                sprint_error(logger, "Unable to send on socket %d: %s. fstat returned %d\n", *sd, strerror(errno), res);
+
                 return (-1);
             }
         } else {
