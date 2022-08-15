@@ -309,6 +309,8 @@ void run_check(check_arguments_t *args)
                 check->status = STATE_DOWN_NEW;
 
                 check->timestamp_first_failed = now;
+
+                uptime_s = calculate_difference(check->timestamp_first_reply, check->timestamp_last_reply);
             }
 
             downtime_s = calculate_difference(check->timestamp_first_failed, now);
