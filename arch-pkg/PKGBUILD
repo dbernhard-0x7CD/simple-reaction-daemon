@@ -31,8 +31,6 @@ build() {
     cd "${pkgname}"
     git checkout -q ${_srctag}
 
-    git submodule init
-    git submodule update
     make
 }
 
