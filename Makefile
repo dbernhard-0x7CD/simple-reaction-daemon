@@ -8,6 +8,7 @@ CFLAGS = -O3 -Wall -Wextra -pthread -lrt \
 		-lm \
 		-D_GNU_SOURCE \
 		# -DDEBUG \
+		# -fsanitize=address
 
 all: srd
 
