@@ -166,8 +166,8 @@ If a host is **down**:
 {
     action = "command";
     delay = 10;
-    user = "root";
-    cmd = "echo \"DOWN at `date`\" >> /var/log/srd.log";
+    user = "REPLACE-ME";
+    cmd = "notify-send \"DOWN at %now\"";
 }
 ```
 Or if he's **up**:
@@ -175,8 +175,8 @@ Or if he's **up**:
 {
     action = "command";
     run_if = "up";
-    user = "root";
-    cmd = "echo \"UP at `date`\" >> /var/log/srd.log";
+    user = "REPLACE-ME";
+    cmd = "notify-send \"UP at %now\"";
 }
 ```
 * Notes for `cmd`:
@@ -268,10 +268,10 @@ timeout = 10
 
 actions = ( 
     {   
-        action = "command";
-        delay = 60; 
-        user = "REPLACE-ME!";
-        cmd = "echo \"`date`: %ip is down\" >> PATH_WHICH_EXISTS/vpn_clients_avail.log";
+        action = "log";
+        delay = 60;
+        path = "PATH/vpn_clients_pings.log";
+        message = "%now: ip failed ping. Now for %downtime (Since %sdt).";
     }
 )
 
@@ -284,7 +284,7 @@ Here's the file to check the gateway. This is used to not check the vpn clients 
 destination = "%gw"
 
 # Period of the pings in s
-period = 5
+period = 30
 
 # timeout in seconds of one ping
 timeout = 5
