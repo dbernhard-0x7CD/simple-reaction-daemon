@@ -65,12 +65,12 @@ actions = (
     {
         action = "reboot";
         # delay in seconds
-        delay = 1800;
+        delay = 1800; # 1/2 hour
     },
     {
         action = "service-restart";
         name = "systemd-networkd.service";
-        delay = 60;
+        delay = 60; # 1 minutes
     }
 )
 
