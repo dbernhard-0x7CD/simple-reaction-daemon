@@ -46,7 +46,7 @@ There are two available installation methods:
 # Configuration
 
 The service is configured by so called **target files** in `/etc/srd/NAME.conf` (with arbitrary name) which follow the following format:
-They can be dependent on eachother by configuring `depends`. If a dependency is unreachable then the current target won't be checked and no action will be taken.
+They can be dependent on eachother by configuring `depends`. If a dependency is unreachable then the current target won't be checked and no action *for this target* will be taken.
 
 ```
 # destination IP
@@ -154,13 +154,10 @@ See here for the exact format: [https://strftime.org/](https://strftime.org/)
 ```
 
 * Notes for `message`:
-    * You can use `%ip` as a placeholder for the actual IP of the current target (if you use multiple destination IPs)
-    * When `run_if = "up-new"`: You can use `%sdt` (**s**tart **d**own**t**ime) as a placeholder for the start of the downtime 
-    * You can use `%lat_ms` as a placeholder for the latency in milliseconds
-    * You can use `%downtime` as a placeholder for the downtime in days, hours, minutes and seconds
-    * `%status` is a placeholder for `success` or `failed` depending if a ping succeeded
+    * For placeholders see [here](#placeholders)
 * With `user` you can define the owner of the file
     * This is only set when creating the file
+
 
 ### Action - **execute arbitrary command as a user**:
 
@@ -182,12 +179,8 @@ Or if he's **up**:
     cmd = "echo \"UP at `date`\" >> /var/log/srd.log";
 }
 ```
-* Notes for `cmd`
-    * You can use `%ip` as a placeholder for the actual IP of the current target (if you use multiple destination IPs)
-    * When `run_if = "up-new"`: You can use `%sdt` (**s**tart **d**own**t**ime) as a placeholder for the start of the downtime 
-    * You can use `%lat_ms` as a placeholder for the latency in milliseconds
-    * You can use `%downtime` as a placeholder for the downtime in days, hours, minutes and seconds
-    * `%status` is a placeholder for `success` or `failed` depending if a ping succeeded
+* Notes for `cmd`:
+    * For placeholders see [here](#placeholders)
 
 <br />
 
@@ -201,11 +194,32 @@ Valid values for `run_if`:
 * `down-new` Executes once if a target was reachable before and now isn't
 * `always`
 
+### Placeholders
+Currently supported by `command.cmd` and `log.msg`:
+
+Always available:
+* `%ip` is the actual IP of the current target
+* `%status` is `success` or `failed` depending on the result of the ping
+* `%now` is the current time formatted like `datetime_format` defined in srd.conf (See [here](#srdconf))
+* `%lat_ms` is the latency (in milliseconds) of the ping. It's `-1.0` if the ping failed or timed out
+
+<br />
+
+The supported placeholders depend on `run_if`:
+* `%sdt` (**s**tart **d**own**t**ime) is the timestamp (in `datetime_format` format defined in [srd.conf](#srdconf)) from the first ping that failed
+    * available for run_if = `down`, `down-new`, `up-new` 
+* `%downtime` for the downtime in days, hours, minutes and seconds
+    * available for run_if = `down`, `down-new`, `up-new`
+* `%uptime` for the uptime in days, hours, minutes and seconds
+    * available for run_if = `up`, `up-new`
+
+
+
 <br />
 
 # Use case - wireguard VPN
 
-If you have a wireguard VPN with a dynamic IP it'll disconnect if the IP of the server changes. 
+If you have a wireguard VPN with a DNS entry but dynamic IP it'll disconnect if the IP of the server changes. 
 
 Using srd you can mitigate this with the following *target file*:
 
