@@ -195,7 +195,7 @@ Valid values for `run_if`:
 * `always`
 
 ### Placeholders
-Currently supported by `command.cmd` and `log.msg`:
+Currently supported by `command.cmd` and `log.message`:
 
 Always available:
 * `%ip` is the actual IP of the current target
