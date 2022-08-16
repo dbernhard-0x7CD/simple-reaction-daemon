@@ -92,7 +92,6 @@ int main()
     }
 #endif
 
-    print_info(logger, "Connectivity Targets: %d\n", connectivity_targets);
     print_debug(logger, "default gateway %s\n", default_gw);
     
     fflush(stdout);
