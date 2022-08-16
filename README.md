@@ -211,7 +211,7 @@ The supported placeholders depend on `run_if`:
 * `%downtime` for the downtime in days, hours, minutes and seconds
     * available for run_if = `down`, `down-new`, `up-new`
 * `%uptime` for the uptime in days, hours, minutes and seconds
-    * available for run_if = `up`, `up-new`
+    * available for run_if = `up`, `up-new`, `down-new` (duration between first successfull ping and latest succesfull ping)
 
 
 

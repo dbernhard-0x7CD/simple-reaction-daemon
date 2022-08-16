@@ -234,7 +234,7 @@ char* insert_placeholders(const char* raw_message,
     char* message = strdup(raw_message);
 
     // replace %uptime
-    if (state & STATE_UP) {
+    if ((state & STATE_UP) || (state == STATE_DOWN_NEW)) {
         char dt_string[24];
         seconds_to_string((int)uptime, dt_string);
 
