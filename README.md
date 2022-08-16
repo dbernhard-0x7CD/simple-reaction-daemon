@@ -93,7 +93,7 @@ actions = (
 
 [optional] `num_pings`: Amount of sequential pings sent. Defaults to 1. This should be used if `period` is large. If one of the pings succeeds we deem the host as UP.
 
-`depends`: IP of another target (must be its own target). If the ping to depends is not successful, then this target won't get checked and no actions performed.
+[optional] `depends`: IP of another target (must be its own target). If the ping to depends is not successful, then this target won't get checked and no actions performed.
 
 * Can also be `%gw` to ping the gateway
 * **Note**: this is currently only set at startup. So changes of the gateway are not yet supported
