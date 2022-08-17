@@ -449,7 +449,7 @@ int ping(const logger_t *logger,
         bytes = sendto(*sd, &send_pckt, sizeof(send_pckt), 0, (struct sockaddr *)&addr_ping, sizeof(addr_ping));
 
         if (bytes < 0) {
-            if (errno == EBADF && tries < 3) {
+            if ((errno == EBADF || errno == ENOTSOCK) && tries < 3) {
                 *sd = create_socket(logger);
                 *epoll_fd = create_epoll(*sd);
             } else {
