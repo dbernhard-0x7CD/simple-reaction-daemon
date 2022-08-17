@@ -352,7 +352,7 @@ void run_check(check_arguments_t *args)
                                     state_down_diff;
             if (should_run)
             {
-                print_info(logger, "[%s]: Performing action: %s\n", check->ip, check->actions[i].name);
+                sprint_info(logger, "[%s]: Performing action: %s\n", check->ip, check->actions[i].name);
 
                 if (strcmp(this_action.name, "service-restart") == 0)
                 {
@@ -360,11 +360,11 @@ void run_check(check_arguments_t *args)
                 }
                 else if (strcmp(this_action.name, "reboot") == 0)
                 {
-                    print_info(logger, "[%s]: Sending restart signal\n", check->ip);
+                    sprint_info(logger, "[%s]: Sending restart signal\n", check->ip);
                     int res = restart_system(logger);
 
                     if (res == 0) { // unable to restart
-                        print_error(logger, "Unable to restart using dbus. Will try command\n");
+                        sprint_error(logger, "Unable to restart using dbus. Will try command\n");
 
                         const char* cmd = "reboot";
                         action_cmd_t cmd_reboot;
@@ -372,7 +372,7 @@ void run_check(check_arguments_t *args)
 
                         run_command(logger, &cmd_reboot);
                     } else {
-                        print_info(logger, "[%s]: Reboot scheduled. \n", check->ip);
+                        sprint_info(logger, "[%s]: Reboot scheduled. \n", check->ip);
                     }
                 }
                 else if (strcmp(this_action.name, "command") == 0)
@@ -391,7 +391,7 @@ void run_check(check_arguments_t *args)
 
                     copy.command = insert_placeholders(cmd->command, check, check->status, check->timestamp_first_failed, datetime_format, downtime, uptime_s, connected);
                     
-                    print_debug(logger, "\tCommand: %s\n", copy.command);
+                    sprint_debug(logger, "\tCommand: %s\n", copy.command);
                     fflush(stdout);
 
                     run_command(logger, &copy);
@@ -411,19 +411,19 @@ void run_check(check_arguments_t *args)
 
                     int r = log_to_file(logger, action_log->path, message, action_log->username);
                     if (r == 0) {
-                        print_error(logger, "[%s]: Unable to log to file %s\n", check->ip ,action_log->path);
+                        sprint_error(logger, "[%s]: Unable to log to file %s\n", check->ip ,action_log->path);
                     }
                     
                     free((char *)message);
                 }
                 else
                 {
-                    print_error(logger, "[%s]: This action is NOT yet implemented: %s\n", check->ip, this_action.name);
+                    sprint_error(logger, "[%s]: This action is NOT yet implemented: %s\n", check->ip, this_action.name);
                 } 
             }
         } // end for loop. (to check if any action has to be taken)
 
-        print_debug(logger, "[%s]: Sleeping for %d seconds...\n\n", check->ip, check->period);
+        sprint_debug(logger, "[%s]: Sleeping for %d seconds...\n\n", check->ip, check->period);
         fflush(stdout);
 
         if (running) {
