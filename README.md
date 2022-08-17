@@ -157,6 +157,7 @@ See here for the exact format: [https://strftime.org/](https://strftime.org/)
     * For placeholders see [here](#placeholders)
 * With `user` you can define the owner of the file
     * This is only set when creating the file
+* `path` supports the [placeholder](#placeholders) `%ip`
 
 
 ### Action - **execute arbitrary command as a user**:

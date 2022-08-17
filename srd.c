@@ -777,7 +777,11 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                         config_destroy(&cfg);
                         return 0;
                     } else {
-                        action_log->path = strdup(path);
+                        path = strdup(path);
+
+                        action_log->path = str_replace(path, "%ip", cc->ip);
+
+                        free((char*)path);
                     }
 
                     const char* message;
