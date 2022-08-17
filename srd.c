@@ -430,6 +430,11 @@ void run_check(check_arguments_t *args)
             sleep(check->period);
         }
     }
+
+    // this should never happen
+    if (running) {
+        sprint_error(logger, "[%s]: ERROR: shutting this target check down.\n", check->ip);
+    }
 }
 
 void signal_handler(int s)
