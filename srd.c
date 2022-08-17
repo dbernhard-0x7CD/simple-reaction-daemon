@@ -575,6 +575,14 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
             cc->socket = -1;
             cc->epoll_fd = -1;
 
+            struct timespec time_zero;
+            time_zero.tv_nsec = 0;
+            time_zero.tv_sec = 0;
+
+            cc->timestamp_first_failed = time_zero;
+            cc->timestamp_first_reply = time_zero;
+            cc->timestamp_last_reply = time_zero;
+
             int length = cur_char - cur_ip_start;
 
             // one more allocated, for null delimiter
