@@ -4,28 +4,34 @@
 
 * (Planned) 1.0
     * Support config name as dependencies
+    * CLI mode (run one check interactively)
     * Print if a command is ill formed for sh
         * capture stderr?
-    * `%prev_uptime` (print how long an IP was online for `down-again`)
     * print to stdout action `stdout` with message
     * time test for actions: `command` versus `log`
-    * `%uptime` placeholder (replaced when STATE_UP)
     * graph example
     * test scenarios for all events (inside testfile)
     * test with no replacements done
+    * test timeseries.conf (also example_configs)
     * support for ipv6
+    * header for logs (usefull for creating csv's)
 
 <br />
 
-* [WIP] 0.0.6
-    * `%status` placeholder for `success` or `failed` depending if the ping was answered or not
-    * datetime_format (from srd.conf) is regarded when printing the current time in stdout
-    * Event `down-again` which runs if a previous ping succeeded and now fails
-    * Fixed potential very rare race condition when printing
+* 0.0.6 (Released on XX.08.2022)
     * Own ping implementation (running as root is no longer needed to ping)
         * We now use approximately 2.5 times less CPU time (userspace and kernel times)
+    * `%status` placeholder for `success` or `failed` depending if the ping was answered or not
+    * `datetime_format` (from srd.conf) is regarded when printing the current time in stdout
+    * Event `down-again` which runs if a previous ping succeeded and now fails
+    * Fixed potential very rare race condition when printing
     * Fix `%lat_ms` not always beeing replaced
     * Make `datetime_format` optional in `srd.conf`
+    * `up-new` actions are triggered at startup
+    * `%uptime` placeholder
+    * `down-again`, `up-again` renamed to `down-new` and`up-new`
+    * Update README.md
+    * Support `%ip` placeholder in log.path
 
 * 0.0.5
     * new ERROR loglevel (nothing logged regarding connections)
