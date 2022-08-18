@@ -388,6 +388,7 @@ int ping(const logger_t *logger,
     memset(&addr_ping, 0, sizeof(addr_ping));
     if (!to_sockaddr(address, &addr_ping)) {
         // could be a hostname
+        print_debug(logger, "Trying as a hostname: %s\n", address);
         if (!resolve_hostname(logger, address, &addr_ping)) {
             return (-1);
         }
