@@ -18,7 +18,8 @@
 
 <br />
 
-* 0.0.6 (Released on XX.08.2022)
+* 0.0.6 (Released on 19.08.2022)
+    * **Breaking**: `down-again`, `up-again` renamed to `down-new` and`up-new`
     * Own ping implementation (running as root is no longer needed to ping)
         * We now use approximately 2.5 times less CPU time (userspace and kernel times)
     * `%status` placeholder for `success` or `failed` depending if the ping was answered or not
@@ -29,7 +30,6 @@
     * Make `datetime_format` optional in `srd.conf`
     * `up-new` actions are triggered at startup
     * `%uptime` placeholder
-    * `down-again`, `up-again` renamed to `down-new` and`up-new`
     * Update README.md
     * Support `%ip` placeholder in log.path
 
