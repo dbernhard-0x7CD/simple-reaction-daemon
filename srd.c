@@ -66,8 +66,16 @@ int main()
 
     if (default_gw == NULL) {
         print_error(logger, "Unable to get default gateway\n");
+
+        /*
+        * We only exit if not in DEBUG mode.
+        */
+#ifndef DEBUG
         pthread_mutex_destroy(&stdout_mut);
         return EXIT_FAILURE;
+#else
+        default_gw = "127.0.0.1";
+#endif
     }
 
     // load configuration files for connectivity targets
