@@ -21,7 +21,7 @@
 
 char *const configd_path = "/etc/srd/";
 char *const config_main = "/srd.conf";
-char *const version = "0.0.6";
+char *const version = "0.0.7-dev";
 
 // application configuration
 enum loglevel loglevel = LOGLEVEL_DEBUG;
