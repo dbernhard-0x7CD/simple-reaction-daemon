@@ -18,6 +18,9 @@
 
 <br />
 
+* 0.0.7 (Released on XX.09.2022)
+    * Allow development without gateway
+
 * 0.0.6 (Released on 19.08.2022)
     * **Breaking**: `down-again`, `up-again` renamed to `down-new` and`up-new`
     * Own ping implementation (running as root is no longer needed to ping)
