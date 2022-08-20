@@ -153,7 +153,7 @@ int run_command(const logger_t* logger, const action_cmd_t *cmd)
 
         while (fgets(buf, sizeof(buf), fp) != NULL)
         {
-            sprint_info(logger, "Command output: %s", buf);
+            sprint_debug(logger, "Command output: %s", buf);
         }
 
         pclose(fp);
