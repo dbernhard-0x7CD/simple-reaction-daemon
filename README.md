@@ -111,7 +111,7 @@ Also `datetime_format` is configurable, by default it's:
 ```
 datetime_format = "%Y-%m-%d %H:%M:%S"
 ```
-See here for the exact format: [https://strftime.org/](https://strftime.org/)
+See here for the exact format: [https://cplusplus.com/reference/ctime/strftime/](https://cplusplus.com/reference/ctime/strftime/)
 
 <br />
 
