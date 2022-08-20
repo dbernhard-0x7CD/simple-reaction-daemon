@@ -59,6 +59,11 @@ char *insert_placeholders(const char *raw_message, const connectivity_check_t *c
 double calculate_difference(struct timespec old, struct timespec new);
 
 /*
+ * Calculates the difference in milliseconds of old and new.
+ */
+double calculate_difference_ms(struct timespec old, struct timespec new);
+
+/*
  * Creates a default socket used for pinging. 
  */
 int create_socket(const logger_t* logger);

@@ -315,6 +315,10 @@ double calculate_difference(struct timespec old, struct timespec new) {
     return (new.tv_sec - old.tv_sec) + (new.tv_nsec - old.tv_nsec) / 1.0e9;
 }
 
+double calculate_difference_ms(struct timespec old, struct timespec new) {
+    return (new.tv_sec - old.tv_sec) * 1e3 + (new.tv_nsec - old.tv_nsec) / 1.0e6;
+}
+
 int to_sockaddr(const char* address, struct sockaddr_in* socket_addr) {
     return inet_pton(AF_INET, address, &(socket_addr->sin_addr));
 }

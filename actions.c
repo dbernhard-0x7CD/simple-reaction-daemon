@@ -9,6 +9,7 @@
 
 #include "actions.h"
 #include "printing.h"
+#include "util.h"
 
 int restart_system(const logger_t* logger)
 {
@@ -122,7 +123,7 @@ finish:
     return r >= 0;
 }
 
-int run_command(const logger_t* logger, const action_cmd_t *cmd)
+int run_command(const logger_t* logger, const action_cmd_t *cmd, const uint32_t timeout_ms)
 {
     FILE *fp;
     int pid = fork();
@@ -163,7 +164,36 @@ int run_command(const logger_t* logger, const action_cmd_t *cmd)
     else
     {
         // await child
-        waitpid(pid, NULL, WUNTRACED);
+        int res;
+        struct timespec start;
+        clock_gettime(CLOCK_REALTIME, &start);
+        struct timespec now;
+
+        const uint32_t delta_ms = 1e2; // 100ms
+        uint32_t diff_ms = 0;
+
+        while ((res = waitpid(pid, NULL, WNOHANG)) == 0) {
+            if (res < 0) {
+                sprint_error(logger, "Unable to wait for pid %d: %s\n", pid, strerror(errno));
+
+                return 0;
+            }
+            usleep(delta_ms); // sleep 100ms
+
+            clock_gettime(CLOCK_REALTIME, &now);
+
+            diff_ms = calculate_difference_ms(start, now);
+
+            if (diff_ms >= timeout_ms) {
+                sprint_error(logger, "Command %s took too long. Killing it and continuing.\n", cmd->command);
+
+                kill(pid, SIGTERM);
+                waitpid(pid, NULL, WUNTRACED);
+                return 0;
+            }
+        }
+
+        return res == pid;
     }
 
     return 1;

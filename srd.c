@@ -378,7 +378,7 @@ void run_check(check_arguments_t *args)
                         action_cmd_t cmd_reboot;
                         cmd_reboot.command = cmd;
 
-                        run_command(logger, &cmd_reboot);
+                        run_command(logger, &cmd_reboot, 5e3);
                     } else {
                         sprint_info(logger, "[%s]: Reboot scheduled. \n", check->ip);
                     }
@@ -402,7 +402,7 @@ void run_check(check_arguments_t *args)
                     sprint_debug(logger, "\tCommand: %s\n", copy.command);
                     fflush(stdout);
 
-                    run_command(logger, &copy);
+                    run_command(logger, &copy, check->period * 1e3 - 300);
 
                     free((char*)copy.command);
                 } else if (strcmp(this_action.name, "log") == 0) { 

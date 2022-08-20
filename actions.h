@@ -2,6 +2,8 @@
 #ifndef SRD_ACTIONS_H
 #define SRD_ACTIONS_H
 
+#include <stdint.h>
+
 #include "printing.h"
 
 /*
@@ -77,10 +79,11 @@ int restart_service(const logger_t* logger, const char* name, const char* ip);
 int restart_system(const logger_t* logger);
 
 /*
- * Runs the given command.
+ * Runs the given command. If it does not exit within timeout_ms milliseconds
+ * it'll be killed.
  * Returns 1 if success, else 0.
  */
-int run_command(const logger_t *logger, const action_cmd_t* cmd);
+int run_command(const logger_t *logger, const action_cmd_t* cmd, const uint32_t timeout_ms);
 
 /*
 * Logs the given message to the given file by appending.
