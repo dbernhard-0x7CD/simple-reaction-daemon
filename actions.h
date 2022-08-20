@@ -45,6 +45,7 @@ typedef struct action_t {
 typedef struct action_cmd_t {
     const char* command;
     const char* user;
+    uint32_t timeout;
 } action_cmd_t;
 
 /*

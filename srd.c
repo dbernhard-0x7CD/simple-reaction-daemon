@@ -402,7 +402,7 @@ void run_check(check_arguments_t *args)
                     sprint_debug(logger, "\tCommand: %s\n", copy.command);
                     fflush(stdout);
 
-                    run_command(logger, &copy, check->period * 1e3 - 300);
+                    run_command(logger, &copy, copy.timeout * 1e3);
 
                     free((char*)copy.command);
                 } else if (strcmp(this_action.name, "log") == 0) { 
@@ -776,6 +776,14 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                         int username_len = strlen(username) + 1;
                         cmd->user = (char *) malloc(username_len * sizeof(char));
                         strcpy((char *)cmd->user, username);
+                    }
+
+                    // load timeout
+                    int timeout;
+                    if (!config_setting_lookup_int(action, "timeout", &timeout)) {
+                        timeout = UINT32_MAX;
+                    } else {
+                        cmd->timeout = timeout;
                     }
 
                     this_action->object = cmd;
