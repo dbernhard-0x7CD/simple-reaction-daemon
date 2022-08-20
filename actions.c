@@ -125,8 +125,6 @@ finish:
 int run_command(const logger_t* logger, const action_cmd_t *cmd)
 {
     FILE *fp;
-    char buf[1024];
-
     int pid = fork();
 
     if (pid < 0)
@@ -136,6 +134,9 @@ int run_command(const logger_t* logger, const action_cmd_t *cmd)
     }
     else if (pid == 0)
     {
+        // I am the child
+        char buf[strlen(cmd->command) + 1];
+
         // switch to user
         if (cmd->user != NULL)
         {
