@@ -305,7 +305,15 @@ char* insert_placeholders(const char* raw_message,
     char str_now[32];
     get_current_time(str_now, 32, datetime_format);
     old = message;
+    struct timespec now;
+
+    clock_gettime(CLOCK_REALTIME, &now);
+    int ms = (int)(now.tv_nsec * 1e-6);
+    char ms_str[3];
+    snprintf(ms_str, 3, "%03d", ms);
+    
     message = str_replace(message, "%now", str_now);
+    message = str_replace(message, "%ms", ms_str);
     free((void*)old);
 
     return message;

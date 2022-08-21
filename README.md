@@ -112,6 +112,7 @@ Also `datetime_format` is configurable, by default it's:
 datetime_format = "%Y-%m-%d %H:%M:%S"
 ```
 See here for the exact format: [https://cplusplus.com/reference/ctime/strftime/](https://cplusplus.com/reference/ctime/strftime/)
+* **Addition**: `%%ms` (really double percentage sign) is replaced with the milliseconds of the current time 
 
 <br />
 
