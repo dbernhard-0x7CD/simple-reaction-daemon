@@ -309,8 +309,8 @@ char* insert_placeholders(const char* raw_message,
 
     clock_gettime(CLOCK_REALTIME, &now);
     int ms = (int)(now.tv_nsec * 1e-6);
-    char ms_str[3];
-    snprintf(ms_str, 3, "%03d", ms);
+    char ms_str[4];
+    snprintf(ms_str, 4, "%03d", ms);
     
     message = str_replace(message, "%now", str_now);
     message = str_replace(message, "%ms", ms_str);
