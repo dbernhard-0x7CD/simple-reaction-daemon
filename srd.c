@@ -445,7 +445,7 @@ void run_check(check_arguments_t *args)
             int32_t wait_time = calculate_difference_ms(now, next_period);
 
             if (wait_time < 0) {
-                print_error(logger, "Behind in schedule. Check your period and your timeouts of the actions.\n");
+                print_error(logger, "[%s]: Behind in schedule. Check your period and your timeouts of the actions.\n", check->ip);
 
                 next_period = timespec_add(now, period);
 
