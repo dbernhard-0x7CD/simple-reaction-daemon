@@ -1,11 +1,14 @@
 #include <errno.h>
 #include <systemd/sd-bus.h>
 #include <pwd.h>
-#include <stdlib.h>
-#include <unistd.h>
+#include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
+#include <time.h>
+#include <unistd.h>
 
 #include "actions.h"
 #include "printing.h"
@@ -125,7 +128,14 @@ finish:
 
 int run_command(const logger_t* logger, const action_cmd_t *cmd, const uint32_t timeout_ms)
 {
-    FILE *fp;
+    int stdin[2];
+    int stdout[2];
+
+    if (pipe(stdin) || pipe(stdout)) {
+        sprint_error(logger, "Unable to create pipe to child\n");
+        return 0;
+    }
+
     int pid = fork();
 
     if (pid < 0)
@@ -136,7 +146,14 @@ int run_command(const logger_t* logger, const action_cmd_t *cmd, const uint32_t 
     else if (pid == 0)
     {
         // I am the child
-        char buf[strlen(cmd->command) + 1];
+
+        // i'm not writing to stdin (thus close it)
+        close(stdin[1]);
+        dup2(stdin[0], 0);
+
+        // i'm not reading from stdout (thus close it)
+        close(stdout[0]);
+        dup2(stdout[1], 1);
 
         // switch to user
         if (cmd->user != NULL)
@@ -145,25 +162,26 @@ int run_command(const logger_t* logger, const action_cmd_t *cmd, const uint32_t 
             uid_t uid = a->pw_uid;
             setuid(uid);
         }
+       
+        execl("/bin/sh", "sh", "-c", cmd->command, NULL);
 
-        fp = popen(cmd->command, "r");
-        if (fp == NULL)
-        {
-            sprint_error(logger, "Failed to run command\n");
-            return EXIT_FAILURE;
-        }
-
-        while (fgets(buf, sizeof(buf), fp) != NULL)
-        {
-            sprint_debug(logger, "Command output: %s", buf);
-        }
-
-        pclose(fp);
-        exit(0);
+        sprint_error(logger, "execl failed.\n");
+        return 0;
     }
     else
     {
+        const size_t buf_size = 32;
+        char buf[buf_size];
+
+        close(stdout[1]);
+        close(stdin[0]);
+
         // await child
+        while (read(stdout[0], buf, buf_size) > 0)
+        {
+            sprint_debug(logger, "Command output: %s\n", buf);
+        }
+
         int res;
         struct timespec start;
         clock_gettime(CLOCK_REALTIME, &start);
