@@ -129,9 +129,8 @@ finish:
 int run_command(const logger_t* logger, const action_cmd_t *cmd, const uint32_t timeout_ms)
 {
     int stdin[2];
-    int stdout[2];
 
-    if (pipe(stdin) || pipe(stdout)) {
+    if (pipe(stdin)) {
         sprint_error(logger, "Unable to create pipe to child\n");
         return 0;
     }
@@ -146,15 +145,9 @@ int run_command(const logger_t* logger, const action_cmd_t *cmd, const uint32_t 
     else if (pid == 0)
     {
         // I am the child
-
-        // i'm not writing to stdin (thus close it)
-        close(stdin[1]);
-        dup2(stdin[0], 0);
-
-        // i'm not reading from stdout (thus close it)
-        close(stdout[0]);
-        dup2(stdout[1], 1);
-
+        
+        dup2(stdin[1], 1);
+        
         // switch to user
         if (cmd->user != NULL)
         {
@@ -173,14 +166,15 @@ int run_command(const logger_t* logger, const action_cmd_t *cmd, const uint32_t 
         const size_t buf_size = 32;
         char buf[buf_size];
 
-        close(stdout[1]);
-        close(stdin[0]);
+        // i'm not writing
+        close(stdin[1]);
 
         // await child
-        while (read(stdout[0], buf, buf_size) > 0)
+        while (read(stdin[0], buf, buf_size) > 0)
         {
             sprint_debug(logger, "Command output: %s\n", buf);
         }
+        close(stdin[0]);
 
         int res;
         struct timespec start;
