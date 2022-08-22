@@ -798,11 +798,11 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                     }
 
                     // load timeout
-                    int32_t timeout;
-                    if (!config_setting_lookup_int(action, "timeout", &timeout)) {
-                        timeout = INT32_MAX;
+                    int32_t timeout_s;
+                    if (!config_setting_lookup_int(action, "timeout", &timeout_s)) {
+                        cmd->timeout = 60*60*24; // 1 day
                     } else {
-                        cmd->timeout = timeout;
+                        cmd->timeout = timeout_s;
                     }
 
                     this_action->object = cmd;
