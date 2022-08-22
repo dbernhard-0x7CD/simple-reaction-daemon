@@ -61,7 +61,13 @@ double calculate_difference(struct timespec old, struct timespec new);
 /*
  * Calculates the difference in milliseconds of old and new.
  */
-double calculate_difference_ms(struct timespec old, struct timespec new);
+int32_t calculate_difference_ms(struct timespec old, struct timespec new);
+
+/*
+ * Adds to timespec structs.
+ */
+struct timespec timespec_add(const struct timespec t1, const struct timespec t2);
+
 
 /*
  * Creates a default socket used for pinging. 

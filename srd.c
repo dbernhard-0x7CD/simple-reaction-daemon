@@ -236,9 +236,13 @@ void run_check(check_arguments_t *args)
 
     // store time to calculate how long a ping took
     struct timespec now;
-    clock_gettime(CLOCK_REALTIME, &check->timestamp_last_reply);
+    clock_gettime(CLOCK_REALTIME, &now);
 
     pthread_setname_np(pthread_self(), check->ip);
+
+    const struct timespec period = { .tv_nsec = 0, .tv_sec = check->period };
+
+    struct timespec next_period = timespec_add(now, period);
 
     // main loop: check connectivity repeatedly
     while (running)
@@ -435,9 +439,23 @@ void run_check(check_arguments_t *args)
         fflush(stdout);
 
         if (running) {
-            sleep(check->period);
+            clock_gettime(CLOCK_REALTIME, &now);
+
+            int32_t wait_time = calculate_difference_ms(now, next_period);
+
+            if (wait_time < 0) {
+                print_error(logger, "Behind in schedule. Check your period and your timeouts of the actions.\n");
+
+                next_period = timespec_add(now, period);
+
+                continue;
+            }
+
+            next_period = timespec_add(next_period, period);
+
+            usleep(wait_time * 1000);
         }
-    }
+    } // end check while(running)
 
     // this should never happen
     if (running) {

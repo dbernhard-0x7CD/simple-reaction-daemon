@@ -323,8 +323,22 @@ double calculate_difference(struct timespec old, struct timespec new) {
     return (new.tv_sec - old.tv_sec) + (new.tv_nsec - old.tv_nsec) / 1.0e9;
 }
 
-double calculate_difference_ms(struct timespec old, struct timespec new) {
-    return (new.tv_sec - old.tv_sec) * 1e3 + (new.tv_nsec - old.tv_nsec) / 1.0e6;
+int32_t calculate_difference_ms(struct timespec old, struct timespec new) {
+    return (new.tv_sec - old.tv_sec) * 1000 + (new.tv_nsec - old.tv_nsec) / 1000000;
+}
+
+struct timespec timespec_add(const struct timespec t1, const struct timespec t2) {
+    struct timespec result = t1;
+
+    result.tv_sec += t2.tv_sec;
+    result.tv_nsec += t2.tv_nsec;
+
+    if (result.tv_nsec / (long)1e9 != 0) {
+        result.tv_sec++;
+        result.tv_nsec = result.tv_nsec % (int)1e9;
+    }
+
+    return result;
 }
 
 int to_sockaddr(const char* address, struct sockaddr_in* socket_addr) {
