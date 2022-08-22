@@ -798,9 +798,9 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                     }
 
                     // load timeout
-                    int timeout;
+                    int32_t timeout;
                     if (!config_setting_lookup_int(action, "timeout", &timeout)) {
-                        timeout = UINT32_MAX;
+                        timeout = INT32_MAX;
                     } else {
                         cmd->timeout = timeout;
                     }
