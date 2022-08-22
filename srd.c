@@ -213,7 +213,8 @@ int is_available(connectivity_check_t **ccs, const int n, char const *ip, int st
         connectivity_check_t* ptr = ccs[i];
 
         if (strcmp(ip, ptr->ip) == 0) {
-            if (ptr->status == STATE_UP) {
+            // status could be STATE_UP or STATE_UP_NEW
+            if (ptr->status & STATE_UP) {
                 return 1;
             }
             if (ptr->status == STATE_NONE && strict == 0) {
