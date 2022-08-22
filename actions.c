@@ -140,7 +140,7 @@ int run_command(const logger_t* logger, const action_cmd_t *cmd, const uint32_t 
 
     if (pid < 0)
     {
-        sprint_error(logger, "Unable to fork.\n");
+        sprint_error(logger, "Unable to fork. %s\n", strerror(errno));
         return 0;
     }
     else if (pid == 0)
