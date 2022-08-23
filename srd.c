@@ -466,10 +466,7 @@ void run_check(check_arguments_t *args)
         }
     } // end check while(running)
 
-    // this should never happen
-    if (running) {
-        sprint_error(logger, "[%s]: ERROR: shutting this target check down.\n", check->ip);
-    }
+    sprint_debug(logger, "[%s]: Shutting this target check down.\n", check->ip);
 }
 
 void signal_handler(int s)
