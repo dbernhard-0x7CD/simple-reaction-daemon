@@ -439,7 +439,7 @@ void run_check(check_arguments_t *args)
                 }
                 else
                 {
-                    sprint_error(logger, "[%s]: This action is NOT yet implemented: %s\n", check->ip, this_action.name);
+                    sprint_error(logger, "[%s]: This action is NOT implemented: %s\n", check->ip, this_action.name);
                 } 
             }
         } // end for loop. (to check if any action has to be taken)
