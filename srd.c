@@ -256,7 +256,10 @@ void run_check(check_arguments_t *args)
 
             if (available == 0) {
                 sprint_info(logger, "[%s]: Awaiting dependency %s\n", check->ip, check->depend_ip);
+
+                next_period = timespec_add(next_period, period);
                 sleep(check->period);
+                
                 continue;
             } else if (available < 0) {
                 sprint_error(logger, "[%s]: Bad check: %s\n", check->ip, check->depend_ip);
