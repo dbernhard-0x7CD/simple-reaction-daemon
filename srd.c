@@ -232,14 +232,14 @@ int is_available(connectivity_check_t **ccs, const int n, char const *ip, int st
 
 void run_check(check_arguments_t *args)
 {
-    int idx = args->idx;
+    const int idx = args->idx;
     connectivity_check_t* check = args->connectivity_checks[idx];
 
-    // store time to calculate how long a ping took
+    pthread_setname_np(pthread_self(), check->ip);
+
+    // store time to calculate the time of the next ping
     struct timespec now;
     clock_gettime(CLOCK_REALTIME, &now);
-
-    pthread_setname_np(pthread_self(), check->ip);
 
     const struct timespec period = { .tv_nsec = 0, .tv_sec = check->period };
 
