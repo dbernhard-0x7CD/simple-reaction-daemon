@@ -680,13 +680,14 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                 // loglevel of srd
                 if (config_lookup_string(&cfg, "loglevel", &setting_loglevel))
                 {
-                    loglevel = to_loglevel(setting_loglevel);
+                    int new_loglevel = to_loglevel(setting_loglevel);
                     
-                    if (loglevel == INVALID_LOGLEVEL)
+                    if (new_loglevel == INVALID_LOGLEVEL)
                     {
                         print_error(logger, "%s contains unknown loglevel: %s\n", cfg_path, setting_loglevel);
                         return 0;
                     }
+                    loglevel = new_loglevel;
                 } else {
                     print_error(logger, "No loglevel defined in %s.\n", cfg_path);
                 }
