@@ -169,19 +169,12 @@ int run_command(const logger_t* logger, const action_cmd_t *cmd, const uint32_t 
         // i'm not writing
         close(stdin[1]);
 
-        // await child
-        while (read(stdin[0], buf, buf_size) > 0)
-        {
-            sprint_debug(logger, "Command output: %s\n", buf);
-        }
-        close(stdin[0]);
-
         int res;
         struct timespec start;
         clock_gettime(CLOCK_REALTIME, &start);
         struct timespec now;
 
-        const uint32_t delta_ms = 1e2; // 100ms
+        const uint32_t delta_ms = 1e5; // 100ms
         uint32_t diff_ms = 0;
 
         while ((res = waitpid(pid, NULL, WNOHANG)) == 0) {
@@ -204,6 +197,12 @@ int run_command(const logger_t* logger, const action_cmd_t *cmd, const uint32_t 
                 return 0;
             }
         }
+
+        while (read(stdin[0], buf, buf_size) > 0)
+        {
+            sprint_debug(logger, "Command output: %s\n", buf);
+        }
+        close(stdin[0]);
 
         return res == pid;
     }
