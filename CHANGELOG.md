@@ -9,7 +9,6 @@
         * capture stderr?
     * print to stdout action `stdout` with message
     * time test for actions: `command` versus `log`
-    * graph example
     * test scenarios for all events (inside testfile)
     * test with no replacements done
     * test timeseries.conf (also example_configs)
@@ -19,8 +18,12 @@
 <br />
 
 * 0.0.7 (Released on XX.09.2022)
+    * Pings now follow period more closely (and no longer shift)
+        * Previously some shift occured as we waited `period` time between pings (and did not include actions which may take some time)
+    * `timeout` for the `command` action
     * Allow development without gateway
     * `datetime_format` (defined in srd.c) will replace `%%ms` (really double percentage sign) with the milliseconds of the current time 
+    * Fix no message when `loglevel` is invalid
 
 * 0.0.6 (Released on 19.08.2022)
     * **Breaking**: `down-again`, `up-again` renamed to `down-new` and`up-new`
