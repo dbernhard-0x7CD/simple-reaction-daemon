@@ -343,7 +343,12 @@ void run_check(check_arguments_t *args)
 
             check->status = STATE_NONE;
 
-            sleep(check->period);
+            clock_gettime(CLOCK_REALTIME, &now);
+
+            next_period = timespec_add(now, period);
+            int32_t wait_time = calculate_difference_ms(now, next_period);
+
+            usleep(wait_time * 1000);
             continue;
         }
         fflush(stdout);
