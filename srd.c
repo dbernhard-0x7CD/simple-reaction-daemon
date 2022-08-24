@@ -268,18 +268,8 @@ void run_check(check_arguments_t *args)
                 return;
             }
         }
-
-#if DEBUG
-        check->socket = create_socket(logger);
-        check->epoll_fd = create_epoll(check->socket);
-#endif
-
         int connected = check_connectivity(check);
 
-#if DEBUG
-        close(check->socket);
-        close(check->epoll_fd);
-#endif
     
         char current_time[32];
         struct tm tm;
@@ -492,7 +482,16 @@ int check_connectivity(connectivity_check_t* cc)
 
     int i;
     for (i = 0; i < cc->num_pings; i++) {
+#if DEBUG
+        cc->socket = create_socket(logger);
+        cc->epoll_fd = create_epoll(cc->socket);
+#endif
         int ping_success = ping(logger, &cc->socket, &cc->epoll_fd, cc->ip, &cc->latency, cc->timeout);
+
+#if DEBUG
+        close(cc->socket);
+        close(cc->epoll_fd);
+#endif
 
         if (ping_success == 1) {
             success = 1;
