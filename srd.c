@@ -449,16 +449,16 @@ void run_check(check_arguments_t *args)
             }
         } // end for loop. (to check if any action has to be taken)
 
-        sprint_debug(logger, "[%s]: Sleeping for %d seconds...\n\n", check->ip, check->period);
         fflush(stdout);
 
         if (running) {
+            // calculate time until next check should be performed
             clock_gettime(CLOCK_REALTIME, &now);
 
             int32_t wait_time = calculate_difference_ms(now, next_period);
 
             if (wait_time < 0) {
-                print_error(logger, "[%s]: Behind in schedule. Check your period and your timeouts of the actions.\n", check->ip);
+                print_error(logger, "[%s]: Behind in schedule by %d ms. Check your period and your timeouts of the actions.\n", check->ip, wait_time);
 
                 next_period = timespec_add(now, period);
 
