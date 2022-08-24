@@ -301,3 +301,35 @@ actions = (
     }
 )
 ```
+
+# Use case - Latency logging
+
+By logging into an influx database we can visualize the latencies to various hosts over time:
+
+![Image with latencies of hosts over time](./doc/usage-example/latency.png "Latency / Time")
+
+
+```
+# destination IP
+destination = "10.10.0.1,[Some more hosts]"
+
+# Period of the pings in s
+period = 10
+
+# timeout for one ping in s
+timeout = 2
+
+# Only execute if gateway is actually available
+depends = "%gw"
+
+num_pings = 2
+
+actions = (
+    {
+        action = "command";
+        cmd = " curl --silent -i -XPOST 'http://INFLUX_HOST:8086/api/v2/write?bucket=BUCKET_NAME&org=ORG_NAME&precision=s' -H \"Authorization: Token REDACTED\" --data-binary \"latency,host=%ip value=%lat_ms `date +%s`\"";
+        run_if = "always";
+        timeout = 2;
+    }
+)
+```
