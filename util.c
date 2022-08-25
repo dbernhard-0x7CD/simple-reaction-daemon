@@ -479,6 +479,8 @@ int ping(const logger_t *logger,
             if ((errno == EBADF || errno == ENOTSOCK) && tries < 3) {
                 *sd = create_socket(logger);
                 *epoll_fd = create_epoll(*sd);
+
+                sprint_debug(logger, "Created new socket for %s\n", address);
             } else {
                 struct stat info;
 
