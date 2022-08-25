@@ -506,7 +506,7 @@ int ping(const logger_t *logger,
     if (num_ready < 0) {
         // Do not print if we got interrupted
         if (errno != EINTR) {
-            print_error(logger, "[%s]: Unable to receive: %s\n", address, strerror(errno));
+            print_debug(logger, "[%s]: Unable to receive: %s\n", address, strerror(errno));
         } else {
             // TODO: maybe return that an interrupt occured
         }
