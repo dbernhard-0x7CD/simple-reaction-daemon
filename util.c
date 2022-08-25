@@ -544,13 +544,11 @@ int ping(const logger_t *logger,
     sprint_debug(logger, "[%s]: Message received: %s with code: %d\n", address, rcv_pckt.msg, rcv_pckt.hdr.code);
 
     // check if the message matches
-    int mem_diff = memcmp(send_pckt.msg, rcv_pckt.msg, 56);
+    int is_exact_match = memcmp(send_pckt.msg, rcv_pckt.msg, 56) == 0;
 
-    sprint_debug(logger, "[%s]: difference: %d\n", address, mem_diff);
+    sprint_debug(logger, "[%s]: is_exact_match: %d\n", address, is_exact_match);
 
-    int success = mem_diff == 0;
-
-    if (success) {
+    if (is_exact_match) {
         *latency_s = calculate_difference(sent_time, rcvd_time);
     } else {
         *latency_s = -1.0;
@@ -559,5 +557,5 @@ int ping(const logger_t *logger,
         close(*epoll_fd);
     }
 
-    return success;
+    return is_exact_match;
 }
