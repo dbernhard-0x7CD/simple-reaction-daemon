@@ -195,13 +195,21 @@ char *get_default_gw()
     return NULL;
 }
 
-void get_current_time(char* str, const int n, const char* format) {
+void get_current_time(char* str, const int str_len, const char* format) {
     struct tm tm;
+    struct timespec now;
+    clock_gettime(CLOCK_REALTIME, &now);
     time_t t = time(NULL);
     
     localtime_r(&t, &tm);
 
-    strftime(str, n, format, &tm);
+    int ms = (int)(now.tv_nsec * 1e-6);
+    char ms_str[4];
+    snprintf(ms_str, 4, "%03d", ms);
+
+    char* ms_replaced = str_replace(format, "%%ms", ms_str);
+
+    strftime(str, str_len, ms_replaced, &tm);
 }
 
 void seconds_to_string(int seconds, char* dt_string) {

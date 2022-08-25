@@ -44,9 +44,10 @@ char *get_default_gw();
 void seconds_to_string(int seconds, char* dt_string);
 
 /*
- * Writes the current time into str with the given format
+ * Writes the current time into str with the given format.
+ * str_len denotes the maximum length str may be (including nul terminator).
  */
-void get_current_time(char *str, const int n, const char *format);
+void get_current_time(char *str, const int str_len, const char *format);
 
 /*
  * Replaces all placeholders inside raw_message and returns a pointer to the updated string (which must be free'd).

@@ -272,18 +272,7 @@ void run_check(check_arguments_t *args)
 
     
         char current_time[32];
-        struct tm tm;
-        time_t t = time(NULL);
-        localtime_r(&t, &tm);
-
-        clock_gettime(CLOCK_REALTIME, &now);
-        int ms = (int)(now.tv_nsec * 1e-6);
-        char ms_str[4];
-        snprintf(ms_str, 4, "%03d", ms);
-        
-        char* ms_replaced = str_replace(datetime_format, "%%ms", ms_str);
-
-        strftime(current_time, 32, ms_replaced, &tm);
+        get_current_time(current_time, 32, datetime_format);
 
         // downtime in seconds
         double downtime_s;
