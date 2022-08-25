@@ -1,15 +1,12 @@
-#include <bits/types/struct_tm.h> 
 #include <errno.h>
-#include <fcntl.h>
 #include <fts.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 #include <libconfig.h>
 #include <signal.h>
+#include <stdint.h>
 #include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <pthread.h>
 
 
