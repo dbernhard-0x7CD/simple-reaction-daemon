@@ -197,10 +197,15 @@ int run_command(const logger_t* logger, const action_cmd_t *cmd, const uint32_t 
             }
         }
 
-        while (read(stdin[0], buf, buf_size) > 0)
+        int bytes_read;
+        sprint_debug(logger, "Command output: ");
+        while ((bytes_read = read(stdin[0], buf, buf_size - 1)) > 0)
         {
-            sprint_debug(logger, "Command output: %s\n", buf);
+            buf[bytes_read] = '\0';
+            sprint_debug_raw(logger, "%s", buf);
         }
+        sprint_debug_raw(logger, "\n");
+
         close(stdin[0]);
 
         return res == pid;

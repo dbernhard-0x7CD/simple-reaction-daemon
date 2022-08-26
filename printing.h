@@ -39,6 +39,12 @@ typedef struct logger_t
         sprint(logger, "DEBUG: " __VA_ARGS__); \
     }
 
+#define sprint_debug_raw(logger, ...)              \
+    if (*logger->level <= LOGLEVEL_DEBUG)      \
+    {                                          \
+        sprint(logger, __VA_ARGS__); \
+    }
+
 #define sprint_info(logger, ...)         \
     if (*logger->level <= LOGLEVEL_INFO) \
     {                                    \
