@@ -195,11 +195,12 @@ char *get_default_gw()
     return NULL;
 }
 
-void get_current_time(char* str, const int str_len, const char* format) {
+void get_current_time(char* str, const int str_len, const char* format, time_t* timestamp) {
     struct tm tm;
     struct timespec now;
+
     clock_gettime(CLOCK_REALTIME, &now);
-    time_t t = time(NULL);
+    time_t t = now.tv_sec;
     
     localtime_r(&t, &tm);
 
@@ -210,6 +211,10 @@ void get_current_time(char* str, const int str_len, const char* format) {
     char* ms_replaced = str_replace(format, "%%ms", ms_str);
 
     strftime(str, str_len, ms_replaced, &tm);
+
+    if (timestamp != NULL) {
+        *timestamp = t;
+    }
 }
 
 void seconds_to_string(int seconds, char* dt_string) {
@@ -311,17 +316,14 @@ char* insert_placeholders(const char* raw_message,
 
     // replace %now
     char str_now[32];
-    get_current_time(str_now, 32, datetime_format);
+    time_t timestamp;
+    get_current_time(str_now, 32, datetime_format, &timestamp);
     old = message;
-    struct timespec now;
-
-    clock_gettime(CLOCK_REALTIME, &now);
-    int ms = (int)(now.tv_nsec * 1e-6);
-    char ms_str[4];
-    snprintf(ms_str, 4, "%03d", ms);
     
+    char str_ts[32];
+    sprintf(str_ts, "%ld", timestamp);
     message = str_replace(message, "%now", str_now);
-    message = str_replace(message, "%ms", ms_str);
+    message = str_replace(message, "%timestamp", str_ts);
     free((void*)old);
 
     return message;

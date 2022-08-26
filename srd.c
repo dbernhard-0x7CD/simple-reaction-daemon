@@ -269,7 +269,7 @@ void run_check(check_arguments_t *args)
 
     
         char current_time[32];
-        get_current_time(current_time, 32, datetime_format);
+        get_current_time(current_time, 32, datetime_format, NULL);
 
         // downtime in seconds
         double downtime_s;
@@ -435,7 +435,7 @@ void run_check(check_arguments_t *args)
 
             if (wait_time < 0) {
                 char str_time[32];
-                get_current_time(str_time, 32, datetime_format);
+                get_current_time(str_time, 32, datetime_format, NULL);
 
                 print_error(logger, "[%s]: Behind in schedule by %d ms at %s. Check your period and your timeouts of the actions.\n", check->ip, wait_time, str_time);
 
