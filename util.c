@@ -482,6 +482,11 @@ int ping(const logger_t *logger,
     int bytes;
     int tries = 0;
 
+    if (*sd < 0 || *epoll_fd < 0) {
+        *sd = create_socket(logger);
+        *epoll_fd = create_epoll(*sd);
+    }
+
     do {
         bytes = sendto(*sd, &send_pckt, sizeof(send_pckt), 0, (struct sockaddr *)&addr_ping, sizeof(addr_ping));
 
@@ -525,6 +530,9 @@ int ping(const logger_t *logger,
         
         close(*sd);
         close(*epoll_fd);
+        *sd = -1;
+        *epoll_fd = -1;
+
         return 0;
     } else if (num_ready == 0) { // timeout
         clock_gettime(CLOCK_REALTIME, &rcvd_time);
@@ -537,6 +545,9 @@ int ping(const logger_t *logger,
 
         close(*sd);
         close(*epoll_fd);
+        *sd = -1;
+        *epoll_fd = -1;
+        
         return 0;
     }
 
@@ -565,6 +576,8 @@ int ping(const logger_t *logger,
         
         close(*sd);
         close(*epoll_fd);
+        *sd = -1;
+        *epoll_fd = -1;
     }
 
     return is_exact_match;
