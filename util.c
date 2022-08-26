@@ -238,13 +238,14 @@ void seconds_to_string(int seconds, char* dt_string) {
 
 char* insert_placeholders(const char* raw_message, 
                         const connectivity_check_t* check,
-                        const conn_state_t state,
-                        const struct timespec start_downtime,
                         const char* datetime_format,
                         const double downtime,
                         const double uptime,
                         const int connected) {
     char* message = strdup(raw_message);
+
+    const conn_state_t state = check->status;
+    const struct timespec start_downtime = check->timestamp_first_failed;
 
     // replace %uptime
     if ((state & STATE_UP) || (state == STATE_DOWN_NEW)) {

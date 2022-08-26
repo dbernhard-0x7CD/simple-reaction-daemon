@@ -391,7 +391,7 @@ void run_check(check_arguments_t *args)
                         downtime = downtime_s; // we are still down (or up)
                     }
 
-                    copy.command = insert_placeholders(cmd->command, check, check->status, check->timestamp_first_failed, datetime_format, downtime, uptime_s, connected);
+                    copy.command = insert_placeholders(cmd->command, check, datetime_format, downtime, uptime_s, connected);
                     
                     sprint_debug(logger, "\tCommand: %s\n", copy.command);
                     fflush(stdout);
@@ -409,7 +409,7 @@ void run_check(check_arguments_t *args)
                         downtime = downtime_s; // we are still down (or up)
                     }
 
-                    const char* message = insert_placeholders(action_log->message, check, check->status, check->timestamp_first_failed, datetime_format, downtime, uptime_s, connected);
+                    const char* message = insert_placeholders(action_log->message, check, datetime_format, downtime, uptime_s, connected);
 
                     int r = log_to_file(logger, action_log->path, message, action_log->username);
                     if (r == 0) {
