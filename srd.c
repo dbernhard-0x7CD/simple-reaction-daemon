@@ -179,10 +179,10 @@ int main()
             } else if (strcmp(ptr->actions[i].name, "service-restart") == 0) {
                 free(ptr->actions[i].object);
             } else if (strcmp(ptr->actions[i].name, "log") == 0) {
-                action_log_t* cmd = (action_log_t*) ptr->actions[i].object;
+                action_log_t* action_log = (action_log_t*) ptr->actions[i].object;
 
-                free((char *)cmd->message);
-                free((char *)cmd->path);
+                free((char *)action_log->message);
+                free((char *)action_log->path);
                 free(ptr->actions[i].object);
             } else if (strcmp(ptr->actions[i].name, "influx") == 0) {
                 action_influx_t* influx = (action_influx_t*) ptr->actions[i].object;
