@@ -204,6 +204,7 @@ Always available:
 * `%ip` is the actual IP of the current target
 * `%status` is `success` or `failed` depending on the result of the ping
 * `%now` is the current time formatted like `datetime_format` defined in srd.conf (See [here](#srdconf))
+    * `%timestamp` is the unix timestamp (seconds since 01.01.1970)
 * `%lat_ms` is the latency (in milliseconds) of the ping. It's `-1.0` if the ping failed or timed out
 
 <br />

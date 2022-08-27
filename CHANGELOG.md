@@ -5,8 +5,6 @@
 * (Planned) 1.0
     * Support config name as dependencies
     * CLI mode (run one check interactively)
-    * Print if a command is ill formed for sh
-        * capture stderr?
     * print to stdout action `stdout` with message
     * time test for actions: `command` versus `log`
     * test scenarios for all events (inside testfile)
@@ -21,6 +19,7 @@
     * Pings now follow period more closely (and no longer shift)
         * Previously some shift occured as we waited `period` time between pings (and did not include actions which may take some time)
     * `timeout` for the `command` action
+    * `%timestamp` is replaced with the unix timestamp
     * Allow development without gateway
     * `datetime_format` (defined in srd.c) will replace `%%ms` (really double percentage sign) with the milliseconds of the current time 
     * Fix no message when `loglevel` is invalid
