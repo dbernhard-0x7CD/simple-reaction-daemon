@@ -78,7 +78,7 @@ typedef struct action_influx_t {
     const char* authorization;
 
     // format of one line. Something like: latency,host=%ip value=%lat_ms %timestamp
-    const char* line_data;
+    char* line_data;
 
     // socket to send the data
     int conn_socket;
