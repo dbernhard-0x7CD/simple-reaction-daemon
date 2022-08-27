@@ -212,6 +212,8 @@ void get_current_time(char* str, const int str_len, const char* format, time_t* 
 
     strftime(str, str_len, ms_replaced, &tm);
 
+    free(ms_replaced);
+
     if (timestamp != NULL) {
         *timestamp = t;
     }
