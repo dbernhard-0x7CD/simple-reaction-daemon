@@ -324,6 +324,9 @@ char* insert_placeholders(const char* raw_message,
     char str_ts[32];
     sprintf(str_ts, "%ld", timestamp);
     message = str_replace(message, "%now", str_now);
+    free((void*)old);
+    old = message;
+    
     message = str_replace(message, "%timestamp", str_ts);
     free((void*)old);
 
