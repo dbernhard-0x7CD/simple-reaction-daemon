@@ -17,7 +17,10 @@ srd: util.o srd.o actions.o printing.o Makefile
 
 %.o : %.c Makefile
 	$(CC) -c $(CFLAGS) $< -o $@
-	
+
+valgrind: srd
+	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./srd
+
 
 clean:
 	rm -f *.o srd
