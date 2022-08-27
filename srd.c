@@ -184,6 +184,14 @@ int main()
                 free((char *)cmd->message);
                 free((char *)cmd->path);
                 free(ptr->actions[i].object);
+            } else if (strcmp(ptr->actions[i].name, "influx") == 0) {
+                action_influx_t* influx = (action_influx_t*) ptr->actions[i].object;
+
+                free((char *)influx->host);
+                free((char *)influx->authorization);
+                free((char *)influx->endpoint);
+                free((char *)influx->line_data);
+                free(ptr->actions[i].object);
             }
             free((char *)ptr->actions[i].name);
         }
@@ -417,6 +425,17 @@ void run_check(check_arguments_t *args)
                     }
                     
                     free((char *)message);
+                } else if (strcmp(this_action.name, "influx") == 0) {
+                    action_influx_t* action = this_action.object;
+
+                    action_influx_t copy = *action;
+
+                    copy.line_data = insert_placeholders(action->line_data, check, datetime_format, downtime_s, uptime_s, connected);
+
+                    influx(logger, copy);
+
+                    // because the copy may have established a new connection
+                    action->conn_socket = copy.conn_socket;
                 }
                 else
                 {
@@ -842,6 +861,57 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                     }
 
                     this_action->object = action_log;
+                }
+                else if (strcmp(action_name, "influx") == 0) {
+                    action_influx_t *action_influx = malloc(sizeof(action_influx_t));
+
+                    // load the host
+                    const char* host;
+                    if (!config_setting_lookup_string(action, "host", &host))
+                    {
+                        print_error(logger, "%s: element is missing the host\n", cfg_path);
+                        config_destroy(&cfg);
+                        return 0;
+                    }
+                    action_influx->host = strdup(host);
+
+                    // load the port
+                    if (!config_setting_lookup_int(action, "port", &action_influx->port))
+                    {
+                        action_influx->port = 8086;
+                    }
+
+                    // load the endpoint
+                    const char* endpoint;
+                    if (!config_setting_lookup_string(action, "endpoint", &endpoint))
+                    {
+                        print_error(logger, "%s: element is missing the endpoint\n", cfg_path);
+                        config_destroy(&cfg);
+                        return 0;
+                    }
+                    action_influx->endpoint = strdup(endpoint);
+
+                    // load authorization
+                    const char* authorization;
+                    if (!config_setting_lookup_string(action, "authorization", &authorization))
+                    {
+                        print_error(logger, "%s: element is missing the authorization\n", cfg_path);
+                        config_destroy(&cfg);
+                        return 0;
+                    }
+                    action_influx->authorization = strdup(authorization);
+
+                    // load linedata format
+                    const char* linedata;
+                    if (!config_setting_lookup_string(action, "linedata", &linedata))
+                    {
+                        print_error(logger, "%s: element is missing the linedata\n", cfg_path);
+                        config_destroy(&cfg);
+                        return 0;
+                    }
+                    action_influx->line_data = str_replace(linedata, "%ip", cc->ip);
+
+                    this_action->object = action_influx;
                 }
                 else
                 {

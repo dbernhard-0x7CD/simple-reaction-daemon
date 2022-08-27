@@ -1,10 +1,12 @@
 #include <errno.h>
 #include <systemd/sd-bus.h>
 #include <pwd.h>
+#include <netinet/in.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/socket.h>
 #include <sys/wait.h>
 #include <time.h>
 #include <unistd.h>
@@ -251,3 +253,93 @@ int log_to_file(const logger_t* logger, const char *path, const char *message, c
 
     return ret_code;
 }
+
+int influx(const logger_t* logger, action_influx_t action) {
+    if (action.conn_socket <= 0) {
+        action.conn_socket = socket(AF_INET, SOCK_STREAM, 0);
+
+        if (action.conn_socket < 0) {
+            sprint_debug(logger, "Unable to create socket.\n");
+            return 0;
+        }
+
+        // connect
+        struct sockaddr_in addr;
+
+        int s;
+        s = to_sockaddr(action.host, &addr);
+
+        if (s < 0) {
+            sprint_error(logger, "Invalid host: %s\n", action.host);
+            return 0;
+        }
+
+        addr.sin_port = htons(action.port);
+        addr.sin_family= AF_INET;
+        
+        s = connect(action.conn_socket, (struct sockaddr *) &addr, sizeof(addr));
+
+        if (s < 0) {
+            sprint_error(logger, "Unable to connect to %s: %s\n", action.host, strerror(errno));
+
+            close(action.conn_socket);
+            action.conn_socket = -1;
+            return 0;
+        }
+    } // end of creating socket
+
+    char header[256];
+    int line_len = strlen(action.line_data) + 1;
+    char body[line_len];
+
+    // create body
+    snprintf(body, line_len, "%s\n", action.line_data);
+
+    // header
+    snprintf(header, 256, "POST %s HTTP/1.1\r\n"
+                          "Host: %s:%d\r\n"
+                          "Content-Length: %ld\r\n"
+                          "Authorization: %s\r\n\r\n",
+                          action.endpoint, action.host, action.port, strlen(body), action.authorization);
+
+    int written_bytes;
+    written_bytes = write(action.conn_socket, header, strlen(header));
+
+    if (written_bytes < 0) {
+        print_error(logger, "Unable to send to influx\n");
+
+        close(action.conn_socket);
+        action.conn_socket = -1;
+        return 0;
+    }
+    print_debug(logger, "[Influx]: Written %d bytes for the header.\n", written_bytes);
+
+    written_bytes = write(action.conn_socket, body, strlen(body));
+
+    if (written_bytes < 0) {
+        print_error(logger, "Unable to send to influx\n");
+        
+        close(action.conn_socket);
+        action.conn_socket = -1;
+        return 0;
+    }
+
+    print_debug(logger, "[Influx]: Written %d\n", written_bytes);
+
+    int read_bytes;
+    char answer[256];
+    read_bytes = read(action.conn_socket, answer, sizeof(answer));
+
+    answer[read_bytes] = '\0';
+
+    // check if starts with start_success
+    const char* start_success = "HTTP/1.1 204 No Content";
+    if (strncmp(answer, start_success, 24) == 0) {
+        return 1;
+    }
+
+    print_error(logger, "[Influx] Received: %s\n", answer);
+
+    return 0;
+}
+

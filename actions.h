@@ -63,6 +63,28 @@ typedef struct action_log_t {
 } action_log_t;
 
 /*
+ * Action to insert data into an influxDB instance.
+ */
+typedef struct action_influx_t {
+    // host
+    const char* host;
+
+    int port;
+
+    // path for the endpoint, may include bucket and organization
+    const char* endpoint;
+
+    // authorization token
+    const char* authorization;
+
+    // format of one line. Something like: latency,host=%ip value=%lat_ms %timestamp
+    const char* line_data;
+
+    // socket to send the data
+    int conn_socket;
+} action_influx_t;
+
+/*
 * Restarts the given service. The service-name must have
 * characters not in [a-Z] or [0-9] escaped to _HEX where
 * HEX is the hex value of the character as string.
@@ -90,5 +112,10 @@ int run_command(const logger_t *logger, const action_cmd_t* cmd, const uint32_t 
 * Logs the given message to the given file by appending.
 */
 int log_to_file(const logger_t* logger, const char* path, const char* message, const char* username);
+
+/*
+ * Executes the given influx action. Returns 1 on success, else 0.
+ */
+int influx(const logger_t* logger, const action_influx_t action);
 
 #endif
