@@ -492,7 +492,7 @@ int ping(const logger_t *logger,
         bytes = sendto(*sd, &send_pckt, sizeof(send_pckt), 0, (struct sockaddr *)&addr_ping, sizeof(addr_ping));
 
         if (bytes < 0) {
-            if ((errno == EBADF || errno == ENOTSOCK) && tries < 3) {
+            if (tries < 3) {
                 *sd = create_socket(logger);
                 *epoll_fd = create_epoll(*sd);
 
@@ -502,7 +502,7 @@ int ping(const logger_t *logger,
 
                 int res = fstat(*sd, &info);
 
-                sprint_error(logger, "Unable to send on socket %d: %s. fstat returned %d\n", *sd, strerror(errno), res);
+                sprint_error(logger, "Unable to send on socket %d after %d tries: %s. fstat returned %d\n", *sd, tries, strerror(errno), res);
 
                 return (-1);
             }
