@@ -334,7 +334,7 @@ int influx(const logger_t* logger, action_influx_t action) {
 
     // check if starts with start_success
     const char* start_success = "HTTP/1.1 204 No Content";
-    if (strncmp(answer, start_success, 24) == 0) {
+    if (strncmp(answer, start_success, 23) == 0) {
         return 1;
     }
 
