@@ -434,6 +434,8 @@ void run_check(check_arguments_t *args)
 
                     influx(logger, copy);
 
+                    free((void *)copy.line_data);
+
                     // because the copy may have established a new connection
                     action->conn_socket = copy.conn_socket;
                 }
