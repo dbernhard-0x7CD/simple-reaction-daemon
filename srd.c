@@ -866,6 +866,7 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                 }
                 else if (strcmp(action_name, "influx") == 0) {
                     action_influx_t *action_influx = malloc(sizeof(action_influx_t));
+                    action_influx->conn_socket = -1;
 
                     // load the host
                     const char* host;
