@@ -161,6 +161,21 @@ See here for the exact format: [https://cplusplus.com/reference/ctime/strftime/]
 * `path` supports the [placeholder](#placeholders) `%ip`
 
 
+### Action **write to InfluxDB**:
+```
+{
+    action = "influx";
+    host = "IP or hostname";
+    port = 8086;
+    endpoint = "/api/v2/write&bucket=YOUR_BUCKET&org=YOUR_ORG&precision=s";
+    authorization = "Token XYZ";
+    linedata = "latency,host=%ip, value=%lat_ms %timestamp";
+    run_if = "always";
+}
+```
+* Notes for `linedata`:
+    * For placeholders see [here](#placeholders)
+
 ### Action - **execute arbitrary command as a user**:
 
 If a host is **down**:
@@ -327,10 +342,13 @@ num_pings = 2
 
 actions = (
     {
-        action = "command";
-        cmd = " curl --silent -i -XPOST 'http://INFLUX_HOST:8086/api/v2/write?bucket=BUCKET_NAME&org=ORG_NAME&precision=s' -H \"Authorization: Token REDACTED\" --data-binary \"latency,host=%ip value=%lat_ms `date +%s`\"";
+        action = "influx";
+        host = "INFLUX_HOST";
+        port = 8086;
+        endpoint = "/api/v2/write&bucket=YOUR_BUCKET&org=YOUR_ORG&precision=s";
+        authorization = "Token XYZ";
+        linedata = "latency,host=%ip, value=%lat_ms %timestamp";
         run_if = "always";
-        timeout = 2;
     }
 )
 ```
