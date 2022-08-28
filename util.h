@@ -1,5 +1,7 @@
+#include <stdint.h>
+#include <time.h>
+
 #include "srd.h"
-#include "actions.h"
 #include "printing.h"
 struct timespec;
 struct sockaddr_in;

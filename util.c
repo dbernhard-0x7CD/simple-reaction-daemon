@@ -1,7 +1,6 @@
 #include <arpa/inet.h>
 #include <bits/types/struct_tm.h> 
 #include <errno.h>
-#include <fcntl.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -17,7 +16,7 @@
 #include <unistd.h>
 
 #include "util.h"
-
+#include "actions.h"
 
 #define PACKETSIZE  64
 struct packet
