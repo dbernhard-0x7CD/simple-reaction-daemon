@@ -213,26 +213,30 @@ int main()
     return EXIT_SUCCESS;
 } // main end
 
-int is_available(connectivity_check_t **ccs, const int n, char const *ip, int strict) {
+connectivity_check_t* get_dependency(connectivity_check_t **ccs, const int n, char const *ip) {
+
     for (int i = 0; i < n; i++) {
         connectivity_check_t* ptr = ccs[i];
 
         if (strcmp(ip, ptr->ip) == 0) {
-            // status could be STATE_UP or STATE_UP_NEW
-            if (ptr->status & STATE_UP) {
-                return 1;
-            }
-            if (ptr->status == STATE_NONE && strict == 0) {
-                return 1;
-            }
-
-            sprint_debug(logger, "Not available: %s (status: %d)\n", ptr->ip, ptr->status);
-            return 0;
+            return ptr;
         }
     }
 
-    sprint_error(logger, "ERROR: This dependency does not have a check: %s\n", ip);
-    return -1;
+    return NULL;
+}
+
+int is_available(connectivity_check_t *check, int strict) {
+    // status could be STATE_UP or STATE_UP_NEW
+    if (check->status & STATE_UP) {
+        return 1;
+    }
+    if (check->status == STATE_NONE && strict == 0) {
+        return 1;
+    }
+
+    sprint_debug(logger, "Not available: %s (status: %d)\n", check->ip, check->status);
+    return 0;
 }
 
 void run_check(check_arguments_t *args)
@@ -250,6 +254,19 @@ void run_check(check_arguments_t *args)
 
     struct timespec next_period = timespec_add(now, period);
 
+    connectivity_check_t* dependency = NULL;
+    
+    if (check->depend_ip != NULL) {
+        dependency = get_dependency(args->connectivity_checks, args->amount_targets, check->depend_ip);
+
+        if (dependency == NULL) {
+            sprint_error(logger, "[%s]: Unable to find check: %s\n", check->ip, check->depend_ip);
+            running = 0;
+            kill(getpid(), SIGALRM);
+            return;
+        }
+    }
+
     // main loop: check connectivity repeatedly
     while (running)
     {
@@ -257,7 +274,7 @@ void run_check(check_arguments_t *args)
         if (check->depend_ip != NULL) {
             sprint_debug(logger, "[%s]: Checking for dependency %s\n",check->ip, check->depend_ip);
 
-            int available = is_available(args->connectivity_checks, args->amount_targets, check->depend_ip, 1);
+            int available = is_available(dependency, 1);
 
             if (available == 0) {
                 sprint_info(logger, "[%s]: Awaiting dependency %s\n", check->ip, check->depend_ip);
@@ -266,15 +283,9 @@ void run_check(check_arguments_t *args)
                 sleep(check->period);
                 
                 continue;
-            } else if (available < 0) {
-                sprint_error(logger, "[%s]: Bad check: %s\n", check->ip, check->depend_ip);
-                running = 0;
-                kill(getpid(), SIGALRM);
-                return;
             }
         }
         int connected = check_connectivity(check);
-
     
         char current_time[32];
         get_current_time(current_time, 32, datetime_format, NULL);

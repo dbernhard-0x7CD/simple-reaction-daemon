@@ -81,10 +81,15 @@ int main();
 void run_check(check_arguments_t *);
 
 /*
- * Checks if the given ip is available. Returns 1 if it is, else 0.
- * If a dependency does not exist a negative value is returned.
+ * Returns a pointer to some check with the given IP.
+ * NULL is returned if no check is found with the given IP.
  */
-int is_available(connectivity_check_t **ccs, const int n, char const *ip, int strict);
+connectivity_check_t* get_dependency(connectivity_check_t **ccs, const int n, char const *ip);
+
+/*
+ * Checks if the given check is available. Returns 1 if it is, else 0.
+ */
+int is_available(connectivity_check_t *check, int strict);
 
 /*
  * Loads all connectivity checks inside the directory.
