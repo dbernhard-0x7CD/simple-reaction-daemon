@@ -21,6 +21,11 @@ srd: util.o srd.o actions.o printing.o Makefile
 valgrind: srd
 	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./srd
 
+check_includes: util.c
+	include-what-you-use util.c
+	include-what-you-use srd.c
+	include-what-you-use actions.c
+	include-what-you-use printing.c
 
 clean:
 	rm -f *.o srd
