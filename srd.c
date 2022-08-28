@@ -443,7 +443,7 @@ void run_check(check_arguments_t *args)
 
                     copy.line_data = insert_placeholders(action->line_data, check, datetime_format, downtime_s, uptime_s, connected);
 
-                    influx(logger, copy);
+                    influx(logger, &copy);
 
                     free((void *)copy.line_data);
 

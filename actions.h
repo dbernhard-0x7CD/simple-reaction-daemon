@@ -116,6 +116,6 @@ int log_to_file(const logger_t* logger, const char* path, const char* message, c
 /*
  * Executes the given influx action. Returns 1 on success, else 0.
  */
-int influx(const logger_t* logger, const action_influx_t action);
+int influx(const logger_t* logger, action_influx_t* action);
 
 #endif
