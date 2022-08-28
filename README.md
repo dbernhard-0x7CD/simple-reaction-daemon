@@ -175,6 +175,8 @@ See here for the exact format: [https://cplusplus.com/reference/ctime/strftime/]
 ```
 * Notes for `linedata`:
     * For placeholders see [here](#placeholders)
+* Notes for `endpoint`:
+    * Supports `%ip` placeholder
 
 ### Action - **execute arbitrary command as a user**:
 

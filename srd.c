@@ -903,7 +903,7 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                         config_destroy(&cfg);
                         return 0;
                     }
-                    action_influx->endpoint = strdup(endpoint);
+                    action_influx->endpoint = str_replace(endpoint, "%ip", cc->ip);
 
                     // load authorization
                     const char* authorization;
