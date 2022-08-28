@@ -269,6 +269,13 @@ int influx(const logger_t* logger, action_influx_t* action) {
         int s;
         s = to_sockaddr(action->host, &addr);
 
+        if (s == 0) {
+            if (!resolve_hostname(logger, action->host, &addr)) {
+                sprint_error(logger, "Unable to get an IP for: %s\n", action->host);
+                return 0;
+            }
+        }
+
         if (s < 0) {
             sprint_error(logger, "Invalid host: %s\n", action->host);
             return 0;
