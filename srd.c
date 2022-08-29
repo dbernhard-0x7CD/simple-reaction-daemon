@@ -183,6 +183,9 @@ int main()
 
                 free((char *)action_log->message);
                 free((char *)action_log->path);
+                if (action_log->username) {
+                    free((char *)action_log->username);
+                }
                 free(ptr->actions[i].object);
             } else if (strcmp(ptr->actions[i].name, "influx") == 0) {
                 action_influx_t* influx = (action_influx_t*) ptr->actions[i].object;
