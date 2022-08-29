@@ -272,12 +272,18 @@ int influx(const logger_t* logger, action_influx_t* action) {
         if (s == 0) {
             if (!resolve_hostname(logger, action->host, &addr)) {
                 sprint_error(logger, "Unable to get an IP for: %s\n", action->host);
+
+                close(action->conn_socket);
+                action->conn_socket = -1;
                 return 0;
             }
         }
 
         if (s < 0) {
             sprint_error(logger, "Invalid host: %s\n", action->host);
+
+            close(action->conn_socket);
+            action->conn_socket = -1;
             return 0;
         }
 
