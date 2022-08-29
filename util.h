@@ -101,4 +101,10 @@ int create_epoll(const int fd);
  */
 int to_sockaddr(const char* address, struct sockaddr_in* socket_addr);
 
+/*
+ * Tries to resolve hostname into an IP iside socket_addr.
+ * Returns 1 on success, else 0.
+ */
+int resolve_hostname(const logger_t* logger, const char *hostname, struct sockaddr_in *socket_addr);
+
 #endif
