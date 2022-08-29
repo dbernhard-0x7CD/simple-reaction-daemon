@@ -268,10 +268,17 @@ char* insert_placeholders(const char* raw_message,
 
         strftime(str_time, 32, datetime_format, &time);
 
+        int ms = (int)(start_downtime.tv_nsec * 1e-6);
+        char ms_str[4];
+        snprintf(ms_str, 4, "%03d", ms);
+
+        char* ms_replaced = str_replace(str_time, "%ms", ms_str);
+
         const char* old = message;
 
-        message = str_replace(message, "%sdt", str_time);
+        message = str_replace(message, "%sdt", ms_replaced);
 
+        free((void *) ms_replaced);
         free((void*)old);
     }
     // replace %downtime
