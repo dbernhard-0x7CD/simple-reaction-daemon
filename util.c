@@ -329,7 +329,8 @@ char* insert_placeholders(const char* raw_message,
     get_current_time(str_now, 32, datetime_format, &timestamp);
     old = message;
     
-    char str_ts[32];
+    // replace %timestamp with the unix time
+    char str_ts[16];
     sprintf(str_ts, "%ld", timestamp);
     message = str_replace(message, "%now", str_now);
     free((void*)old);
