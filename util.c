@@ -377,7 +377,7 @@ int resolve_hostname(const logger_t* logger, const char *hostname, struct sockad
     hint.ai_family = AF_UNSPEC;
     hint.ai_socktype = SOCK_STREAM;
 
-    if ((rv = getaddrinfo(hostname, "http", &hint, &pai)) != 0)
+    if ((rv = getaddrinfo(hostname, NULL, &hint, &pai)) < 0)
     {
         sprint_error(logger, "[%s]: Unable to get address info: %s\n", hostname, gai_strerror(rv));
         return 0;
