@@ -201,6 +201,7 @@ Or if he's **up**:
 * Notes for `cmd`:
     * For placeholders see [here](#placeholders)
 * You can also set `timeout` to terminate the command after `timeout` seconds if it has not finished yet.
+    * The default `timeout` is one day
 
 <br />
 
