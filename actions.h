@@ -27,8 +27,14 @@ typedef struct action_t {
     // Defines which action to perform
     const char* name;
 
-    // Pointer to struct or string with more info
-    // about the given action
+    /* Pointer to struct or string with more info
+     * about the given action.
+     * Currently:
+     *      * action_cmd_t
+     *      * action_log_t
+     *      * action_influx_t
+     *      * to char* which is the service name if name is "restart-service"
+     */
     void*       object;
 
     // Delay until this action is performed when run is DOWN
