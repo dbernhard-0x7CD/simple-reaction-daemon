@@ -57,10 +57,10 @@ typedef struct logger_t
         sprint(logger, __VA_ARGS__);      \
     }
 
-#define sprint_error(logger, ...)         \
-    if (*logger->level <= LOGLEVEL_ERROR) \
-    {                                     \
-        sprint(logger, __VA_ARGS__);      \
+#define sprint_error(logger, ...)               \
+    if (*logger->level <= LOGLEVEL_ERROR)       \
+    {                                           \
+        sprint(logger, "ERROR: " __VA_ARGS__);  \
     }
 
 #define print_debug(logger, ...)          \
@@ -84,7 +84,7 @@ typedef struct logger_t
 #define print_error(logger, ...)          \
     if (*logger->level <= LOGLEVEL_ERROR) \
     {                                     \
-        printf(__VA_ARGS__);              \
+        printf("ERROR: " __VA_ARGS__);              \
     }
 
 
