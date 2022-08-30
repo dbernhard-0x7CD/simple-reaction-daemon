@@ -133,10 +133,23 @@ int main()
 
         // waits until a signal arrives
         int result;
+
+        const struct timespec timeout = { .tv_nsec = 0, .tv_sec = 60};
         
-        while ((result = sigwaitinfo(&waitset, &info) < 0)) {
-            print_debug(logger, "sigwaitinfo received error %d\n", errno);
+        while ((result = sigtimedwait(&waitset, &info, &timeout) < 0)) {
+            if (result == EAGAIN) {
+                for (int i = 0; i < connectivity_targets; i++)
+                {
+                    if (!pthread_kill(threads[i], 0)) {
+                        sprint_error(logger, "Thread %d failed\n", i);
+                    }
+                }
+                sprint_debug(logger, "Checking threads...\n");
+                continue;
+            }
+            print_error(logger, "Received another signal: %s\n", strerror(errno));
         }
+
         running = 0;
 
         print_debug(logger, "Got signal %d\n", info.si_signo);
