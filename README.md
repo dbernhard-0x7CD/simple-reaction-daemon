@@ -81,7 +81,7 @@ actions = (
 `destination`: IP or domain to ping regularly
     
 * Can also be `%gw` to ping the gateway
-* **Note**: this is currently only set at startup. So changes of the gateway are not yet supported
+    * **Note**: this is currently only set at startup. So changes of the gateway are not yet supported
 
 <br />
 
@@ -236,8 +236,6 @@ The supported placeholders depend on `run_if`:
     * available for run_if = `down`, `down-new`, `up-new`
 * `%uptime` for the uptime in days, hours, minutes and seconds
     * available for run_if = `up`, `up-new`, `down-new` (duration between first successfull ping and latest succesfull ping)
-
-
 
 <br />
 
