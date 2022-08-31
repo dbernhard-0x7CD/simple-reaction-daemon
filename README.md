@@ -2,10 +2,12 @@
 
 This program allows to monitor hosts and define actions that will be executed if a ping to some host fail (or succeed). Currently implemented actions are:
 
-* restart another systemd-service (f.ex: systemd-networkd, iwd or wpa_supplicant)
-* log to a file
-* restart the system
-* execute custom command as user
+* [restart another systemd-service](#action-restart-a-service) (f.ex: systemd-networkd, iwd or wpa_supplicant)
+* [log to a file](#action-log-to-a-file)
+* [restart the system](#action-reboot)
+* [write data to an InfluxDB instance](#action-write-to-influxdb)
+    * [Here is an example visualization](#use-case---latency-logging)
+* [execute custom command as user](#action---execute-arbitrary-command-as-a-user)
     * f.ex: Send wake-on-lan packet to host, send an email, ...
 
 
