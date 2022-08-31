@@ -63,7 +63,7 @@ char *escape_servicename(char *input_name)
     if (escaped_str == NULL)
     {
         printf("Out of memory\n");
-        exit(1);
+        return NULL;
     }
 
     int new_i = 0;

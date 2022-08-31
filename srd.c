@@ -815,6 +815,12 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                     }
 
                     char *escaped_servicename = escape_servicename((char *)cc->actions[i].object);
+
+                    if (escaped_servicename == NULL) {
+                        print_error(logger, "%s: Out of memory.\n", cfg_path);
+                        config_destroy(&cfg);
+                        return 0;
+                    }
                     
                     cc->actions[i].object = escaped_servicename;
                 }
