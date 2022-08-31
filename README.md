@@ -103,7 +103,7 @@ actions = (
 ## srd.conf
 This file may also contain the `loglevel` configuration:
 ```
-# available loglevels: DEBUG, INFO
+# available loglevels: DEBUG, INFO, QUIET, ERROR
 loglevel = "INFO"
 ```
 
