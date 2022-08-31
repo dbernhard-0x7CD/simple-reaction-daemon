@@ -134,7 +134,7 @@ int main()
         // waits until a signal arrives
         int result;
 
-        const struct timespec timeout = { .tv_nsec = 0, .tv_sec = 60};
+        const struct timespec timeout = { .tv_nsec = 0, .tv_sec = 60 };
         
         while ((result = sigtimedwait(&waitset, &info, &timeout) < 0)) {
             if (result == EAGAIN) {
