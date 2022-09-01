@@ -7,6 +7,9 @@
 #include <signal.h>
 #include <stdint.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/stat.h>
 #include <pthread.h>
 
 
@@ -520,7 +523,7 @@ int check_connectivity(connectivity_check_t* cc)
     int i;
     for (i = 0; i < cc->num_pings; i++) {
 #if DEBUG
-        cc->socket = create_socket(logger);
+        cc->socket = create_socket(logger, AF_INET);
         cc->epoll_fd = create_epoll(cc->socket);
 #endif
         int ping_success = ping(logger, &cc->socket, &cc->epoll_fd, cc->ip, &cc->latency, cc->timeout);

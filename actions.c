@@ -267,10 +267,11 @@ int influx(const logger_t* logger, action_influx_t* action) {
         struct sockaddr_in addr;
 
         int s;
-        s = to_sockaddr(action->host, &addr);
+        sa_family_t family = AF_INET;
+        s = to_sockaddr(action->host, (struct sockaddr_storage*)&addr, &family);
 
         if (s == 0) {
-            if (!resolve_hostname(logger, action->host, &addr)) {
+            if (!resolve_hostname(logger, action->host, (struct sockaddr_storage*)&addr)) {
                 sprint_error(logger, "Unable to get an IP for: %s\n", action->host);
 
                 close(action->conn_socket);

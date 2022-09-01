@@ -75,7 +75,7 @@ struct timespec timespec_add(const struct timespec t1, const struct timespec t2)
 /*
  * Creates a default socket used for pinging. 
  */
-int create_socket(const logger_t* logger);
+int create_socket(const logger_t* logger, const int address_family);
 
 /*
 * Pings the given address and updates latency_s.
@@ -96,15 +96,17 @@ int ping(const logger_t *logger,
 int create_epoll(const int fd);
 
 /*
- * Converts the address as string into sockaddr_in.
+ * Converts the address as string into a sockaddr_in.
+ * Sets address_family to AF_INET if it's an IPv4 address,
+ * and to AF_INET6 if it's an IPv6 address.
  * Returns 1 on success, else 0.
  */
-int to_sockaddr(const char* address, struct sockaddr_in* socket_addr);
+int to_sockaddr(const char* address, struct sockaddr_storage* socket_addr, sa_family_t* address_family);
 
 /*
  * Tries to resolve hostname into an IP iside socket_addr.
  * Returns 1 on success, else 0.
  */
-int resolve_hostname(const logger_t* logger, const char *hostname, struct sockaddr_in *socket_addr);
+int resolve_hostname(const logger_t* logger, const char *hostname, struct sockaddr_storage *socket_addr);
 
 #endif

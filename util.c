@@ -13,6 +13,7 @@
 #include <netdb.h>
 #include <netinet/in.h>
 #include <netinet/ip_icmp.h>
+#include <netinet/icmp6.h>
 #include <unistd.h>
 
 #include "util.h"
@@ -23,6 +24,12 @@ struct packet
 {
     struct icmphdr hdr;
     char msg[PACKETSIZE-sizeof(struct icmphdr)];
+};
+
+struct packet6
+{
+    struct icmp6_hdr hdr;
+    char msg[PACKETSIZE-sizeof(struct icmp6_hdr)];
 };
 
 _Atomic(unsigned int) icmp_msgs_count = 1; // sequence number
@@ -364,11 +371,24 @@ struct timespec timespec_add(const struct timespec t1, const struct timespec t2)
     return result;
 }
 
-int to_sockaddr(const char* address, struct sockaddr_in* socket_addr) {
-    return inet_pton(AF_INET, address, &(socket_addr->sin_addr));
+int to_sockaddr(const char* address, struct sockaddr_storage* socket_addr, sa_family_t* address_family) {
+
+    struct sockaddr_in* ipv4_addr = (struct sockaddr_in*) socket_addr;
+    int success = inet_pton(AF_INET, address, &ipv4_addr->sin_addr);
+
+    *address_family = AF_INET;
+    // might be ipv6
+    if (!success) {
+        printf("failed as ipv4: %s\n", address);
+        success = inet_pton(AF_INET6, address, &((struct sockaddr_in6*) socket_addr)->sin6_addr);
+        *address_family = AF_INET6;
+    }
+    printf("[%s]: to_sockaddr: %d\n", address, success);
+
+    return success;
 }
 
-int resolve_hostname(const logger_t* logger, const char *hostname, struct sockaddr_in *socket_addr)
+int resolve_hostname(const logger_t* logger, const char *hostname, struct sockaddr_storage *socket_addr)
 {
     struct addrinfo hint, *pai;
     int rv;
@@ -383,27 +403,44 @@ int resolve_hostname(const logger_t* logger, const char *hostname, struct sockad
         return 0;
     }
 
-    *socket_addr = *(struct sockaddr_in *)pai->ai_addr;
+    char addr[INET6_ADDRSTRLEN];
+    struct sockaddr_in *p = (struct sockaddr_in *)pai->ai_addr;
+
+    inet_ntop(AF_INET, &p->sin_addr, addr, INET_ADDRSTRLEN);
+
+    if (pai->ai_family == AF_INET) {
+        memcpy(socket_addr, &pai->ai_addr, sizeof(struct sockaddr_in));
+    } else {
+        memcpy(socket_addr, &pai->ai_addr, sizeof(struct sockaddr_in6));
+    }
 
     freeaddrinfo(pai);
     return 1;
 }
 
-int create_socket(const logger_t* logger) {
-    const int ttl = 255;
+int create_socket(const logger_t* logger, const int address_family) {
     int sd;
+    int proto = IPPROTO_ICMP;
+    int domain = AF_INET;
 
-    if ((sd = socket(PF_INET, SOCK_DGRAM | SOCK_NONBLOCK, IPPROTO_ICMP)) < 0)
+    if (address_family == AF_INET6) {
+        proto = IPPROTO_ICMPV6;
+        domain = AF_INET6;
+    }
+
+    if ((sd = socket(domain, SOCK_DGRAM | SOCK_NONBLOCK, proto)) < 0)
     {
         sprint_error(logger, "Unable to open socket. %s\n", strerror(errno));
         return 0;
     }
-    if (setsockopt(sd, SOL_IP, IP_TTL, &ttl, sizeof(ttl)) != 0)
-    {
-        sprint_error(logger, "Unable to set TTL option\n");
-        close(sd);
-        return 0;
-    }
+    // if (setsockopt(sd, SOL_IP, IP_TTL, &ttl, sizeof(ttl)) != 0)
+    // {
+    //     sprint_error(logger, "Unable to set TTL option\n");
+    //     close(sd);
+    //     return 0;
+    // }
+
+    printf("created socket with domain %d\n", domain);
 
     return sd;
 }
@@ -421,114 +458,157 @@ int create_epoll(const int fd) {
     return epfd;
 }
 
-int ping(const logger_t *logger,
-         int* sd,
-         int* epoll_fd,
-         const char *address,
-         double *latency_s,
-         const double timeout_s)
-{   
-    struct packet send_pckt, rcv_pckt;
-    struct sockaddr_in addr_ping;
+/*
+ * Fills the message starting at point in the following format:
+ *            `target IP`_`icmp_msgs_count`___..._
+ */
+void fill_message(char* point, const char* end, const char* address) {
+    char* cptr = point;
 
-    // for receiving
-    const int rcv_len = 64;
-    
-    memset(&addr_ping, 0, sizeof(addr_ping));
-    if (!to_sockaddr(address, &addr_ping)) {
-        // could be a hostname
-        print_debug(logger, "Trying as a hostname: %s\n", address);
-        if (!resolve_hostname(logger, address, &addr_ping)) {
-            return (-1);
-        }
-    }
-    addr_ping.sin_port = 0;
-    addr_ping.sin_family = AF_INET;
-
-    struct timespec sent_time;
-    struct timespec rcvd_time;
-
-    // construct packet and send
-    memset(&send_pckt, 0, sizeof(send_pckt));
-    memset(&rcv_pckt, 0, sizeof(rcv_pckt));
-
-    send_pckt.hdr.type = ICMP_ECHO;
-    send_pckt.hdr.un.echo.sequence = icmp_msgs_count++;
-
-    // fill the message. `target IP`_`icmp_msgs_count`__..__
-    unsigned int i;
-    for (i = 0; i < sizeof(send_pckt.msg) - 1; i++)
-    {
-        send_pckt.msg[i] = '_';
-    }
     int addr_len = strlen(address);
-    
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wstringop-truncation"
-    strncpy(&send_pckt.msg[0], address, addr_len);
-#pragma GCC diagnostic pop
+        
+    memcpy(cptr, address, addr_len);
+    cptr += addr_len;
+    *cptr = '_';
+    cptr++;
 
     const int seq_str_len = 5; // maximum size of uint16_t as a string
     char seq_str[seq_str_len];
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-truncation"
-    snprintf(seq_str, seq_str_len, "%d", send_pckt.hdr.un.echo.sequence);
+    snprintf(seq_str, seq_str_len, "%d", icmp_msgs_count++);
 #pragma GCC diagnostic pop
 
-    // insert sequence number
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstringop-truncation"
-    strncpy(&send_pckt.msg[addr_len + 1], seq_str, strlen(seq_str));
+    strncpy(cptr, seq_str, strlen(seq_str));
 #pragma GCC diagnostic pop
 
-    send_pckt.msg[i] = 0; // terminator
+    cptr += seq_str_len;
+
+    for (; cptr < end - 1; cptr += 1) {
+        *cptr = '_';
+    }
+    *cptr = 0;
+}
+
+char* create_packet(int family, const char* address) {
+    char* packet = malloc(64 * sizeof(char));
+
+    if (family == AF_INET) {
+        struct packet* pptr = (struct packet*) packet;
+
+        pptr->hdr.type = ICMP_ECHO;
+        pptr->hdr.un.echo.sequence = icmp_msgs_count++;
+
+        fill_message(pptr->msg, pptr->msg + 56, address);
+    } else if (family == AF_INET6) {
+        struct packet6* pptr = (struct packet6*) packet;
+
+        pptr->hdr.icmp6_type = ICMP6_ECHO_REQUEST;
+
+        fill_message(pptr->msg, pptr->msg + 56, address);
+    } else {
+        return NULL;
+    }
+
+    return packet;
+}
+
+int ping(const logger_t *logger,
+         int* sd,
+         int* epoll_fd,
+         const char *address,
+         double *latency_s,
+         const double timeout_s)
+{
+    char* send_pckt;
+    char* rcv_pckt = malloc(PACKETSIZE * sizeof(char));
+
+    struct sockaddr_storage addr_ping;
+
+    sa_family_t addr_family;
+    
+    memset(&addr_ping, 0, sizeof(addr_ping));
+    if (!to_sockaddr(address, &addr_ping, &addr_family)) {
+        // could be a hostname
+        print_debug(logger, "Trying as a hostname: %s\n", address);
+        if (!resolve_hostname(logger, address, &addr_ping)) {
+            return (-1);
+        }
+    }
+
+#if DEBUG
+    *sd = create_socket(logger, addr_family);
+    *epoll_fd = create_epoll(*sd);
+#endif
+
+    addr_ping.ss_family = addr_family;
+
+    struct timespec sent_time;
+    struct timespec rcvd_time;
+
+    // construct packet and send
+    memset(rcv_pckt, 0, PACKETSIZE);
+
+    send_pckt = create_packet(addr_family, address);
 
     // Send the message
 #if DEBUG
-    sprint_debug(logger, "[%s]: Message sent: %s\n", address, send_pckt.msg);
+    sprint_debug(logger, "[%s]: Message sent: %s\n", address, send_pckt + 8);
 #endif
 
     // Start the clock
     clock_gettime(CLOCK_REALTIME, &sent_time);
 
-    int bytes;
+    int bytes_sent = 0;
     int tries = 0;
 
     if (*sd < 0 || *epoll_fd < 0) {
-        *sd = create_socket(logger);
+        *sd = create_socket(logger, addr_family);
         *epoll_fd = create_epoll(*sd);
     }
 
     do {
-        bytes = sendto(*sd, &send_pckt, sizeof(send_pckt), 0, (struct sockaddr *)&addr_ping, sizeof(addr_ping));
-
-        if (bytes < 0) {
-            if (tries < 3) {
-                *sd = create_socket(logger);
-                *epoll_fd = create_epoll(*sd);
-
-                sprint_debug(logger, "Created new socket for %s\n", address);
-            } else {
-                struct stat info;
-
-                int res = fstat(*sd, &info);
-
-                sprint_error(logger, "Unable to send on socket %d after %d tries: %s. fstat returned %d\n", *sd, tries, strerror(errno), res);
-
-                return (-1);
-            }
+        if (addr_family == AF_INET) {
+            print_debug(logger, "[%s]: ipv4 sendto\n", address);
+            bytes_sent = sendto(*sd, send_pckt, PACKETSIZE, 0, (struct sockaddr *)&addr_ping, sizeof(struct sockaddr_in));
         } else {
-            break;
+            print_debug(logger, "[%s]: ipv6 sendto and packetsize %ld\n", address, sizeof(struct packet6));
+            bytes_sent = sendto(*sd, send_pckt, PACKETSIZE, 0, (struct sockaddr*)&addr_ping, sizeof(struct sockaddr_in6));
+        }
+
+        if (tries >= 3) {
+            struct stat info;
+
+            int res = fstat(*sd, &info);
+
+            sprint_error(logger, "[%s]: Unable to send on socket %d after %d tries: %s. fstat returned %d family: %d\n", address, *sd, tries, strerror(errno), res, addr_family);
+
+            *sd = create_socket(logger, addr_family);
+            *epoll_fd = create_epoll(*sd);
+
+            return (-1);
+        }
+
+        if (bytes_sent < 0) { // error
+            *sd = create_socket(logger, addr_family);
+            *epoll_fd = create_epoll(*sd);
+
+            sprint_debug(logger, "Created new socket for %s\n", address);
+        } else { // this holds: bytes >= 0
+            if (bytes_sent == 64) break;
+            print_error(logger, "Only sent %d out of 64 bytes.\n", bytes_sent);
+
+            return (-1);
         }
         tries++;
     } while(1);
 
-#if DEBUG
-    sprint_debug(logger, "[%s]: Sent %d bytes with echo.id %d and SEQ %d\n", address, bytes, send_pckt.hdr.un.echo.id, send_pckt.hdr.un.echo.sequence);
-#endif
-
+    // receive
     struct epoll_event events[1];
+    
     int num_ready = epoll_wait(*epoll_fd, events, 1, timeout_s * 1e3);
 
     if (num_ready < 0) {
@@ -568,17 +648,19 @@ int ping(const logger_t *logger,
 #if DEBUG
         printf("Socket %d got some data\n", events[0].data.fd);
 #endif
-        recv(*sd, &rcv_pckt, rcv_len, 0);
+        size_t bytes_rcved = recv(*sd, rcv_pckt, PACKETSIZE, 0);
+        
+        if (bytes_rcved != 64) {
+            printf("just received: %ld bytes: %s\n", bytes_rcved, (char *)rcv_pckt);
+
+            return (-1);
+        }
     }
 
     clock_gettime(CLOCK_REALTIME, &rcvd_time);
 
-    sprint_debug(logger, "[%s]: Read %d bytes with SEQ %d\n", address, 64, rcv_pckt.hdr.un.echo.sequence);
-
-    sprint_debug(logger, "[%s]: Message received: %s with code: %d\n", address, rcv_pckt.msg, rcv_pckt.hdr.code);
-
     // check if the message matches
-    int is_exact_match = memcmp(send_pckt.msg, rcv_pckt.msg, 56) == 0;
+    int is_exact_match = memcmp(send_pckt + 8, rcv_pckt + 8, 56) == 0;
 
     sprint_debug(logger, "[%s]: is_exact_match: %d\n", address, is_exact_match);
 
