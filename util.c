@@ -372,18 +372,15 @@ struct timespec timespec_add(const struct timespec t1, const struct timespec t2)
 }
 
 int to_sockaddr(const char* address, struct sockaddr_storage* socket_addr, sa_family_t* address_family) {
-
     struct sockaddr_in* ipv4_addr = (struct sockaddr_in*) socket_addr;
     int success = inet_pton(AF_INET, address, &ipv4_addr->sin_addr);
 
     *address_family = AF_INET;
     // might be ipv6
     if (!success) {
-        printf("failed as ipv4: %s\n", address);
         success = inet_pton(AF_INET6, address, &((struct sockaddr_in6*) socket_addr)->sin6_addr);
         *address_family = AF_INET6;
     }
-    printf("[%s]: to_sockaddr: %d\n", address, success);
 
     return success;
 }
@@ -433,12 +430,6 @@ int create_socket(const logger_t* logger, const int address_family) {
         sprint_error(logger, "Unable to open socket. %s\n", strerror(errno));
         return 0;
     }
-    // if (setsockopt(sd, SOL_IP, IP_TTL, &ttl, sizeof(ttl)) != 0)
-    // {
-    //     sprint_error(logger, "Unable to set TTL option\n");
-    //     close(sd);
-    //     return 0;
-    // }
 
     printf("created socket with domain %d\n", domain);
 
