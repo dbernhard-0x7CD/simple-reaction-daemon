@@ -476,7 +476,7 @@ void fill_message(char* point, const char* end, const char* address) {
     strncpy(cptr, seq_str, strlen(seq_str));
 #pragma GCC diagnostic pop
 
-    cptr += seq_str_len;
+    cptr += strlen(seq_str);
 
     for (; cptr < end - 1; cptr += 1) {
         *cptr = '_';
