@@ -101,8 +101,6 @@ int main()
 #endif
 
     print_debug(logger, "default gateway %s\n", default_gw);
-    
-    fflush(stdout);
 
     pthread_t threads[connectivity_targets];
     check_arguments_t args[connectivity_targets];
