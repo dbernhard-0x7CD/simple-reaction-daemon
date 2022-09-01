@@ -147,7 +147,7 @@ int main()
                 sprint_debug(logger, "Checking threads...\n");
                 continue;
             }
-            print_error(logger, "Received another signal: %s\n", strerror(errno));
+            print_debug(logger, "Received another signal: %s\n", strerror(errno));
         }
 
         running = 0;
