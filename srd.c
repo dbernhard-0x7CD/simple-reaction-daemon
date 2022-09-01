@@ -520,16 +520,7 @@ int check_connectivity(connectivity_check_t* cc)
 
     int i;
     for (i = 0; i < cc->num_pings; i++) {
-#if DEBUG
-        cc->socket = create_socket(logger, AF_INET);
-        cc->epoll_fd = create_epoll(cc->socket);
-#endif
         int ping_success = ping(logger, &cc->socket, &cc->epoll_fd, cc->ip, &cc->latency, cc->timeout);
-
-#if DEBUG
-        close(cc->socket);
-        close(cc->epoll_fd);
-#endif
 
         if (ping_success == 1) {
             success = 1;

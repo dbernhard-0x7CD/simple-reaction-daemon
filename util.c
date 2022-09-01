@@ -540,6 +540,8 @@ int ping(const logger_t *logger,
     }
 
 #if DEBUG
+    close(*sd);
+    close(*epoll_fd);
     *sd = create_socket(logger, addr_family);
     *epoll_fd = create_epoll(*sd);
 #endif
