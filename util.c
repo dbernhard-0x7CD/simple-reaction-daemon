@@ -427,7 +427,7 @@ int create_socket(const logger_t* logger, const int address_family) {
         return 0;
     }
 
-    printf("created socket with domain %d\n", domain);
+    sprint_debug(logger, "Created socket with family: %d\n", address_family);
 
     return sd;
 }
