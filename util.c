@@ -385,14 +385,14 @@ int to_sockaddr(const char* address, struct sockaddr_storage* socket_addr, sa_fa
     return success;
 }
 
-int resolve_hostname(const logger_t* logger, const char *hostname, struct sockaddr_storage *socket_addr)
+int resolve_hostname(const logger_t* logger, const char *hostname, struct sockaddr_storage *socket_addr, sa_family_t* address_family)
 {
     struct addrinfo hint, *pai;
     int rv;
 
     memset(&hint, 0, sizeof(hint));
     hint.ai_family = AF_UNSPEC;
-    hint.ai_socktype = SOCK_STREAM;
+    hint.ai_socktype = SOCK_DGRAM;
 
     if ((rv = getaddrinfo(hostname, NULL, &hint, &pai)) < 0)
     {
@@ -400,16 +400,12 @@ int resolve_hostname(const logger_t* logger, const char *hostname, struct sockad
         return 0;
     }
 
-    char addr[INET6_ADDRSTRLEN];
-    struct sockaddr_in *p = (struct sockaddr_in *)pai->ai_addr;
-
-    inet_ntop(AF_INET, &p->sin_addr, addr, INET_ADDRSTRLEN);
-
     if (pai->ai_family == AF_INET) {
-        memcpy(socket_addr, &pai->ai_addr, sizeof(struct sockaddr_in));
+        memcpy(socket_addr, pai->ai_addr, sizeof(struct sockaddr_in));
     } else {
-        memcpy(socket_addr, &pai->ai_addr, sizeof(struct sockaddr_in6));
+        memcpy(socket_addr, pai->ai_addr, sizeof(struct sockaddr_in6));
     }
+    *address_family = pai->ai_family;
 
     freeaddrinfo(pai);
     return 1;
@@ -487,6 +483,8 @@ void fill_message(char* point, const char* end, const char* address) {
 char* create_packet(int family, const char* address) {
     char* packet = malloc(64 * sizeof(char));
 
+    memset(packet, 0, 64 * sizeof(char));
+
     if (family == AF_INET) {
         struct packet* pptr = (struct packet*) packet;
 
@@ -525,7 +523,7 @@ int ping(const logger_t *logger,
     if (!to_sockaddr(address, &addr_ping, &addr_family)) {
         // could be a hostname
         print_debug(logger, "Trying as a hostname: %s\n", address);
-        if (!resolve_hostname(logger, address, &addr_ping)) {
+        if (!resolve_hostname(logger, address, &addr_ping, &addr_family)) {
             return (-1);
         }
     }
