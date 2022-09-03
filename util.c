@@ -571,6 +571,9 @@ int ping(const logger_t *logger,
 
             sprint_error(logger, "[%s]: Unable to send on socket %d after %d tries: %s. fstat returned %d family: %d\n", address, *sd, tries, strerror(errno), res, addr_family);
 
+            close(*sd);
+            close(*epoll_fd);
+
             *sd = create_socket(logger, addr_family);
             *epoll_fd = create_epoll(*sd);
 
@@ -578,6 +581,9 @@ int ping(const logger_t *logger,
         }
 
         if (bytes_sent < 0) { // error
+            close(*sd);
+            close(*epoll_fd);
+            
             *sd = create_socket(logger, addr_family);
             *epoll_fd = create_epoll(*sd);
 
