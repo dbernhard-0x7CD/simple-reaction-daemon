@@ -320,25 +320,25 @@ int influx(const logger_t* logger, action_influx_t* action) {
     written_bytes = write(action->conn_socket, header, strlen(header));
 
     if (written_bytes < 0) {
-        print_error(logger, "Unable to send to influx\n");
+        sprint_error(logger, "Unable to send to influx\n");
 
         close(action->conn_socket);
         action->conn_socket = -1;
         return 0;
     }
-    print_debug(logger, "[Influx]: Written %d bytes for the header.\n", written_bytes);
+    sprint_debug(logger, "[Influx]: Written %d bytes for the header.\n", written_bytes);
 
     written_bytes = write(action->conn_socket, body, strlen(body));
 
     if (written_bytes < 0) {
-        print_error(logger, "Unable to send to influx\n");
+        sprint_error(logger, "Unable to send to influx\n");
         
         close(action->conn_socket);
         action->conn_socket = -1;
         return 0;
     }
 
-    print_debug(logger, "[Influx]: Written %d\n", written_bytes);
+    sprint_debug(logger, "[Influx]: Written %d\n", written_bytes);
 
     int read_bytes;
     char answer[256];
@@ -352,7 +352,7 @@ int influx(const logger_t* logger, action_influx_t* action) {
         return 1;
     }
 
-    print_error(logger, "[Influx] Received: %s\n", answer);
+    sprint_error(logger, "[Influx] Received: %s\n", answer);
 
     return 0;
 }
