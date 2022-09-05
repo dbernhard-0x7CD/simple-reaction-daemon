@@ -25,6 +25,7 @@
     * `datetime_format` (defined in srd.c) will replace `%%ms` (really double percentage sign) with the milliseconds of the current time 
     * Fix no message when `loglevel` is invalid
     * Potential performance improvements
+    * targets can now be IPv6 addresses
 
 * 0.0.6 (Released on 19.08.2022)
     * **Breaking**: `down-again`, `up-again` renamed to `down-new` and`up-new`
