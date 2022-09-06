@@ -216,38 +216,38 @@ int run_command(const logger_t* logger, const action_cmd_t *cmd, const uint32_t 
     return 1;
 }
 
-int log_to_file(const logger_t* logger, const char *path, const char *message, const char* username)
+int log_to_file(const logger_t* logger, const action_log_t* action_log)
 {
     FILE *file;
 
     // check if the file is beeing created
     int is_new = 0;
-    if (access(path, F_OK) != 0) {
+    if (access(action_log->path, F_OK) != 0) {
         is_new = 1;
     }
 
-    file = fopen(path, "a");
+    file = fopen(action_log->path, "a");
 
     if (file == NULL)
     {
-        print_error(logger, "Unable to open file: %s (Reason: %s)\n", path, strerror(errno));
+        sprint_error(logger, "Unable to open file: %s (Reason: %s)\n", action_log->path, strerror(errno));
         return 0;
     }
 
-    fputs(message, file);
+    fputs(action_log->message, file);
     fputs("\n", file);
 
     int ret_code = fclose(file) == 0;
 
     // set permissions for the file when 
     // it's newly created
-    if (is_new && username != NULL) {
-        struct passwd *user_passwd = getpwnam(username);
+    if (is_new && action_log->username != NULL) {
+        struct passwd *user_passwd = getpwnam(action_log->username);
 
-        int r = chown(path, user_passwd->pw_uid, user_passwd->pw_gid);
+        int r = chown(action_log->path, user_passwd->pw_uid, user_passwd->pw_gid);
 
         if (r < 0) {
-            sprint_error(logger, "Unable to chown log file %s: %s\n", path, strerror(errno));
+            sprint_error(logger, "Unable to chown log file %s: %s\n", action_log->path, strerror(errno));
         }
     }
 

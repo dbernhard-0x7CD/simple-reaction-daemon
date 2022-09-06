@@ -117,7 +117,7 @@ int run_command(const logger_t *logger, const action_cmd_t* cmd, const uint32_t 
 /*
 * Logs the given message to the given file by appending.
 */
-int log_to_file(const logger_t* logger, const char* path, const char* message, const char* username);
+int log_to_file(const logger_t* logger, const action_log_t* action_log);
 
 /*
  * Executes the given influx action. Returns 1 on success, else 0.

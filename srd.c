@@ -447,7 +447,10 @@ void run_check(check_arguments_t *args)
 
                     const char* message = insert_placeholders(action_log->message, check, datetime_format, downtime, uptime_s, connected);
 
-                    int r = log_to_file(logger, action_log->path, message, action_log->username);
+                    action_log_t copy = *action_log;
+                    copy.message = message;
+
+                    int r = log_to_file(logger, &copy);
                     if (r == 0) {
                         sprint_error(logger, "[%s]: Unable to log to file %s\n", check->ip ,action_log->path);
                     }
