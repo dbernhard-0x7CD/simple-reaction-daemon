@@ -10,8 +10,13 @@
     * test scenarios for all events (inside testfile)
     * test with no replacements done
     * test timeseries.conf (also example_configs)
-    * support for ipv6
+    * influx: support for ipv6
     * header for logs (usefull for creating csv's)
+    * influx timeout
+    * cache if datetime_format contains %%ms (only replace if there)
+        * or generally cache what needs to be replaced (bitmap?)
+    * dispatch threads in some dependency order
+    * ignore-below (for down-new and up-new)
 
 <br />
 
