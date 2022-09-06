@@ -200,6 +200,9 @@ int main()
                 if (action_log->username) {
                     free((char *)action_log->username);
                 }
+                if (action_log->header) {
+                    free((char *)action_log->header);
+                }
                 free(ptr->actions[i].object);
             } else if (strcmp(ptr->actions[i].name, "influx") == 0) {
                 action_influx_t* influx = (action_influx_t*) ptr->actions[i].object;
@@ -880,6 +883,15 @@ int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, 
                         return 0;
                     } else {
                         action_log->message = str_replace(message, "%ip", (char *)cc->ip);
+                    }
+
+                    // Load header
+                    const char* header;
+                    if (config_setting_lookup_string(action, "header", &header))
+                    {
+                        action_log->header = str_replace(header, "%ip", (char *)cc->ip);
+                    } else {
+                        action_log->header = NULL;
                     }
 
                     const char* username;

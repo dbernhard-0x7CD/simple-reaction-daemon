@@ -233,6 +233,10 @@ int log_to_file(const logger_t* logger, const action_log_t* action_log)
         sprint_error(logger, "Unable to open file: %s (Reason: %s)\n", action_log->path, strerror(errno));
         return 0;
     }
+    if (is_new) {
+        fputs(action_log->header, file);
+        fputs("\n", file);
+    }
 
     fputs(action_log->message, file);
     fputs("\n", file);

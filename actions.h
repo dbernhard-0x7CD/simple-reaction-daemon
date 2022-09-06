@@ -66,6 +66,9 @@ typedef struct action_log_t {
 
     // Username of the owner from the logfile
     const char* username;
+
+    // Header for the log-file. Only written when creating the file
+    const char* header;
 } action_log_t;
 
 /*
