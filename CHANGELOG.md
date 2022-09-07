@@ -11,7 +11,6 @@
     * test with no replacements done
     * test timeseries.conf (also example_configs)
     * influx: support for ipv6
-    * header for logs (usefull for creating csv's)
     * influx timeout
     * cache if datetime_format contains %%ms (only replace if there)
         * or generally cache what needs to be replaced (bitmap?)
@@ -31,6 +30,7 @@
     * Fix no message when `loglevel` is invalid
     * Potential performance improvements
     * targets can now be IPv6 addresses
+    * New setting `header` for action `log` (usefull for creating CSV files)
 
 * 0.0.6 (Released on 19.08.2022)
     * **Breaking**: `down-again`, `up-again` renamed to `down-new` and`up-new`
