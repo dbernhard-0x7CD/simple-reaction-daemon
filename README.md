@@ -156,12 +156,14 @@ See here for the exact format: [https://cplusplus.com/reference/ctime/strftime/]
 }
 ```
 
-* Notes for `message`:
-    * For placeholders see [here](#placeholders)
 * With `user` you can define the owner of the file
     * This is only set when creating the file
-* `path` supports the [placeholder](#placeholders) `%ip`
-
+* Additional setting `header` takes a string which will be the header if the file is newly created:
+    * For example: ``` header = "host, latency";``` would be suitable for CSV files
+        * And corresponding ``` message = "%ip, %lat_ms";```
+* Notes for `path`: Supports the [placeholder](#placeholders) `%ip`
+* Notes for `message`:
+    * Supports [placeholders](#placeholders)
 
 ### Action **write to InfluxDB**:
 ```
@@ -176,7 +178,7 @@ See here for the exact format: [https://cplusplus.com/reference/ctime/strftime/]
 }
 ```
 * Notes for `linedata`:
-    * For placeholders see [here](#placeholders)
+    * Supports [placeholders](#placeholders)
 * Notes for `endpoint`:
     * Supports `%ip` placeholder
 
