@@ -1,25 +1,33 @@
 
 # Changelog
 
+* 0.0.7 (Released on 09.09.2022)
+    * Pings now follow period more closely (and no longer shift)
+        * Previously some shift occured as we waited `period` time between pings (and did not include actions which may take some time)
+    * `timeout` for the `command` action
+    * action `influx` for inserting data into [InfluxDB](https://www.influxdata.com/)
+    * `%timestamp` is replaced with the unix timestamp
+    * Allow development without gateway
+    * `datetime_format` (defined in srd.c) will replace `%%ms` (really double percentage sign) with the milliseconds of the current time 
+    * Fix no message when `loglevel` is invalid
+    * Potential performance improvements
+    * targets can now be IPv6 addresses
+    * New setting `header` for action `log` (usefull for creating CSV files)
 
-* (Planned) 1.0
-    * Support config name as dependencies
-    * Own ping
-    * `%success` placeholder (binary)
-    * Print if a command is ill formed for sh
-        * capture stderr?
-    * `down-again` (print how long an IP was online)
-    * `down-start` one message if host went down
-    * `up-start` one message if host is up
-    * print to stdout action `stdout` with message
-    * time test for actions: `command` versus `log`
+* 0.0.6 (Released on 19.08.2022)
+    * **Breaking**: `down-again`, `up-again` renamed to `down-new` and`up-new`
+    * Own ping implementation (running as root is no longer needed to ping)
+        * We now use approximately 2.5 times less CPU time (userspace and kernel times)
+    * `%status` placeholder for `success` or `failed` depending if the ping was answered or not
+    * `datetime_format` (from srd.conf) is regarded when printing the current time in stdout
+    * Event `down-again` which runs if a previous ping succeeded and now fails
+    * Fixed potential very rare race condition when printing
+    * Fix `%lat_ms` not always beeing replaced
+    * Make `datetime_format` optional in `srd.conf`
+    * `up-new` actions are triggered at startup
     * `%uptime` placeholder
-    * Fix %lat_ms not always beeing replaced
-
-<br />
-
-* [WIP] 0.0.6
-    *
+    * Update README.md
+    * Support `%ip` placeholder in log.path
 
 * 0.0.5
     * new ERROR loglevel (nothing logged regarding connections)
