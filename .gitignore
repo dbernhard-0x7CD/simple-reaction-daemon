@@ -6,6 +6,8 @@ arch-pkg/pkg/*
 arch-pkg/*.zst
 .gitp/
 *.o
+debug.c
+debug
 performance.txt
 venv/
 .sync-exclude.lst
