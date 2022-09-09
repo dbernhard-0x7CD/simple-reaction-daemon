@@ -519,15 +519,21 @@ int ping(const logger_t *logger,
 
     sa_family_t addr_family;
     
-
+    memset(&addr_ping, 0, sizeof(addr_ping));
     if (!to_sockaddr(address, &addr_ping, &addr_family)) {
         // could be a hostname
-
         print_debug(logger, "Trying as a hostname: %s\n", address);
         if (!resolve_hostname(logger, address, &addr_ping, &addr_family)) {
             return (-1);
         }
     }
+
+#if DEBUG
+    close(*sd);
+    close(*epoll_fd);
+    *sd = create_socket(logger, addr_family);
+    *epoll_fd = create_epoll(*sd);
+#endif
 
     addr_ping.ss_family = addr_family;
 
