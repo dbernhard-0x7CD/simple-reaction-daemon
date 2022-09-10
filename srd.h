@@ -20,9 +20,10 @@ typedef struct connectivity_check_t
     // Timeout in seconds
     double timeout;
 
-    // Period in which this IP is pinged
+    // Period in which this IP is pinged in seconds
     int period;
 
+    // number of times to retry sending a ping
     int num_pings;
 
     // Latency of the last ping in seconds; -1.0 if not successful
@@ -46,7 +47,7 @@ typedef struct connectivity_check_t
     // Count of actions if this target is not reachable
     int actions_count;
 
-    // Actions if the target is not reachable
+    // Actions to perform (dependend on the status)
     action_t *actions;
 
     // Socket used to ping the target
