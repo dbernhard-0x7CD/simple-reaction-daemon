@@ -133,13 +133,25 @@ int main()
         int result;
 
         const struct timespec timeout = { .tv_nsec = 0, .tv_sec = 60 };
+
+        struct timespec now;
         
-        while ((result = sigtimedwait(&waitset, &info, &timeout) < 0)) {
-            if (result == EAGAIN) {
+        while ((result = sigtimedwait(&waitset, &info, &timeout)) < 0) {
+            if (errno == EAGAIN) {
+                // printf("was EAGAIN\n");
+                clock_gettime(CLOCK_REALTIME, &now);
+
                 for (int i = 0; i < connectivity_targets; i++)
                 {
-                    if (!pthread_kill(threads[i], 0)) {
-                        sprint_error(logger, "Thread %d failed\n", i);
+                    const connectivity_check_t* check = connectivity_checks[i];
+
+                    double diff = calculate_difference(check->timestamp_latest_try, now);
+
+                    // sprint_debug(logger, "period: %ds and diff: %f s\n", check->period, diff);
+
+                    // + 1 to not report some small overhead occured
+                    if (check->period + 1 < diff) {
+                        sprint_error(logger, "Thread for %s is stalled. Period is %d but last check was %1.2f seconds ago \n", check->ip, check->period, diff);
                     }
                 }
                 sprint_debug(logger, "Checking threads...\n");
@@ -306,6 +318,8 @@ void run_check(check_arguments_t *args)
     
         char current_time[32];
         get_current_time(current_time, 32, datetime_format, NULL);
+        clock_gettime(CLOCK_REALTIME, &now);
+        check->timestamp_latest_try = now;
 
         // downtime in seconds
         double downtime_s;

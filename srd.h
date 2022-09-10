@@ -40,6 +40,9 @@ typedef struct connectivity_check_t
     // Timestamp of the first failing ping, set when we switch from STATE_UP to STATE_DOWN_NEW
     struct timespec timestamp_first_failed;
 
+    // Last time we sent a ping
+    struct timespec timestamp_latest_try;
+
     // Count of actions if this target is not reachable
     int actions_count;
 
