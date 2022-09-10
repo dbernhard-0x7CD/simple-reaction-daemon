@@ -305,7 +305,8 @@ char* insert_placeholders(const char* raw_message,
         // +2 for null-term and one off by log10
         // +1 for period '.'
         // +2 for some precision
-        int length = log10f(check->latency + 1) + 5;
+        int length = (int)log10f(check->latency * 1e3 + 1.0) + 5;
+
         char* latency_str = malloc(length * sizeof(char));
 
         const char* old = message;
