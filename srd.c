@@ -59,19 +59,18 @@ int main()
     }
 
     // try to get default gateway
-    default_gw = get_default_gw();
-
-    if (default_gw == NULL) {
-        print_error(logger, "Unable to get default gateway\n");
+    while ((default_gw = get_default_gw()) == NULL) {
 
         /*
-        * We only exit if not in DEBUG mode.
+        * Use localhost as gateway when debugging and no gateway is available.
         */
-#ifndef DEBUG
-        pthread_mutex_destroy(&stdout_mut);
-        return EXIT_FAILURE;
-#else
+#ifdef DEBUG
         default_gw = "127.0.0.1";
+        break;
+#else
+        print_error(logger, "Unable to get default gateway. Retrying in 60 seconds... \n");
+
+        sleep(60);
 #endif
     }
 
