@@ -19,6 +19,9 @@
 
 <br />
 
+* 0.0.8 (Released on XX.09.2022)
+    * Fixed missing decimal places for pings greater than 99ms
+
 * 0.0.7 (Released on 09.09.2022)
     * Pings now follow period more closely (and no longer shift)
         * Previously some shift occured as we waited `period` time between pings (and did not include actions which may take some time)
