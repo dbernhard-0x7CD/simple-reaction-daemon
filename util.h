@@ -1,11 +1,12 @@
 #include <stdint.h>
-#include <sys/socket.h>
+#include <sys/un.h>
 #include <time.h>
 
 #include "srd.h"
 #include "printing.h"
 struct timespec;
-struct sockaddr_in;
+struct sockaddr_storage;
+
 
 #ifndef SRD_UTIL_H
 #define SRD_UTIL_H
