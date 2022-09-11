@@ -116,7 +116,7 @@ int check_connectivity(connectivity_check_t *check);
  * max_conns_size is the current maximum for conns
  * Returns 1 on success, else 0.
  */
-int load_config(char *cfg_path, connectivity_check_t ***conns, int *conns_size, int *max_conns_size);
+int load_config(const char *cfg_path, connectivity_check_t ***conns, int *conns_size, int *max_conns_size);
 
 /*
  * Handle signals like SIGTERM to stop this program.

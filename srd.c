@@ -622,7 +622,7 @@ connectivity_check_t **load(char *directory, int *success, int *count)
     return conns;
 }
 
-int load_config(char *cfg_path, connectivity_check_t*** conns, int* conns_size, int* max_conns_size)
+int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_size, int* max_conns_size)
 {
     config_t cfg;
 

@@ -26,7 +26,7 @@ char *escape_servicename(char *);
 /*
  * Checks if the string 'str' ends with 'end'
  */
-int ends_with(char *str, char *end);
+int ends_with(const char *str, const char *end);
 
 /*
  * Returns a pointer to the string 'string' where substr was replaced with

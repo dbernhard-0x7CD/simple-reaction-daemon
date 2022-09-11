@@ -99,7 +99,7 @@ char *escape_servicename(char *input_name)
     return escaped_str;
 }
 
-int ends_with(char *str, char *end)
+int ends_with(const char *str, const char *end)
 {
     if (!str || !end)
     {
