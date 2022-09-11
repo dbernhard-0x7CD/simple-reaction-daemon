@@ -139,7 +139,6 @@ int main()
         
         while ((result = sigtimedwait(&waitset, &info, &timeout)) < 0) {
             if (errno == EAGAIN) {
-                // printf("was EAGAIN\n");
                 clock_gettime(CLOCK_REALTIME, &now);
 
                 for (int i = 0; i < connectivity_targets; i++)
@@ -147,8 +146,6 @@ int main()
                     const connectivity_check_t* check = connectivity_checks[i];
 
                     double diff = calculate_difference(check->timestamp_latest_try, now);
-
-                    // sprint_debug(logger, "period: %ds and diff: %f s\n", check->period, diff);
 
                     // + 1 to not report some small overhead occured
                     if (check->period + 1 < diff) {
