@@ -43,6 +43,7 @@ int main()
 {
     // await stop signal, then we stop (set running = 0)
     signal(SIGALRM, signal_handler); 
+    signal(SIGINT, signal_handler);
 
     logger_t log;
     log.level = &loglevel;
@@ -118,6 +119,7 @@ int main()
     {
         sigemptyset(&waitset);
 
+        sigaddset(&waitset, SIGINT);
         sigaddset(&waitset, SIGALRM);
         sigaddset(&waitset, SIGTERM);
         sigaddset(&waitset, SIGABRT);
@@ -521,7 +523,7 @@ void run_check(check_arguments_t *args)
 void signal_handler(int s)
 {
     // stop if we receive one of those signals
-    if (s == SIGTERM || s == SIGABRT || s == SIGKILL || s == SIGSTOP || s == SIGALRM)
+    if (s == SIGALRM || s == SIGINT || s == SIGKILL || s == SIGSTOP || s == SIGTERM || s == SIGABRT)
     {
         running = 0;
         return;
