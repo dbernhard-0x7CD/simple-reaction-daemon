@@ -331,7 +331,10 @@ void run_check(check_arguments_t *args)
             }
         }
         int connected = check_connectivity(logger, check);
-    
+        if (!running) {
+            break;
+        }
+        
         char current_time[32];
         get_current_time(current_time, 32, datetime_format, NULL);
         clock_gettime(CLOCK_REALTIME, &now);
