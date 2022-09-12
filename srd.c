@@ -684,9 +684,7 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
             char* path = strdup(cfg_path);
             cc->name = basename(path);
 
-            struct timespec time_zero;
-            time_zero.tv_nsec = 0;
-            time_zero.tv_sec = 0;
+            const struct timespec time_zero = { .tv_nsec = 0, .tv_sec = 0};
 
             cc->timestamp_first_failed = time_zero;
             cc->timestamp_first_reply = time_zero;
