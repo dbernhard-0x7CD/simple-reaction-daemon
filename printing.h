@@ -19,6 +19,9 @@ typedef struct logger_t
 {
     pthread_mutex_t *stdout_mut;
     enum loglevel *level;
+
+    // prefix for each message
+    const char* prefix;
 } logger_t;
 
 /* Define some macros to print inside a mutex */
@@ -29,9 +32,14 @@ typedef struct logger_t
     }                                                \
     else                                             \
     {                                                \
+        printf(logger->prefix);                      \
         printf(__VA_ARGS__);                         \
         pthread_mutex_unlock(logger->stdout_mut);    \
     }
+
+#define uprint(logger, ...)     \
+    printf(logger->prefix);     \
+    printf(__VA_ARGS__);
 
 #define sprint_debug(logger, ...)              \
     if (*logger->level <= LOGLEVEL_DEBUG)      \
@@ -39,10 +47,10 @@ typedef struct logger_t
         sprint(logger, "DEBUG: " __VA_ARGS__); \
     }
 
-#define sprint_debug_raw(logger, ...)              \
+#define sprint_debug_raw(logger, ...)          \
     if (*logger->level <= LOGLEVEL_DEBUG)      \
     {                                          \
-        sprint(logger, __VA_ARGS__); \
+        sprint(logger, __VA_ARGS__);           \
     }
 
 #define sprint_info(logger, ...)         \
@@ -66,25 +74,25 @@ typedef struct logger_t
 #define print_debug(logger, ...)          \
     if (*logger->level <= LOGLEVEL_DEBUG) \
     {                                     \
-        printf("DEBUG: " __VA_ARGS__);    \
+        uprint(logger, "DEBUG: " __VA_ARGS__);   \
     }
 
 #define print_info(logger, ...)          \
     if (*logger->level <= LOGLEVEL_INFO) \
     {                                    \
-        printf(__VA_ARGS__);             \
+        uprint(logger, __VA_ARGS__);            \
     }
 
 #define print_quiet(logger, ...)          \
     if (*logger->level <= LOGLEVEL_QUIET) \
     {                                     \
-        printf(__VA_ARGS__);              \
+        uprint(logger, __VA_ARGS__);             \
     }
 
 #define print_error(logger, ...)          \
     if (*logger->level <= LOGLEVEL_ERROR) \
     {                                     \
-        printf("ERROR: " __VA_ARGS__);              \
+        uprint(logger, "ERROR: " __VA_ARGS__);   \
     }
 
 

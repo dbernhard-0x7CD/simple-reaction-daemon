@@ -66,9 +66,9 @@ finish:
     return r >= 0;
 }
 
-int restart_service(const logger_t* logger, const char *name, const char *ip)
+int restart_service(const logger_t* logger, const char *name)
 {
-    print_debug(logger, "[%s]: Restart service %s\n", ip, name);
+    print_debug(logger, "Restart service: %s\n", name);
 
     sd_bus_error error = SD_BUS_ERROR_NULL;
     sd_bus_message *m = NULL;
@@ -118,7 +118,7 @@ int restart_service(const logger_t* logger, const char *name, const char *ip)
         goto finish;
     }
 
-    sprint_debug(logger, "[%s]: Queued service job as %s.\n", ip, path);
+    sprint_debug(logger, "Queued service job as %s.\n", path);
 
 finish:
     sd_bus_error_free(&error);

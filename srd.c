@@ -48,6 +48,7 @@ int main()
     logger_t log;
     log.level = &loglevel;
     log.stdout_mut = &stdout_mut;
+    log.prefix = "[main]: ";
     logger = &log;
 
     print_error(logger, "Starting srd (Simple Reaction Daemon) version %s\n", version);
@@ -106,10 +107,27 @@ int main()
     // for each target in `connectivity_checks` we create one thread
     for (int i = 0; i < connectivity_targets; i++)
     {
-        args[i] = (check_arguments_t) { connectivity_checks, i, connectivity_targets };
+        /*
+         * Create a logger with the prefix CONFIG_NAME-TARGET_IP
+         */
+        logger_t thread_logger = *logger;
+
+        size_t confname_length = strlen(connectivity_checks[i]->name);
+        size_t hostname_length = strlen(connectivity_checks[i]->ip);
+
+        char* prefix = malloc(5 * sizeof(char) + confname_length + hostname_length);
+        prefix[0] = '[';
+        strncpy(prefix + 1, connectivity_checks[i]->name, confname_length);
+        prefix[1 + confname_length] = '-';
+        strncpy(prefix + 2 + confname_length, connectivity_checks[i]->ip, hostname_length);
+        strncpy(prefix + 2 + confname_length + hostname_length, "]: ", 4);
+
+        thread_logger.prefix = prefix;
+        
+        args[i] = (check_arguments_t) { connectivity_checks, i, connectivity_targets, thread_logger };
         pthread_create(&threads[i], NULL, (void *)run_check, (void *)&args[i]);
     }
-    print_error(logger, "Started all target checks (%d).\n", connectivity_targets);
+    print_info(logger, "Started all target checks (%d).\n", connectivity_targets);
 
     // used to await only specific signals
     sigset_t waitset;
@@ -184,6 +202,7 @@ int main()
 
         free((char *)ptr->ip);
         free((char *)ptr->depend_ip);
+        free((char *)ptr->name);
 
         close(ptr->epoll_fd);
         close(ptr->socket);
@@ -234,7 +253,7 @@ int main()
 
     pthread_mutex_destroy(&stdout_mut);
 
-    print_error(logger, "Finished Simple Reaction Daemon.\n");
+    print_info(logger, "Finished Simple Reaction Daemon.\n");
     fflush(stdout);
 
     return EXIT_SUCCESS;
@@ -262,7 +281,6 @@ int is_available(connectivity_check_t *check, int strict) {
         return 1;
     }
 
-    sprint_debug(logger, "Not available: %s (status: %d)\n", check->ip, check->status);
     return 0;
 }
 
@@ -272,6 +290,8 @@ void run_check(check_arguments_t *args)
     connectivity_check_t* check = args->connectivity_checks[idx];
 
     pthread_setname_np(pthread_self(), check->ip);
+
+    logger_t* logger = &args->logger;
 
     // store time to calculate the time of the next ping
     struct timespec now;
@@ -287,7 +307,7 @@ void run_check(check_arguments_t *args)
         dependency = get_dependency(args->connectivity_checks, args->amount_targets, check->depend_ip);
 
         if (dependency == NULL) {
-            sprint_error(logger, "[%s]: Unable to find check: %s\n", check->ip, check->depend_ip);
+            sprint_error(logger, "Unable to find check: %s\n",  check->depend_ip);
             running = 0;
             kill(getpid(), SIGALRM);
             return;
@@ -299,12 +319,12 @@ void run_check(check_arguments_t *args)
     {
         // check if our dependency is available
         if (check->depend_ip != NULL) {
-            sprint_debug(logger, "[%s]: Checking for dependency %s\n",check->ip, check->depend_ip);
+            sprint_debug(logger, "Checking for dependency %s\n",check->depend_ip);
 
             int available = is_available(dependency, 1);
 
             if (available == 0) {
-                sprint_info(logger, "[%s]: Awaiting dependency %s\n", check->ip, check->depend_ip);
+                sprint_info(logger, "Awaiting dependency %s\n", check->depend_ip);
 
                 next_period = timespec_add(next_period, period);
                 sleep(check->period);
@@ -312,7 +332,7 @@ void run_check(check_arguments_t *args)
                 continue;
             }
         }
-        int connected = check_connectivity(check);
+        int connected = check_connectivity(logger, check);
     
         char current_time[32];
         get_current_time(current_time, 32, datetime_format, NULL);
@@ -329,7 +349,7 @@ void run_check(check_arguments_t *args)
         if (connected == 1)
         {
             if ((check->status & STATE_UP) == 0) {
-                sprint_info(logger, "[%s]: Reachable %s\n", check->ip,  current_time);
+                sprint_info(logger, "Reachable %s\n", current_time);
                 if (check->status & STATE_DOWN) {
                     prev_downtime = calculate_difference(check->timestamp_last_reply, now);
                 }
@@ -359,11 +379,11 @@ void run_check(check_arguments_t *args)
 
             downtime_s = calculate_difference(check->timestamp_first_failed, now);
 
-            sprint_info(logger, "[%s]: %s: Ping FAILED. Now for %0.3fs\n", check->ip, current_time, downtime_s);
+            sprint_info(logger, "%s: Ping FAILED. Now for %0.3fs\n", current_time, downtime_s);
         } else if (!running) {
             break; 
         } else {
-            sprint_error(logger, "[%s]: %s: Error when checking connectivity. (connected: %d)\n", check->ip, current_time, connected);
+            sprint_error(logger, "%s: Error when checking connectivity. (connected: %d)\n", current_time, connected);
 
             check->status = STATE_NONE;
 
@@ -376,14 +396,14 @@ void run_check(check_arguments_t *args)
             continue;
         }
         fflush(stdout);
-        // print_debug(logger, "[%s]: determined state: %d\n", check->ip , check->status);
+        // print_debug(logger, "determined state: %d\n", check->status);
 
         // check if any action is required
         for (int i = 0; running && i < check->actions_count; i++)
         {
             action_t this_action = check->actions[i];
             
-            // print_debug(logger, "[%s]: action: %s this_action.run %d\n", check->ip, this_action.name, this_action.run);
+            // print_debug(logger, "action: %s this_action.run %d\n", check->ip, this_action.name, this_action.run);
 
             unsigned int state_match = check->status & this_action.run;
             int superior = (state_match >= this_action.run || this_action.run == STATE_ALL);
@@ -402,15 +422,15 @@ void run_check(check_arguments_t *args)
                                     state_down_diff;
             if (should_run)
             {
-                sprint_info(logger, "[%s]: Performing action: %s\n", check->ip, check->actions[i].name);
+                sprint_info(logger, "Performing action: %s\n", check->actions[i].name);
 
                 if (strcmp(this_action.name, "service-restart") == 0)
                 {
-                    restart_service(logger, this_action.object, check->ip);
+                    restart_service(logger, this_action.object);
                 }
                 else if (strcmp(this_action.name, "reboot") == 0)
                 {
-                    sprint_info(logger, "[%s]: Sending restart signal\n", check->ip);
+                    sprint_info(logger, "Sending restart signal\n");
                     int res = restart_system(logger);
 
                     if (res == 0) { // unable to restart
@@ -422,7 +442,7 @@ void run_check(check_arguments_t *args)
 
                         run_command(logger, &cmd_reboot, 5e3);
                     } else {
-                        sprint_info(logger, "[%s]: Reboot scheduled. \n", check->ip);
+                        sprint_info(logger, "Reboot scheduled. \n");
                     }
                 }
                 else if (strcmp(this_action.name, "command") == 0)
@@ -464,7 +484,7 @@ void run_check(check_arguments_t *args)
 
                     int r = log_to_file(logger, &copy);
                     if (r == 0) {
-                        sprint_error(logger, "[%s]: Unable to log to file %s\n", check->ip ,action_log->path);
+                        sprint_error(logger, "Unable to log to file %s\n", action_log->path);
                     }
                     
                     free((char *)message);
@@ -484,7 +504,7 @@ void run_check(check_arguments_t *args)
                 }
                 else
                 {
-                    sprint_error(logger, "[%s]: This action is NOT implemented: %s\n", check->ip, this_action.name);
+                    sprint_error(logger, "This action is NOT implemented: %s\n", this_action.name);
                 } 
             }
         } // end for loop. (to check if any action has to be taken)
@@ -501,7 +521,7 @@ void run_check(check_arguments_t *args)
                 char str_time[32];
                 get_current_time(str_time, 32, datetime_format, NULL);
 
-                print_error(logger, "[%s]: Behind in schedule by %d ms at %s. Check your period and your timeouts of the actions.\n", check->ip, wait_time, str_time);
+                print_error(logger, "Behind in schedule by %d ms at %s. Check your period and your timeouts of the actions.\n", wait_time, str_time);
 
                 next_period = timespec_add(now, period);
 
@@ -514,7 +534,7 @@ void run_check(check_arguments_t *args)
         }
     } // end check while(running)
 
-    sprint_debug(logger, "[%s]: Shutting this target check down.\n", check->ip);
+    sprint_debug(logger, "Shutting this target check down.\n");
 }
 
 void signal_handler(int s)
@@ -529,7 +549,7 @@ void signal_handler(int s)
     fflush(stdout);
 }
 
-int check_connectivity(connectivity_check_t* cc)
+int check_connectivity(const logger_t* logger, connectivity_check_t* cc)
 {
     int success = 0;
 
@@ -548,7 +568,7 @@ int check_connectivity(connectivity_check_t* cc)
         return 0;
     }
 
-    sprint_debug(logger, "[%s]: Ping has success: %d with latency: %2.3fms\n", cc->ip, success, cc->latency * 1000);
+    sprint_debug(logger, "Ping has success: %d with latency: %2.3fms\n", success, cc->latency * 1000);
 
     return success;
 }
@@ -659,6 +679,9 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
             // initial values for a target
             cc->socket = -1;
             cc->epoll_fd = -1;
+
+            char* path = strdup(cfg_path);
+            cc->name = basename(path);
 
             struct timespec time_zero;
             time_zero.tv_nsec = 0;

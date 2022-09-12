@@ -91,17 +91,18 @@ typedef struct action_influx_t {
 
     // socket to send the data
     int conn_socket;
+
+    // epoll fd to send the data
+    int conn_epoll_fd;
 } action_influx_t;
 
 /*
 * Restarts the given service. The service-name must have
 * characters not in [a-Z] or [0-9] escaped to _HEX where
 * HEX is the hex value of the character as string.
-* ip is used when logging to indicate from which target
-* this restart originated.
 * Returns 1 on success, else 0.
 */
-int restart_service(const logger_t* logger, const char* name, const char* ip);
+int restart_service(const logger_t* logger, const char* name);
 
 /*
 * Restarts the system (errors out if the executing user has

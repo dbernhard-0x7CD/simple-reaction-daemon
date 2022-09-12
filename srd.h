@@ -11,6 +11,9 @@
  */
 typedef struct connectivity_check_t
 {
+    // config name where this target is defined
+    const char* name;
+
     // target IP address
     const char *ip;
 
@@ -71,6 +74,9 @@ typedef struct check_arguments_t
 
     /* Sum of all checks */
     int amount_targets;
+
+    /* Logger which should be used by this thread. */
+    logger_t logger;
 } check_arguments_t;
 
 /*
@@ -108,7 +114,7 @@ connectivity_check_t **load(char *const directory, int *success, int *count);
  * else 0. If we cannot determine connectivity a negative value
  * is returned.
  */
-int check_connectivity(connectivity_check_t *check);
+int check_connectivity(const logger_t* logger, connectivity_check_t *check);
 
 /* Loads the configuration file at the given path and appends
  * all found connectivity targets to conns.

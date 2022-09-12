@@ -397,7 +397,7 @@ int resolve_hostname(const logger_t* logger, const char *hostname, struct sockad
 
     if ((rv = getaddrinfo(hostname, NULL, &hint, &pai)) < 0)
     {
-        sprint_error(logger, "[%s]: Unable to get address info: %s\n", hostname, gai_strerror(rv));
+        sprint_error(logger, "Unable to get address info: %s\n", gai_strerror(rv));
         return 0;
     }
 
@@ -523,7 +523,7 @@ int ping(const logger_t *logger,
     memset(&addr_ping, 0, sizeof(addr_ping));
     if (!to_sockaddr(address, &addr_ping, &addr_family)) {
         // could be a hostname
-        print_debug(logger, "Trying as a hostname: %s\n", address);
+        sprint_debug(logger, "Trying as a hostname: %s\n", address);
         if (!resolve_hostname(logger, address, &addr_ping, &addr_family)) {
             return (-1);
         }
@@ -548,7 +548,7 @@ int ping(const logger_t *logger,
 
     // Send the message
 #if DEBUG
-    sprint_debug(logger, "[%s]: Message sent: %s\n", address, send_pckt + 8);
+    sprint_debug(logger, "Message sent: %s\n", send_pckt + 8);
 #endif
 
     // Start the clock
@@ -564,10 +564,10 @@ int ping(const logger_t *logger,
 
     do {
         if (addr_family == AF_INET) {
-            print_debug(logger, "[%s]: ipv4 sendto\n", address);
+            sprint_debug(logger, "ipv4 sendto\n");
             bytes_sent = sendto(*sd, send_pckt, PACKETSIZE, 0, (struct sockaddr *)&addr_ping, sizeof(struct sockaddr_in));
         } else {
-            print_debug(logger, "[%s]: ipv6 sendto and packetsize %ld\n", address, sizeof(struct packet6));
+            sprint_debug(logger, "ipv6 sendto and packetsize %ld\n", sizeof(struct packet6));
             bytes_sent = sendto(*sd, send_pckt, PACKETSIZE, 0, (struct sockaddr*)&addr_ping, sizeof(struct sockaddr_in6));
         }
 
@@ -576,7 +576,7 @@ int ping(const logger_t *logger,
 
             int res = fstat(*sd, &info);
 
-            sprint_error(logger, "[%s]: Unable to send on socket %d after %d tries: %s. fstat returned %d family: %d\n", address, *sd, tries, strerror(errno), res, addr_family);
+            sprint_error(logger, "Unable to send on socket %d after %d tries: %s. fstat returned %d family: %d\n", *sd, tries, strerror(errno), res, addr_family);
 
             close(*sd);
             close(*epoll_fd);
@@ -597,7 +597,7 @@ int ping(const logger_t *logger,
             sprint_debug(logger, "Created new socket for %s\n", address);
         } else { // this holds: bytes >= 0
             if (bytes_sent == 64) break;
-            print_error(logger, "Only sent %d out of 64 bytes.\n", bytes_sent);
+            sprint_error(logger, "Only sent %d out of 64 bytes.\n", bytes_sent);
 
             return (-1);
         }
@@ -612,7 +612,7 @@ int ping(const logger_t *logger,
     if (num_ready < 0) {
         // Do not print if we got interrupted
         if (errno != EINTR) {
-            print_debug(logger, "[%s]: Unable to receive: %s\n", address, strerror(errno));
+            sprint_debug(logger, "Unable to receive: %s\n", strerror(errno));
         } else {
             // TODO: maybe return that an interrupt occured
         }
@@ -630,7 +630,7 @@ int ping(const logger_t *logger,
 
         double diff = calculate_difference(sent_time, rcvd_time);
 
-        print_debug(logger, "[%s]: Timeout after %1.2fms\n", address, diff * 1e3);
+        sprint_debug(logger, "Timeout after %1.2fms\n", diff * 1e3);
 
         *latency_s = -1.0;
 
@@ -660,7 +660,7 @@ int ping(const logger_t *logger,
     // check if the message matches
     int is_exact_match = memcmp(send_pckt + 8, rcv_pckt + 8, 56) == 0;
 
-    sprint_debug(logger, "[%s]: is_exact_match: %d\n", address, is_exact_match);
+    sprint_debug(logger, "is_exact_match: %d\n", is_exact_match);
 
     if (is_exact_match) {
         *latency_s = calculate_difference(sent_time, rcvd_time);
