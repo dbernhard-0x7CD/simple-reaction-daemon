@@ -253,7 +253,6 @@ char* insert_placeholders(const char* raw_message,
     char* message = strdup(raw_message);
 
     const conn_state_t state = check->status;
-    const struct timespec start_downtime = check->timestamp_first_failed;
 
     // replace %uptime
     if ((state & STATE_UP) || (state == STATE_DOWN_NEW)) {
@@ -271,11 +270,11 @@ char* insert_placeholders(const char* raw_message,
     if (state == STATE_UP_NEW || state & STATE_DOWN) {
         char str_time[32];
         struct tm time;
-        localtime_r(&start_downtime.tv_sec, &time);
+        localtime_r(&check->timestamp_first_failed.tv_sec, &time);
 
         strftime(str_time, 32, datetime_format, &time);
 
-        int ms = (int)(start_downtime.tv_nsec * 1e-6);
+        int ms = (int)(check->timestamp_first_failed.tv_nsec * 1e-6);
         char ms_str[4];
         snprintf(ms_str, 4, "%03d", ms);
 
