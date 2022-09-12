@@ -17,7 +17,10 @@ enum loglevel
 
 typedef struct logger_t
 {
+    // for avoiding race conditions when writing
     pthread_mutex_t *stdout_mut;
+
+    // the current loglevel
     enum loglevel *level;
 
     // prefix for each message

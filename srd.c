@@ -60,12 +60,10 @@ int main()
         return EXIT_FAILURE;
     }
 
-    // try to get default gateway
+    /* Try to get default gateway
+    * Use localhost as gateway when debugging and no gateway is available.
+    */
     while ((default_gw = get_default_gw()) == NULL) {
-
-        /*
-        * Use localhost as gateway when debugging and no gateway is available.
-        */
 #ifdef DEBUG
         default_gw = "127.0.0.1";
         break;
