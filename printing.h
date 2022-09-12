@@ -24,7 +24,7 @@ typedef struct logger_t
     enum loglevel *level;
 
     // prefix for each message
-    const char* prefix;
+    char* prefix;
 } logger_t;
 
 /* Define some macros to print inside a mutex */

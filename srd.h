@@ -12,7 +12,7 @@
 typedef struct connectivity_check_t
 {
     // config name where this target is defined
-    const char* name;
+    char* name;
 
     // target IP address
     const char *ip;

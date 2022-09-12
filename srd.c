@@ -113,12 +113,14 @@ int main()
         size_t confname_length = strlen(connectivity_checks[i]->name);
         size_t hostname_length = strlen(connectivity_checks[i]->ip);
 
-        char* prefix = malloc(5 * sizeof(char) + confname_length + hostname_length);
+        char* prefix = malloc((5 + confname_length + hostname_length) * sizeof(char));
         prefix[0] = '[';
         strncpy(prefix + 1, connectivity_checks[i]->name, confname_length);
         prefix[1 + confname_length] = '-';
         strncpy(prefix + 2 + confname_length, connectivity_checks[i]->ip, hostname_length);
-        strncpy(prefix + 2 + confname_length + hostname_length, "]: ", 4);
+        memcpy(prefix + 2 + confname_length + hostname_length, "]: ", 3 * sizeof(char));
+
+        prefix[4 + confname_length + hostname_length] = '\0';
 
         thread_logger.prefix = prefix;
         
@@ -196,6 +198,11 @@ int main()
 
     // free all memory
     for (int i = 0; i < connectivity_targets; i++) {
+        // args
+        check_arguments_t cur_args = args[i];
+        free(cur_args.logger.prefix);
+
+        // connectivity_checks
         connectivity_check_t* ptr = connectivity_checks[i];
 
         free((char *)ptr->ip);
@@ -682,7 +689,10 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
             cc->epoll_fd = -1;
 
             char* path = strdup(cfg_path);
-            cc->name = basename(path);
+            char* base = basename(path);
+            cc->name = malloc((strlen(base) + 1) * sizeof(char));
+            strcpy(cc->name, base);
+            free((char *)path);
 
             const struct timespec time_zero = { .tv_nsec = 0, .tv_sec = 0};
 
