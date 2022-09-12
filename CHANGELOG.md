@@ -6,7 +6,6 @@
     * Support config name as dependencies
     * CLI mode (run one check interactively)
     * print to stdout action `stdout` with message
-    * time test for actions: `command` versus `log`
     * test scenarios for all events (inside testfile)
     * test with no replacements done
     * test timeseries.conf (also example_configs)
@@ -20,7 +19,11 @@
 <br />
 
 * 0.0.8 (Released on XX.09.2022)
+    * Wait instead of shutting down when no default gateway was found (may happen if the service is started too early)
     * Fixed missing decimal places for pings greater than 99ms
+    * Report targets which we stopped pinging
+        * may happen if we're stuck on resolving a domain name 
+    * Shut down after pressing ctrl + c
 
 * 0.0.7 (Released on 09.09.2022)
     * Pings now follow period more closely (and no longer shift)
