@@ -583,6 +583,7 @@ int ping(const logger_t *logger,
             *sd = create_socket(logger, addr_family);
             *epoll_fd = create_epoll(*sd);
 
+            free((char *)send_pckt);
             return (-1);
         }
 
@@ -598,6 +599,7 @@ int ping(const logger_t *logger,
             if (bytes_sent == 64) break;
             sprint_error(logger, "Only sent %d out of 64 bytes.\n", bytes_sent);
 
+            free((char *)send_pckt);
             return (-1);
         }
         tries++;
@@ -623,6 +625,7 @@ int ping(const logger_t *logger,
         *sd = -1;
         *epoll_fd = -1;
 
+        free((char *)send_pckt);
         return 0;
     } else if (num_ready == 0) { // timeout
         clock_gettime(CLOCK_REALTIME, &rcvd_time);
@@ -637,7 +640,8 @@ int ping(const logger_t *logger,
         close(*epoll_fd);
         *sd = -1;
         *epoll_fd = -1;
-        
+
+        free((char *)send_pckt); 
         return 0;
     }
 
@@ -650,6 +654,7 @@ int ping(const logger_t *logger,
         if (bytes_rcved != 64) {
             printf("just received: %ld bytes: %s\n", bytes_rcved, (char *)rcv_pckt);
 
+            free((char *)send_pckt);
             return (-1);
         }
     }
@@ -671,6 +676,8 @@ int ping(const logger_t *logger,
         *sd = -1;
         *epoll_fd = -1;
     }
+
+    free((char *)send_pckt);
 
     return is_exact_match;
 }
