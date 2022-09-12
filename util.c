@@ -46,10 +46,10 @@ int needs_escaping(char c)
     return 0;
 }
 
-char *escape_servicename(char *input_name)
+char *escape_servicename(const char *input_name)
 {
     // count characters which need escaping
-    char *start = input_name;
+    const char *start = input_name;
     int chars_need_escaping = 0;
     int len = strlen(input_name);
 
@@ -225,7 +225,7 @@ void get_current_time(char* str, const int str_len, const char* format, time_t* 
     }
 }
 
-void seconds_to_string(int seconds, char* dt_string) {
+void seconds_to_string(const int seconds, char* dt_string) {
     int remainingSeconds = seconds;
 
     int days = remainingSeconds / (60*60*24);

@@ -21,7 +21,7 @@ int needs_escaping(char c);
  * Each character not in [a-Z] or [0-9] will get escaped to '_HEX' where HEX is
  * the HEX value of the value
  */
-char *escape_servicename(char *);
+char *escape_servicename(const char *);
 
 /*
  * Checks if the string 'str' ends with 'end'
@@ -45,7 +45,7 @@ char *get_default_gw();
  * [%d days] %h:%m:%s. Where %d is only contained if it's
  * more than one day.
  */
-void seconds_to_string(int seconds, char* dt_string);
+void seconds_to_string(const int seconds, char* dt_string);
 
 /*
  * Writes the current time into str with the given format.
