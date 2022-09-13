@@ -71,6 +71,10 @@ int main()
         print_error(logger, "Unable to get default gateway. Retrying in 60 seconds... \n");
 
         sleep(60);
+
+        if (!running) {
+            return EXIT_SUCCESS;
+        }
 #endif
     }
 
