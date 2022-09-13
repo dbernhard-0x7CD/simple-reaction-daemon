@@ -516,8 +516,12 @@ int ping(const logger_t *logger,
     }
 
 #if DEBUG
-    close(check->socket);
-    close(check->epoll_fd);
+    if (check->socket > 0) {
+        close(check->socket);
+    }
+    if (check->epoll_fd > 0) {
+        close(check->epoll_fd);
+    }
     check->socket = create_socket(logger, addr_family);
     check->epoll_fd = create_epoll(check->socket);
 #endif
