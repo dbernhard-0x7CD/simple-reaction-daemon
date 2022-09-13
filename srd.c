@@ -696,6 +696,7 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
             cc->socket = -1;
             cc->epoll_fd = -1;
 
+            // set the configuration name
             char* path = strdup(cfg_path);
             char* base = basename(path);
             cc->name = malloc((strlen(base) + 1) * sizeof(char));
@@ -713,6 +714,7 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
             cc->timestamp_first_reply = time_zero;
             cc->timestamp_last_reply = time_zero;
 
+            // load ip
             int length = cur_char - cur_ip_start;
 
             // one more allocated, for null delimiter
@@ -724,7 +726,7 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
             cc->ip = str_replace(ip, "%gw", default_gw);
             free(ip);
 
-            // initial connectivity_check values
+            // set initial connectivity_check values
             cc->status = STATE_NONE;
 
             if (!config_lookup_int(&cfg, "period", &cc->period))

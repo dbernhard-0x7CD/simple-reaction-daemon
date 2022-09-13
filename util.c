@@ -289,8 +289,6 @@ char* insert_placeholders(const char* raw_message,
     }
     // replace %downtime
     if (state == STATE_UP_NEW || state & STATE_DOWN) {
-        // difference string
-        
         char dt_string[24];
         seconds_to_string((int)downtime, dt_string);
         
@@ -299,6 +297,8 @@ char* insert_placeholders(const char* raw_message,
 
         free((void*)old);
     }
+
+    // replace %lat_ms
     if (check->latency >= 0) {
         // latency +1 to avoid negative logarithms (are negative in ]1, 0[); 
         // +2 for null-term and one off by log10
