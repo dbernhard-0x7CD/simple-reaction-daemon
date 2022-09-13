@@ -65,7 +65,9 @@ int main()
     */
     while ((default_gw = get_default_gw()) == NULL) {
 #ifdef DEBUG
-        default_gw = "127.0.0.1";
+        char* debug_gw = "127.0.0.1";
+        default_gw = malloc((1 + strlen(debug_gw)) * sizeof(char));
+        memcpy(default_gw, debug_gw, 1 + strlen(debug_gw));
         break;
 #else
         print_error(logger, "Unable to get default gateway. Retrying in 60 seconds... \n");
