@@ -507,10 +507,10 @@ int ping(const logger_t *logger,
     sa_family_t addr_family;
     
     memset(&addr_ping, 0, sizeof(addr_ping));
-    if (!to_sockaddr(check->ip, &addr_ping, &addr_family)) {
+    if (!to_sockaddr(check->address, &addr_ping, &addr_family)) {
         // could be a hostname
-        sprint_debug(logger, "Trying as a hostname: %s\n", check->ip);
-        if (!resolve_hostname(logger, check->ip, &addr_ping, &addr_family)) {
+        sprint_debug(logger, "Trying as a hostname: %s\n", check->address);
+        if (!resolve_hostname(logger, check->address, &addr_ping, &addr_family)) {
             return (-1);
         }
     }
@@ -534,7 +534,7 @@ int ping(const logger_t *logger,
     // construct packet and send
     memset(check->rcv_buffer, 0, PACKETSIZE);
 
-    initialize_packet(check->snd_buffer, addr_family, check->ip);
+    initialize_packet(check->snd_buffer, addr_family, check->address);
 
     // Send the message
 #if DEBUG
@@ -584,7 +584,7 @@ int ping(const logger_t *logger,
             check->socket = create_socket(logger, addr_family);
             check->epoll_fd = create_epoll(check->socket);
 
-            sprint_debug(logger, "Created new socket for %s\n", check->ip);
+            sprint_debug(logger, "Created new socket for %s\n", check->address);
         } else { // this holds: bytes >= 0
             if (bytes_sent == 64) break;
             sprint_error(logger, "Only sent %d out of 64 bytes.\n", bytes_sent);

@@ -15,7 +15,7 @@ typedef struct connectivity_check_t
     char* name;
 
     // target IP address
-    const char *ip;
+    const char *address;
 
     // IP address this check depends on
     const char *depend_ip;

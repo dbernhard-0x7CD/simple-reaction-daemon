@@ -95,7 +95,7 @@ int main()
     for (int i = 0; i < connectivity_targets; i++) {
         connectivity_check_t cc = *connectivity_checks[i];
 
-        printf("Connectivity target %d has ip %s\n", i, cc.ip);
+        printf("Connectivity target %d has ip %s\n", i, cc.address);
         printf("\t depends on: %s\n", cc.depend_ip);
         printf("\t period: %d\n", cc.period);
         printf("\tnum actions: %d\n", cc.actions_count);
@@ -117,13 +117,13 @@ int main()
         logger_t thread_logger = *logger;
 
         size_t confname_length = strlen(connectivity_checks[i]->name);
-        size_t hostname_length = strlen(connectivity_checks[i]->ip);
+        size_t hostname_length = strlen(connectivity_checks[i]->address);
 
         char* prefix = malloc((5 + confname_length + hostname_length) * sizeof(char));
         prefix[0] = '[';
         strncpy(prefix + 1, connectivity_checks[i]->name, confname_length);
         prefix[1 + confname_length] = '-';
-        strncpy(prefix + 2 + confname_length, connectivity_checks[i]->ip, hostname_length);
+        strncpy(prefix + 2 + confname_length, connectivity_checks[i]->address, hostname_length);
         memcpy(prefix + 2 + confname_length + hostname_length, "]: ", 3 * sizeof(char));
 
         prefix[4 + confname_length + hostname_length] = '\0';
@@ -173,7 +173,7 @@ int main()
 
                     // + 1 to not report some small overhead occured
                     if (check->period + 1 < diff) {
-                        sprint_error(logger, "Thread for %s is stalled. Period is %d but last check was %1.2f seconds ago \n", check->ip, check->period, diff);
+                        sprint_error(logger, "Thread for %s is stalled. Period is %d but last check was %1.2f seconds ago \n", check->address, check->period, diff);
                     }
                 }
                 sprint_debug(logger, "Checking threads...\n");
@@ -211,7 +211,7 @@ int main()
         // connectivity_checks
         connectivity_check_t* ptr = connectivity_checks[i];
 
-        free((char *)ptr->ip);
+        free((char *)ptr->address);
         free((char *)ptr->depend_ip);
         free((char *)ptr->name);
         free((char *)ptr->snd_buffer);
@@ -277,7 +277,7 @@ connectivity_check_t* get_dependency(connectivity_check_t **ccs, const int n, ch
     for (int i = 0; i < n; i++) {
         connectivity_check_t* ptr = ccs[i];
 
-        if (strcmp(ip, ptr->ip) == 0) {
+        if (strcmp(ip, ptr->address) == 0) {
             return ptr;
         }
     }
@@ -302,7 +302,7 @@ void run_check(check_arguments_t *args)
     const int idx = args->idx;
     connectivity_check_t* check = args->connectivity_checks[idx];
 
-    pthread_setname_np(pthread_self(), check->ip);
+    pthread_setname_np(pthread_self(), check->address);
 
     logger_t* logger = &args->logger;
 
@@ -723,7 +723,7 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
             memcpy(ip, cur_ip_start, length);
             *(ip + length) = '\0';
 
-            cc->ip = str_replace(ip, "%gw", default_gw);
+            cc->address = str_replace(ip, "%gw", default_gw);
             free(ip);
 
             // set initial connectivity_check values
@@ -889,7 +889,7 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
                         config_destroy(&cfg);
                         return 0;
                     }
-                    command = str_replace(command, "%ip", (char *)cc->ip);
+                    command = str_replace(command, "%ip", (char *)cc->address);
 
                     cmd->command = command;
 
@@ -926,7 +926,7 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
                     } else {
                         path = strdup(path);
 
-                        action_log->path = str_replace(path, "%ip", cc->ip);
+                        action_log->path = str_replace(path, "%ip", cc->address);
 
                         free((char*)path);
                     }
@@ -938,14 +938,14 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
                         config_destroy(&cfg);
                         return 0;
                     } else {
-                        action_log->message = str_replace(message, "%ip", (char *)cc->ip);
+                        action_log->message = str_replace(message, "%ip", (char *)cc->address);
                     }
 
                     // Load header
                     const char* header;
                     if (config_setting_lookup_string(action, "header", &header))
                     {
-                        action_log->header = str_replace(header, "%ip", (char *)cc->ip);
+                        action_log->header = str_replace(header, "%ip", (char *)cc->address);
                     } else {
                         action_log->header = NULL;
                     }
@@ -988,7 +988,7 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
                         config_destroy(&cfg);
                         return 0;
                     }
-                    action_influx->endpoint = str_replace(endpoint, "%ip", cc->ip);
+                    action_influx->endpoint = str_replace(endpoint, "%ip", cc->address);
 
                     // load authorization
                     const char* authorization;
@@ -1008,7 +1008,7 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
                         config_destroy(&cfg);
                         return 0;
                     }
-                    action_influx->line_data = str_replace(linedata, "%ip", cc->ip);
+                    action_influx->line_data = str_replace(linedata, "%ip", cc->address);
 
                     this_action->object = action_influx;
                 }
