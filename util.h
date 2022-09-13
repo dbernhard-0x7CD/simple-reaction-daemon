@@ -85,12 +85,7 @@ int create_socket(const logger_t* logger, const int address_family);
 * If nothing was returned 0 is returned. Errors are
 * indicated by any negative value.
 */
-int ping(const logger_t *logger,
-        int* sd,
-        int* epoll_fd,
-        const char *adress,
-        double *latency_s,
-        const double timeout_s);
+int ping(const logger_t *logger, connectivity_check_t* check);
 
 /*
  * Creates an epoll fd used to get notified when a message was received on the fd.

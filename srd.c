@@ -214,6 +214,8 @@ int main()
         free((char *)ptr->ip);
         free((char *)ptr->depend_ip);
         free((char *)ptr->name);
+        free((char *)ptr->snd_buffer);
+        free((char *)ptr->rcv_buffer);
 
         close(ptr->epoll_fd);
         close(ptr->socket);
@@ -569,7 +571,7 @@ int check_connectivity(const logger_t* logger, connectivity_check_t* cc)
 
     int i;
     for (i = 0; i < cc->num_pings; i++) {
-        int ping_success = ping(logger, &cc->socket, &cc->epoll_fd, cc->ip, &cc->latency, cc->timeout);
+        int ping_success = ping(logger, cc);
 
         if (ping_success == 1) {
             success = 1;
@@ -700,6 +702,11 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
             strcpy(cc->name, base);
             free((char *)path);
 
+            // allocate buffers
+            cc->snd_buffer = malloc(PACKETSIZE * sizeof(char));
+            cc->rcv_buffer = malloc(PACKETSIZE * sizeof(char));
+
+            // initialize timestamps which store first success; last (latest) reply, ...
             const struct timespec time_zero = { .tv_nsec = 0, .tv_sec = 0};
 
             cc->timestamp_first_failed = time_zero;

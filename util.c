@@ -18,8 +18,8 @@
 
 #include "util.h"
 #include "actions.h"
+#include "srd.h"
 
-#define PACKETSIZE  64
 struct packet
 {
     struct icmphdr hdr;
@@ -480,59 +480,46 @@ void fill_message(char* point, const char* end, const char* address) {
     *cptr = 0;
 }
 
-char* create_packet(int family, const char* address) {
-    char* packet = malloc(64 * sizeof(char));
-
-    memset(packet, 0, 64 * sizeof(char));
+void initialize_packet(char* packet_base, int family, const char* address) {
+    memset(packet_base, 0, 64 * sizeof(char));
 
     if (family == AF_INET) {
-        struct packet* pptr = (struct packet*) packet;
+        struct packet* pptr = (struct packet*) packet_base;
 
         pptr->hdr.type = ICMP_ECHO;
         pptr->hdr.un.echo.sequence = icmp_msgs_count++;
 
         fill_message(pptr->msg, pptr->msg + 56, address);
     } else if (family == AF_INET6) {
-        struct packet6* pptr = (struct packet6*) packet;
+        struct packet6* pptr = (struct packet6*) packet_base;
 
         pptr->hdr.icmp6_type = ICMP6_ECHO_REQUEST;
 
         fill_message(pptr->msg, pptr->msg + 56, address);
-    } else {
-        return NULL;
-    }
-
-    return packet;
+    } 
 }
 
 int ping(const logger_t *logger,
-         int* sd,
-         int* epoll_fd,
-         const char *address,
-         double *latency_s,
-         const double timeout_s)
+         connectivity_check_t* check)
 {
-    char* send_pckt;
-    char* rcv_pckt = malloc(PACKETSIZE * sizeof(char));
-
     struct sockaddr_storage addr_ping;
 
     sa_family_t addr_family;
     
     memset(&addr_ping, 0, sizeof(addr_ping));
-    if (!to_sockaddr(address, &addr_ping, &addr_family)) {
+    if (!to_sockaddr(check->ip, &addr_ping, &addr_family)) {
         // could be a hostname
-        sprint_debug(logger, "Trying as a hostname: %s\n", address);
-        if (!resolve_hostname(logger, address, &addr_ping, &addr_family)) {
+        sprint_debug(logger, "Trying as a hostname: %s\n", check->ip);
+        if (!resolve_hostname(logger, check->ip, &addr_ping, &addr_family)) {
             return (-1);
         }
     }
 
 #if DEBUG
-    close(*sd);
-    close(*epoll_fd);
-    *sd = create_socket(logger, addr_family);
-    *epoll_fd = create_epoll(*sd);
+    close(check->socket);
+    close(check->epoll_fd);
+    check->socket = create_socket(logger, addr_family);
+    check->epoll_fd = create_epoll(check->socket);
 #endif
 
     addr_ping.ss_family = addr_family;
@@ -541,13 +528,13 @@ int ping(const logger_t *logger,
     struct timespec rcvd_time;
 
     // construct packet and send
-    memset(rcv_pckt, 0, PACKETSIZE);
+    memset(check->rcv_buffer, 0, PACKETSIZE);
 
-    send_pckt = create_packet(addr_family, address);
+    initialize_packet(check->snd_buffer, addr_family, check->ip);
 
     // Send the message
 #if DEBUG
-    sprint_debug(logger, "Message sent: %s\n", send_pckt + 8);
+    sprint_debug(logger, "Message sent: %s\n", check->snd_buffer + 8);
 #endif
 
     // Start the clock
@@ -556,50 +543,48 @@ int ping(const logger_t *logger,
     int bytes_sent = 0;
     int tries = 0;
 
-    if (*sd < 0 || *epoll_fd < 0) {
-        *sd = create_socket(logger, addr_family);
-        *epoll_fd = create_epoll(*sd);
+    if (check->socket < 0 || check->epoll_fd < 0) {
+        check->socket = create_socket(logger, addr_family);
+        check->epoll_fd = create_epoll(check->socket);
     }
 
     do {
         if (addr_family == AF_INET) {
             sprint_debug(logger, "ipv4 sendto\n");
-            bytes_sent = sendto(*sd, send_pckt, PACKETSIZE, 0, (struct sockaddr *)&addr_ping, sizeof(struct sockaddr_in));
+            bytes_sent = sendto(check->socket, check->snd_buffer, PACKETSIZE, 0, (struct sockaddr *)&addr_ping, sizeof(struct sockaddr_in));
         } else {
             sprint_debug(logger, "ipv6 sendto and packetsize %ld\n", sizeof(struct packet6));
-            bytes_sent = sendto(*sd, send_pckt, PACKETSIZE, 0, (struct sockaddr*)&addr_ping, sizeof(struct sockaddr_in6));
+            bytes_sent = sendto(check->socket, check->snd_buffer, PACKETSIZE, 0, (struct sockaddr*)&addr_ping, sizeof(struct sockaddr_in6));
         }
 
         if (tries >= 3) {
             struct stat info;
 
-            int res = fstat(*sd, &info);
+            int res = fstat(check->socket, &info);
 
-            sprint_error(logger, "Unable to send on socket %d after %d tries: %s. fstat returned %d family: %d\n", *sd, tries, strerror(errno), res, addr_family);
+            sprint_error(logger, "Unable to send on socket %d after %d tries: %s. fstat returned %d family: %d\n", check->socket, tries, strerror(errno), res, addr_family);
 
-            close(*sd);
-            close(*epoll_fd);
+            close(check->socket);
+            close(check->epoll_fd);
 
-            *sd = create_socket(logger, addr_family);
-            *epoll_fd = create_epoll(*sd);
+            check->socket = create_socket(logger, addr_family);
+            check->epoll_fd = create_epoll(check->socket);
 
-            free((char *)send_pckt);
             return (-1);
         }
 
         if (bytes_sent < 0) { // error
-            close(*sd);
-            close(*epoll_fd);
+            close(check->socket);
+            close(check->epoll_fd);
             
-            *sd = create_socket(logger, addr_family);
-            *epoll_fd = create_epoll(*sd);
+            check->socket = create_socket(logger, addr_family);
+            check->epoll_fd = create_epoll(check->socket);
 
-            sprint_debug(logger, "Created new socket for %s\n", address);
+            sprint_debug(logger, "Created new socket for %s\n", check->ip);
         } else { // this holds: bytes >= 0
             if (bytes_sent == 64) break;
             sprint_error(logger, "Only sent %d out of 64 bytes.\n", bytes_sent);
 
-            free((char *)send_pckt);
             return (-1);
         }
         tries++;
@@ -608,7 +593,7 @@ int ping(const logger_t *logger,
     // receive
     struct epoll_event events[1];
     
-    int num_ready = epoll_wait(*epoll_fd, events, 1, timeout_s * 1e3);
+    int num_ready = epoll_wait(check->epoll_fd, events, 1, check->timeout * 1e3);
 
     if (num_ready < 0) {
         // Do not print if we got interrupted
@@ -618,14 +603,13 @@ int ping(const logger_t *logger,
             // TODO: maybe return that an interrupt occured
         }
 
-        *latency_s = -1.0;
+        check->timeout = -1.0;
         
-        close(*sd);
-        close(*epoll_fd);
-        *sd = -1;
-        *epoll_fd = -1;
+        close(check->socket);
+        close(check->epoll_fd);
+        check->socket = -1;
+        check->epoll_fd = -1;
 
-        free((char *)send_pckt);
         return 0;
     } else if (num_ready == 0) { // timeout
         clock_gettime(CLOCK_REALTIME, &rcvd_time);
@@ -634,14 +618,13 @@ int ping(const logger_t *logger,
 
         sprint_debug(logger, "Timeout after %1.2fms\n", diff * 1e3);
 
-        *latency_s = -1.0;
+        check->latency = -1.0;
 
-        close(*sd);
-        close(*epoll_fd);
-        *sd = -1;
-        *epoll_fd = -1;
+        close(check->socket);
+        close(check->epoll_fd);
+        check->socket = -1;
+        check->epoll_fd = -1;
 
-        free((char *)send_pckt); 
         return 0;
     }
 
@@ -649,12 +632,11 @@ int ping(const logger_t *logger,
 #if DEBUG
         printf("Socket %d got some data\n", events[0].data.fd);
 #endif
-        size_t bytes_rcved = recv(*sd, rcv_pckt, PACKETSIZE, 0);
+        size_t bytes_rcved = recv(check->socket, check->rcv_buffer, PACKETSIZE, 0);
         
         if (bytes_rcved != 64) {
-            printf("just received: %ld bytes: %s\n", bytes_rcved, (char *)rcv_pckt);
+            printf("just received: %ld bytes: %s\n", bytes_rcved, check->rcv_buffer);
 
-            free((char *)send_pckt);
             return (-1);
         }
     }
@@ -662,22 +644,20 @@ int ping(const logger_t *logger,
     clock_gettime(CLOCK_REALTIME, &rcvd_time);
 
     // check if the message matches
-    int is_exact_match = memcmp(send_pckt + 8, rcv_pckt + 8, 56) == 0;
+    int is_exact_match = memcmp(check->snd_buffer + 8, check->rcv_buffer + 8, PACKETSIZE - 8) == 0;
 
     sprint_debug(logger, "is_exact_match: %d\n", is_exact_match);
 
     if (is_exact_match) {
-        *latency_s = calculate_difference(sent_time, rcvd_time);
+        check->latency = calculate_difference(sent_time, rcvd_time);
     } else {
-        *latency_s = -1.0;
+        check->latency = -1.0;
         
-        close(*sd);
-        close(*epoll_fd);
-        *sd = -1;
-        *epoll_fd = -1;
+        close(check->socket);
+        close(check->epoll_fd);
+        check->socket = -1;
+        check->epoll_fd = -1;
     }
-
-    free((char *)send_pckt);
 
     return is_exact_match;
 }

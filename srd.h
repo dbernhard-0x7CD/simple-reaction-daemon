@@ -58,6 +58,12 @@ typedef struct connectivity_check_t
 
     // On epoll filedescriptor for receiving from socket
     int epoll_fd;
+
+    // buffer for sending packets
+    char* snd_buffer;
+
+    // buffer for receiving packets
+    char* rcv_buffer;
 } connectivity_check_t;
 
 /*
@@ -128,5 +134,7 @@ int load_config(const char *cfg_path, connectivity_check_t ***conns, int *conns_
  * Handle signals like SIGTERM to stop this program.
  */
 void signal_handler(int);
+
+#define PACKETSIZE 64
 
 #endif
