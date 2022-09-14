@@ -364,8 +364,10 @@ void run_check(check_arguments_t *args)
         
         if (connected == 1)
         {
-            if ((check->status & STATE_UP) == 0) {
-                sprint_info(logger, "Reachable %s\n", current_time);
+            sprint_info(logger, "Reachable %s\n", current_time);
+            
+            // if we're not up
+            if ((check->status & STATE_UP) == 0 && check->status != STATE_NONE) {
                 if (check->status & STATE_DOWN) {
                     prev_downtime = calculate_difference(check->timestamp_last_reply, now);
                 }
@@ -383,14 +385,15 @@ void run_check(check_arguments_t *args)
         }
         else if (connected == 0)
         {   
-            if (check->status & STATE_DOWN) {
-                check->status = STATE_DOWN;
-            } else {
+            // if we're not down
+            if ((check->status & STATE_DOWN) == 0 && check->status != STATE_NONE) {
                 check->status = STATE_DOWN_NEW;
 
                 check->timestamp_first_failed = now;
 
                 uptime_s = calculate_difference(check->timestamp_first_reply, check->timestamp_last_reply);
+            } else {
+                check->status = STATE_DOWN;
             }
 
             downtime_s = calculate_difference(check->timestamp_first_failed, now);
