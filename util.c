@@ -657,12 +657,12 @@ int ping(const logger_t *logger,
 
     if(events[0].events & EPOLLIN) {
 #if DEBUG
-        printf("Socket %d got some data\n", events[0].data.fd);
+        sprint_debug(logger, "Socket %d got some data\n", events[0].data.fd);
 #endif
         size_t bytes_rcved = recv(check->socket, check->rcv_buffer, PACKETSIZE, 0);
         
         if (bytes_rcved != 64) {
-            printf("just received: %ld bytes: %s\n", bytes_rcved, check->rcv_buffer);
+            sprint_debug(logger, "just received: %ld bytes: %s\n", bytes_rcved, check->rcv_buffer);
 
             return (-1);
         }
@@ -673,7 +673,10 @@ int ping(const logger_t *logger,
     // check if the message matches
     int is_exact_match = memcmp(check->snd_buffer + 8, check->rcv_buffer + 8, PACKETSIZE - 8) == 0;
 
-    sprint_debug(logger, "is_exact_match: %d\n", is_exact_match);
+    if (!is_exact_match) {
+        sprint_debug(logger, "Expected %s\n", check->snd_buffer + 8);
+        sprint_debug(logger, "Got      %s\n", check->rcv_buffer + 8);
+    }
 
     if (is_exact_match) {
         check->latency = calculate_difference(sent_time, rcvd_time);
