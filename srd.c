@@ -44,6 +44,7 @@ int main()
     // await stop signal, then we stop (set running = 0)
     signal(SIGALRM, signal_handler); 
     signal(SIGINT, signal_handler);
+    signal(SIGPIPE, signal_handler);
 
     logger_t log;
     log.level = &loglevel;
@@ -560,7 +561,14 @@ void signal_handler(int s)
         running = 0;
         return;
     }
-    printf("Unhandled signal %d\n", s);
+    if (s == SIGPIPE) {
+        char str_now[32];
+
+        get_current_time(str_now, 32, datetime_format, NULL);
+
+        sprint_error(logger, "Got SIGPIPE at %s.\n", str_now); 
+    }
+    sprint_error(logger, "Unhandled signal %d\n", s);
     fflush(stdout);
 }
 
