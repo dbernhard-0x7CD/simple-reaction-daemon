@@ -21,16 +21,16 @@ typedef struct connectivity_check_t
     const char *depend_ip;
 
     // Timeout in seconds
-    double timeout;
+    float timeout;
 
     // Period in which this IP is pinged in seconds
-    int period;
+    uint8_t period;
 
     // number of times to retry sending a ping
-    int num_pings;
+    uint8_t num_pings;
 
     // Latency of the last ping in seconds; -1.0 if not successful
-    double latency;
+    float latency;
 
     // Status of last ping
     conn_state_t status;
@@ -48,7 +48,7 @@ typedef struct connectivity_check_t
     struct timespec timestamp_latest_try;
 
     // Count of actions if this target is not reachable
-    int actions_count;
+    uint8_t actions_count;
 
     // Actions to perform (dependend on the status)
     action_t *actions;

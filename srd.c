@@ -736,23 +736,30 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
             // set initial connectivity_check values
             cc->status = STATE_NONE;
 
-            if (!config_lookup_int(&cfg, "period", &cc->period))
+            int period;
+            if (!config_lookup_int(&cfg, "period", &period))
             {
                 print_error(logger, "%s is missing setting: period\n", cfg_path);
                 config_destroy(&cfg);
                 return 0;
+            } else {
+                cc->period = period; 
             }
 
             // timeout (can be an integer or double)
             int timeout;
+            double timeout_dbl;
             if (config_lookup_int(&cfg, "timeout", &timeout)) {
-                cc->timeout = (double)timeout;
-            } else if (!config_lookup_float(&cfg, "timeout", &cc->timeout))
+                cc->timeout = (float) timeout;
+            } else if (!config_lookup_float(&cfg, "timeout", &timeout_dbl))
             {
                 print_error(logger, "%s is missing setting: timeout\n", cfg_path);
                 config_destroy(&cfg);
                 return 0;
+            } else {
+                cc->timeout = timeout_dbl;
             }
+
             if (cc->timeout < 0) {
                 print_error(logger, "%s timeout cannot be negative\n", cfg_path);
                 config_destroy(&cfg);
