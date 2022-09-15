@@ -212,11 +212,10 @@ Or if he's **up**:
 ### Conditional actions - run_if
 Valid values for `run_if`:
 * `up` - Run everytime a ping succeeds (approximately every `period` seconds)
-* `up-new` (first ping successfull after one or more failed pings)
-    * In this case `command.delay` denotes how long the downtime at least had to be to trigger this action
+* `up-new` - Runs **once** when a ping is successfull after the target has been down for at least `command.delay` seconds (defaults to 0)
 * `down` (default)
-    * After `command.delay` seconds this target is seen as down and this action executed
-* `down-new` Executes once if a target was reachable before and now isn't
+    * If `command.delay` seconds no ping succeeds this target is seen as down and this action executed
+* `down-new` Executes **once** if a target was reachable before and now isn't
 * `always`
 
 ### Placeholders
