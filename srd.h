@@ -36,7 +36,7 @@ typedef struct connectivity_check_t
     uint32_t previous_downtime;
 
     // Status of last ping
-    conn_state_t status;
+    conn_state_t state;
 
     // Timestamp of the last successfull ping
     struct timespec timestamp_last_reply;

@@ -252,7 +252,7 @@ char* insert_placeholders(const char* raw_message,
                         const int connected) {
     char* message = strdup(raw_message);
 
-    const conn_state_t state = check->status;
+    const conn_state_t state = check->state;
 
     // replace %uptime
     if ((state & STATE_UP) || (state == STATE_DOWN_NEW)) {

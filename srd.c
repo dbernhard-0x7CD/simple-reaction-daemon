@@ -287,10 +287,10 @@ connectivity_check_t* get_dependency(connectivity_check_t **ccs, const int n, ch
 
 int is_available(connectivity_check_t *check, int strict) {
     // status could be STATE_UP or STATE_UP_NEW
-    if (check->status & STATE_UP) {
+    if (check->state & STATE_UP) {
         return 1;
     }
-    if (check->status == STATE_NONE && strict == 0) {
+    if (check->state == STATE_NONE && strict == 0) {
         return 1;
     }
 
@@ -364,17 +364,17 @@ void run_check(check_arguments_t *args)
             sprint_info(logger, "Reachable %s\n", current_time);
             
             // set timestamp if the current statue is not STATE_UP
-            if ((check->status & STATE_UP) == 0) {
+            if ((check->state & STATE_UP) == 0) {
                 check->timestamp_first_reply = now;
                 
             }
 
             // if we're not up (do not set state to STATE_UP_NEW if previous state was STATE_NONE)
-            if ((check->status & STATE_UP) == 0 && check->status != STATE_NONE) {
+            if ((check->state & STATE_UP) == 0 && check->state != STATE_NONE) {
                 check->previous_downtime = calculate_difference(check->timestamp_last_reply, now);
-                check->status = STATE_UP_NEW;
+                check->state = STATE_UP_NEW;
             } else {
-                check->status = STATE_UP;
+                check->state = STATE_UP;
             }
 
             check->timestamp_last_reply = now;
@@ -384,16 +384,16 @@ void run_check(check_arguments_t *args)
         }
         else if (connected == 0)
         {
-            if ((check->status & STATE_DOWN) == 0) {
+            if ((check->state & STATE_DOWN) == 0) {
                 check->timestamp_first_failed = now;
 
                 uptime_s = calculate_difference(check->timestamp_first_reply, check->timestamp_last_reply);
             }
             // if we're not down
-            if ((check->status & STATE_DOWN) == 0 && check->status != STATE_NONE) {
-                check->status = STATE_DOWN_NEW;
+            if ((check->state & STATE_DOWN) == 0 && check->state != STATE_NONE) {
+                check->state = STATE_DOWN_NEW;
             } else {
-                check->status = STATE_DOWN;
+                check->state = STATE_DOWN;
             }
 
             downtime_s = calculate_difference(check->timestamp_first_failed, now);
@@ -404,7 +404,7 @@ void run_check(check_arguments_t *args)
         } else {
             sprint_error(logger, "%s: Error when checking connectivity. (connected: %d)\n", current_time, connected);
 
-            check->status = STATE_NONE;
+            check->state = STATE_NONE;
 
             clock_gettime(CLOCK_REALTIME, &now);
 
@@ -422,7 +422,7 @@ void run_check(check_arguments_t *args)
             
             // print_debug(logger, "action: %s this_action.run %d\n", check->ip, this_action.name, this_action.run);
 
-            unsigned int state_match = check->status & this_action.run;
+            unsigned int state_match = check->state & this_action.run;
             int superior = (state_match >= this_action.run || this_action.run == STATE_ALL);
 
             int state_up_new_diff = (this_action.run != STATE_UP_NEW || check->actions[i].delay <= check->previous_downtime);
@@ -470,7 +470,7 @@ void run_check(check_arguments_t *args)
                     action_cmd_t copy = *cmd;
 
                     double downtime;
-                    if (check->status == STATE_UP_NEW) {
+                    if (check->state == STATE_UP_NEW) {
                         downtime = check->previous_downtime;
                     } else {
                         downtime = downtime_s; // we are still down (or up)
@@ -488,7 +488,7 @@ void run_check(check_arguments_t *args)
                     action_log_t* action_log = (action_log_t*) this_action.object;
 
                     double downtime;
-                    if (check->status == STATE_UP_NEW) {
+                    if (check->state == STATE_UP_NEW) {
                         downtime = check->previous_downtime;
                     } else {
                         downtime = downtime_s; // we are still down (or up)
@@ -735,7 +735,7 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
             free(ip);
 
             // set initial connectivity_check values
-            cc->status = STATE_NONE;
+            cc->state = STATE_NONE;
 
             int period;
             if (!config_lookup_int(&cfg, "period", &period))
