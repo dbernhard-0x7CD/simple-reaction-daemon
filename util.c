@@ -287,6 +287,29 @@ char* insert_placeholders(const char* raw_message,
         free((void *) ms_replaced);
         free((void*)old);
     }
+
+    // replace %sut
+    if (state == STATE_DOWN_NEW || state & STATE_UP) {
+        char str_time[32];
+        struct tm time;
+        localtime_r(&check->timestamp_first_reply.tv_sec, &time);
+
+        strftime(str_time, 32, datetime_format, &time);
+
+        int ms = (int)(check->timestamp_first_reply.tv_nsec * 1e-6);
+        char ms_str[4];
+        snprintf(ms_str, 4, "%03d", ms);
+
+        char* ms_replaced = str_replace(str_time, "%ms", ms_str);
+
+        const char* old = message;
+
+        message = str_replace(message, "%sut", ms_replaced);
+
+        free((void *) ms_replaced);
+        free((void*)old);
+    }
+
     // replace %downtime
     if (state == STATE_UP_NEW || state & STATE_DOWN) {
         char dt_string[24];

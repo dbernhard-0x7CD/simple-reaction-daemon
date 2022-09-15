@@ -231,12 +231,14 @@ Always available:
 <br />
 
 The supported placeholders depend on `run_if`:
-* `%sdt` (**s**tart **d**own**t**ime) is the timestamp (in `datetime_format` format defined in [srd.conf](#srdconf)) from the first ping that failed
-    * available for run_if = `down`, `down-new`, `up-new` 
-* `%downtime` for the downtime in days, hours, minutes and seconds
-    * available for run_if = `down`, `down-new`, `up-new`
 * `%uptime` for the uptime in days, hours, minutes and seconds
     * available for run_if = `up`, `up-new`, `down-new` (duration between first successfull ping and latest succesfull ping)
+* `%downtime` for the downtime in days, hours, minutes and seconds
+    * available for run_if = `down`, `down-new`, `up-new`
+* `%sdt` (**s**tart **d**own**t**ime) is the timestamp (in `datetime_format` format defined in [srd.conf](#srdconf)) from the first ping that failed
+    * available for run_if = `down`, `down-new`, `up-new` 
+* `%sut` (**s**tart **u**p**t**ime) is the timestamp (in `datetime_format` format defined in [srd.conf](#srdconf)) from the first ping that **succeeded**
+    * available for run_if = `up`
 
 <br />
 
