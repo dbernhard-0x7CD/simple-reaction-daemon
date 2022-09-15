@@ -161,6 +161,7 @@ See here for the exact format: [https://cplusplus.com/reference/ctime/strftime/]
 * Additional setting `header` takes a string which will be the header if the file is newly created:
     * For example: ``` header = "host, latency";``` would be suitable for CSV files
         * And corresponding ``` message = "%ip, %lat_ms";```
+    * **Note for strings:** You can use `\n` as a line-break and create multi-line headers ;)
 * Notes for `path`: Supports the [placeholder](#placeholders) `%ip`
 * Notes for `message`:
     * Supports [placeholders](#placeholders)
