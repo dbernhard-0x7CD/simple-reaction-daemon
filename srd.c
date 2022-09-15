@@ -356,23 +356,22 @@ void run_check(check_arguments_t *args)
         check->timestamp_latest_try = now;
 
         // downtime in seconds
-        double downtime_s;
+        double downtime_s = -1.0;
         double uptime_s = -1.0;
 
-        // previous downtime; set when up-new
-        double prev_downtime = 0.0;
-        
         if (connected == 1)
         {
             sprint_info(logger, "Reachable %s\n", current_time);
             
-            // if we're not up
-            if ((check->status & STATE_UP) == 0 && check->status != STATE_NONE) {
-                if (check->status & STATE_DOWN) {
-                    prev_downtime = calculate_difference(check->timestamp_last_reply, now);
-                }
+            // set timestamp if the current statue is not STATE_UP
+            if ((check->status & STATE_UP) == 0) {
                 check->timestamp_first_reply = now;
+                
+            }
 
+            // if we're not up (do not set state to STATE_UP_NEW if previous state was STATE_NONE)
+            if ((check->status & STATE_UP) == 0 && check->status != STATE_NONE) {
+                check->previous_downtime = calculate_difference(check->timestamp_last_reply, now);
                 check->status = STATE_UP_NEW;
             } else {
                 check->status = STATE_UP;
@@ -384,14 +383,15 @@ void run_check(check_arguments_t *args)
             uptime_s = calculate_difference(check->timestamp_first_reply, now);
         }
         else if (connected == 0)
-        {   
-            // if we're not down
-            if ((check->status & STATE_DOWN) == 0 && check->status != STATE_NONE) {
-                check->status = STATE_DOWN_NEW;
-
+        {
+            if ((check->status & STATE_DOWN) == 0) {
                 check->timestamp_first_failed = now;
 
                 uptime_s = calculate_difference(check->timestamp_first_reply, check->timestamp_last_reply);
+            }
+            // if we're not down
+            if ((check->status & STATE_DOWN) == 0 && check->status != STATE_NONE) {
+                check->status = STATE_DOWN_NEW;
             } else {
                 check->status = STATE_DOWN;
             }
@@ -425,7 +425,7 @@ void run_check(check_arguments_t *args)
             unsigned int state_match = check->status & this_action.run;
             int superior = (state_match >= this_action.run || this_action.run == STATE_ALL);
 
-            int state_up_new_diff = (this_action.run != STATE_UP_NEW || check->actions[i].delay <= prev_downtime);
+            int state_up_new_diff = (this_action.run != STATE_UP_NEW || check->actions[i].delay <= check->previous_downtime);
 
             int state_down_diff = (this_action.run != STATE_DOWN || check->actions[i].delay <= downtime_s);
 
@@ -471,7 +471,7 @@ void run_check(check_arguments_t *args)
 
                     double downtime;
                     if (check->status == STATE_UP_NEW) {
-                        downtime = prev_downtime;
+                        downtime = check->previous_downtime;
                     } else {
                         downtime = downtime_s; // we are still down (or up)
                     }
@@ -489,7 +489,7 @@ void run_check(check_arguments_t *args)
 
                     double downtime;
                     if (check->status == STATE_UP_NEW) {
-                        downtime = prev_downtime;
+                        downtime = check->previous_downtime;
                     } else {
                         downtime = downtime_s; // we are still down (or up)
                     }

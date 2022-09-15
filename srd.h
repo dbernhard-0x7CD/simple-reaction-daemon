@@ -32,6 +32,9 @@ typedef struct connectivity_check_t
     // Latency of the last ping in seconds; -1.0 if not successful
     float latency;
 
+    // previous downtime. set when up-new is triggered
+    uint32_t previous_downtime;
+
     // Status of last ping
     conn_state_t status;
 
