@@ -120,13 +120,14 @@ int main()
         size_t confname_length = strlen(connectivity_checks[i]->name);
         size_t hostname_length = strlen(connectivity_checks[i]->address);
 
-        char* prefix = malloc((5 + confname_length + hostname_length) * sizeof(char));
+        char* prefix = malloc((6 + confname_length + hostname_length) * sizeof(char));
         prefix[0] = '[';
         strncpy(prefix + 1, connectivity_checks[i]->name, confname_length);
         prefix[1 + confname_length] = '-';
         strncpy(prefix + 2 + confname_length, connectivity_checks[i]->address, hostname_length);
         memcpy(prefix + 2 + confname_length + hostname_length, "]: ", 3 * sizeof(char));
 
+        prefix[5 + confname_length + hostname_length] = '\0';
         thread_logger.prefix = prefix;
         
         args[i] = (check_arguments_t) { connectivity_checks, i, connectivity_targets, thread_logger };
