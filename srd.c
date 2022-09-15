@@ -51,7 +51,7 @@ int main()
     log.prefix = "[main]: ";
     logger = &log;
 
-    print_error(logger, "Starting srd (Simple Reaction Daemon) version %s\n", version);
+    print_info(logger, "Starting srd (Simple Reaction Daemon) version %s\n", version);
 
     // create a mutex; if unsuccessful we stop
     if (pthread_mutex_init(&stdout_mut, NULL) != 0)
@@ -126,8 +126,6 @@ int main()
         strncpy(prefix + 2 + confname_length, connectivity_checks[i]->address, hostname_length);
         memcpy(prefix + 2 + confname_length + hostname_length, "]: ", 3 * sizeof(char));
 
-        prefix[4 + confname_length + hostname_length] = '\0';
-
         thread_logger.prefix = prefix;
         
         args[i] = (check_arguments_t) { connectivity_checks, i, connectivity_targets, thread_logger };
@@ -187,7 +185,7 @@ int main()
         print_debug(logger, "Got signal %d\n", info.si_signo);
     }
 
-    print_error(logger, "Shutting down Simple Reaction Daemon\n");
+    print_info(logger, "Shutting down Simple Reaction Daemon\n");
     fflush(stdout);
 
     // kill and join all threads
@@ -414,8 +412,6 @@ void run_check(check_arguments_t *args)
             usleep(wait_time * 1000);
             continue;
         }
-        fflush(stdout);
-        // print_debug(logger, "determined state: %d\n", check->status);
 
         // check if any action is required
         for (int i = 0; running && i < check->actions_count; i++)
