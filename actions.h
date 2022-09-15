@@ -38,7 +38,7 @@ typedef struct action_t {
     void*       object;
 
     // Delay until this action is performed when run is DOWN
-    int         delay;
+    uint32_t    delay;
 
     // When to run this action
     conn_state_t run;

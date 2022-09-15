@@ -864,9 +864,12 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
                 }
                 
                 // delay configuration
-                if (!config_setting_lookup_int(action, "delay", &this_action->delay))
+                int delay;
+                if (!config_setting_lookup_int(action, "delay", &delay))
                 {
                     this_action->delay = 0;
+                } else {
+                    this_action->delay = delay;
                 }
 
                 // Load the properties for action_name
