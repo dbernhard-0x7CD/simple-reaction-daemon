@@ -63,6 +63,9 @@ timeout = 10
 # number of pings to send
 num_pings = 1
 
+# available loglevels: DEBUG, INFO, QUIET, ERROR
+loglevel = "INFO"
+
 actions = (
     {
         action = "reboot";
@@ -100,14 +103,12 @@ actions = (
 * Can also be `%gw` to ping the gateway
 * **Note**: this is currently only set at startup. So changes of the gateway are not yet supported
 
+[optional] `loglevel`: Loglevel for the current target. Can be: DEBUG, INFO (logs when an action is executed and when a ping fails), QUIET, ERROR
+
 <br />
 
 ## srd.conf
-This file may also contain the `loglevel` configuration:
-```
-# available loglevels: DEBUG, INFO, QUIET, ERROR
-loglevel = "INFO"
-```
+This file's loglevel is also the loglevel for the application
 
 Also `datetime_format` is configurable, by default it's:
 ```
