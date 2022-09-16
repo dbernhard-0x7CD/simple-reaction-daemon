@@ -93,7 +93,10 @@ typedef struct action_influx_t {
     int conn_socket;
 
     // epoll fd to send the data
-    int conn_epoll_fd;
+    int conn_epoll_write_fd;
+
+    // epoll fd to receive an answer
+    int conn_epoll_read_fd;
 } action_influx_t;
 
 /*

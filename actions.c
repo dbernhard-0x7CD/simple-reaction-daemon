@@ -261,48 +261,71 @@ int log_to_file(const logger_t* logger, const action_log_t* action_log)
 
 int influx(const logger_t* logger, action_influx_t* action) {
     if (action->conn_socket <= 0) {
-        action->conn_socket = socket(AF_INET, SOCK_STREAM, 0);
+        action->conn_socket = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
 
         if (action->conn_socket < 0) {
             sprint_debug(logger, "Unable to create socket.\n");
             return 0;
         }
+        action->conn_epoll_write_fd = epoll_create(1);
+        action->conn_epoll_read_fd = epoll_create(1);
 
-        // connect
+        // write fd
+        struct epoll_event event;
+        event.events = EPOLLOUT;
+        event.data.fd = action->conn_socket;
+
+        epoll_ctl(action->conn_epoll_write_fd, EPOLL_CTL_ADD, action->conn_socket, &event);
+
+        // read fd
+        event.events = EPOLLIN;
+        event.data.fd = action->conn_socket;
+
+        epoll_ctl(action->conn_epoll_read_fd, EPOLL_CTL_ADD, action->conn_socket, &event);
+
+        // connect to addr
         struct sockaddr_in addr;
 
         int s;
-        sa_family_t family = AF_INET;
+        sa_family_t family;
         s = to_sockaddr(action->host, (struct sockaddr_storage*)&addr, &family);
 
+        // if to_sockaddr failed
         if (s == 0) {
             if (!resolve_hostname(logger, action->host, (struct sockaddr_storage*)&addr, &family)) {
                 sprint_error(logger, "Unable to get an IP for: %s\n", action->host);
 
                 close(action->conn_socket);
+                close(action->conn_epoll_write_fd);
+                close(action->conn_epoll_read_fd);
                 action->conn_socket = -1;
+                action->conn_epoll_write_fd = -1;
+                action->conn_epoll_read_fd = -1;
                 return 0;
             }
         }
 
-        if (s < 0) {
-            sprint_error(logger, "Invalid host: %s\n", action->host);
-
-            close(action->conn_socket);
-            action->conn_socket = -1;
-            return 0;
-        }
-
         addr.sin_port = htons(action->port);
-        addr.sin_family= AF_INET;
+        addr.sin_family= family;
         
         s = connect(action->conn_socket, (struct sockaddr *) &addr, sizeof(addr));
 
-        if (s < 0) {
-            sprint_error(logger, "Unable to connect to %s: %s\n", action->host, strerror(errno));
+        // If s == 0, then we are successfully connected
+        if (s == 0) {
+            sprint_debug(logger, "[Influx]: Connected to %s:%d\n", action->host, action->port);
+        } else if (s == -1 && errno == EINPROGRESS) {
+            sprint_debug(logger, "[Influx]: Not immediately connected to %s\n", action->host);
+            
+        } else {
+            sprint_error(logger, "[Influx]: Unable to connect to %s: %s\n", action->host, strerror(errno));
 
             close(action->conn_socket);
+            close(action->conn_epoll_write_fd);
+            close(action->conn_epoll_read_fd);
+
             action->conn_socket = -1;
+            action->conn_epoll_write_fd = -1;
+            action->conn_epoll_read_fd = -1;
             return 0;
         }
     } // end of creating socket
@@ -321,6 +344,24 @@ int influx(const logger_t* logger, action_influx_t* action) {
                           "Authorization: %s\r\n\r\n",
                           action->endpoint, action->host, action->port, strlen(body), action->authorization);
 
+    // wait for maximum 5 seconds until we can write
+    struct epoll_event events_write[1];
+    
+    // maximum of
+    int num_ready = epoll_wait(action->conn_epoll_write_fd, events_write, 1, 5 * 1e3);
+
+    if (num_ready <= 0) {
+        sprint_error(logger, "Unable to connect to %s:%d\n", action->host, action->port);
+        close(action->conn_socket);
+        close(action->conn_epoll_write_fd);
+        close(action->conn_epoll_read_fd);
+
+        action->conn_socket = -1;
+        action->conn_epoll_write_fd = -1;
+        action->conn_epoll_read_fd = -1;
+        return 0;
+    }
+
     int written_bytes;
     written_bytes = write(action->conn_socket, header, strlen(header));
 
@@ -328,7 +369,11 @@ int influx(const logger_t* logger, action_influx_t* action) {
         sprint_error(logger, "Unable to send to influx\n");
 
         close(action->conn_socket);
+        close(action->conn_epoll_write_fd);
+        close(action->conn_epoll_read_fd);
         action->conn_socket = -1;
+        action->conn_epoll_write_fd = -1;
+        action->conn_epoll_read_fd = -1;
         return 0;
     }
     sprint_debug(logger, "[Influx]: Written %d bytes for the header.\n", written_bytes);
@@ -336,15 +381,36 @@ int influx(const logger_t* logger, action_influx_t* action) {
     written_bytes = write(action->conn_socket, body, strlen(body));
 
     if (written_bytes < 0) {
-        sprint_error(logger, "Unable to send to influx\n");
+        sprint_error(logger, "Unable to send body to influx\n");
         
         close(action->conn_socket);
+        close(action->conn_epoll_write_fd);
+        close(action->conn_epoll_read_fd);
         action->conn_socket = -1;
+        action->conn_epoll_write_fd = -1;
+        action->conn_epoll_read_fd = -1;
         return 0;
     }
 
     sprint_debug(logger, "[Influx]: Written %d\n", written_bytes);
 
+    struct epoll_event events_read[1];
+    int num_events = epoll_wait(action->conn_epoll_read_fd, events_read, 1, 1e3);
+
+    if (num_events <= 0) {
+        sprint_error(logger, "[Influx]: Timeout while waiting for a response from %s:%d.\n", action->host, action->port);
+        close(action->conn_socket);
+        close(action->conn_epoll_write_fd);
+        close(action->conn_epoll_read_fd);
+        action->conn_socket = -1;
+        action->conn_epoll_write_fd = -1;
+        action->conn_epoll_read_fd = -1;
+
+        return 0;
+    }
+
+    // we only need to look at the start to see if we were successfull at
+    // writing
     int read_bytes;
     char answer[256];
     read_bytes = read(action->conn_socket, answer, sizeof(answer));
@@ -357,8 +423,7 @@ int influx(const logger_t* logger, action_influx_t* action) {
         return 1;
     }
 
-    sprint_error(logger, "[Influx] Received: %s\n", answer);
+    sprint_error(logger, "[Influx] Not successfull writing to influxdb. Received: %s\n", answer);
 
     return 0;
 }
-
