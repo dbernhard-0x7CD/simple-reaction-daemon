@@ -40,6 +40,17 @@ typedef struct logger_t
         pthread_mutex_unlock(logger->stdout_mut);    \
     }
 
+#define sprint_raw(logger, ...)                      \
+    if (pthread_mutex_lock(logger->stdout_mut) != 0) \
+    {                                                \
+        printf("Unable to get lock: " __VA_ARGS__);  \
+    }                                                \
+    else                                             \
+    {                                                \
+        printf(__VA_ARGS__);                         \
+        pthread_mutex_unlock(logger->stdout_mut);    \
+    }
+
 #define uprint(logger, ...)     \
     printf(logger->prefix);     \
     printf(__VA_ARGS__);
@@ -53,7 +64,7 @@ typedef struct logger_t
 #define sprint_debug_raw(logger, ...)          \
     if (*logger->level <= LOGLEVEL_DEBUG)      \
     {                                          \
-        sprint(logger, __VA_ARGS__);           \
+        sprint_raw(logger, __VA_ARGS__);       \
     }
 
 #define sprint_info(logger, ...)         \
