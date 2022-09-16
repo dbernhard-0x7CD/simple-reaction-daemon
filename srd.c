@@ -110,12 +110,20 @@ int main()
 
     // Start threads for each connectivity target
     // for each target in `connectivity_checks` we create one thread
-    for (int i = 0; i < connectivity_targets; i++)
+    int i;
+    for (i = 0; i < connectivity_targets; i++)
     {
-        start_check(threads, args, connectivity_checks, connectivity_targets, i);
+        int s = start_check(threads, args, connectivity_checks, connectivity_targets, i);
+        if (s < 0) {
+            running = 0;
+            print_error(logger, "There is a dependency loop in your configs.\n");
+            break;
+        }
     }
 
-    print_info(logger, "Started all target checks (%d).\n", connectivity_targets);
+    if (i == connectivity_targets) {
+        print_info(logger, "Started all target checks (%d).\n", connectivity_targets);
+    }
 
     // used to await only specific signals
     sigset_t waitset;
@@ -175,11 +183,15 @@ int main()
     // kill and join all threads
     for (int i = 0; i < connectivity_targets; i++)
     {
-        pthread_kill(threads[i], SIGALRM);
+        if (connectivity_checks[i]->flags & FLAG_STARTED) {
+            pthread_kill(threads[i], SIGALRM);
+        }
     }
     for (int i = 0; i < connectivity_targets; i++)
     {
-        pthread_join(threads[i], NULL);
+        if (connectivity_checks[i]->flags & FLAG_STARTED) {
+            pthread_join(threads[i], NULL);
+        }
     }
 
     print_debug(logger, "Killed all threads\n");
@@ -187,8 +199,10 @@ int main()
     // free all memory
     for (int i = 0; i < connectivity_targets; i++) {
         // args
-        check_arguments_t cur_args = args[i];
-        free(cur_args.logger.prefix);
+        if (connectivity_checks[i]->flags & FLAG_STARTED) {
+            check_arguments_t cur_args = args[i];
+            free(cur_args.logger.prefix);
+        }
 
         // connectivity_checks
         connectivity_check_t* ptr = connectivity_checks[i];
@@ -286,7 +300,7 @@ int start_check(pthread_t* threads, check_arguments_t* args, connectivity_check_
     // check if it has a dependency
     if (check->depend_ip != NULL) {
         uint16_t dep_idx = -1;
-        check->flags |= FLAG_AWAITING_DEPENDENCY;
+        check->flags |= FLAG_STARTING_DEPENDENCY;
 
         get_dependency(ccs, n, check->depend_ip, &dep_idx);
 
@@ -344,6 +358,8 @@ void run_check(check_arguments_t *args)
 {
     const int idx = args->idx;
     connectivity_check_t* check = args->connectivity_checks[idx];
+
+    check->flags |= FLAG_STARTED;
 
     pthread_setname_np(pthread_self(), check->address);
 
