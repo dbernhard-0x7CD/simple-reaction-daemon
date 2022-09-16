@@ -669,9 +669,11 @@ int ping(const logger_t *logger,
     clock_gettime(CLOCK_REALTIME, &rcvd_time);
 
     // check if the message matches
-    int is_exact_match = memcmp(check->snd_buffer + 8, check->rcv_buffer + 8, PACKETSIZE - 8) == 0;
+    int difference = memcmp(check->snd_buffer + 8, check->rcv_buffer + 8, PACKETSIZE - 8);
+    int is_exact_match = difference == 0; 
 
     if (!is_exact_match) {
+        sprint_debug(logger, "Difference: %d\n", difference);
         sprint_debug(logger, "Expected %s\n", check->snd_buffer + 8);
         sprint_debug(logger, "Got      %s\n", check->rcv_buffer + 8);
     }
