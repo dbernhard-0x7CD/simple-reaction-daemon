@@ -564,16 +564,16 @@ int ping(const logger_t *logger,
     sprint_debug(logger, "Message sent: %s\n", check->snd_buffer + 8);
 #endif
 
+    if (check->socket < 0 || check->epoll_fd < 0) {
+        check->socket = create_socket(logger, addr_family);
+        check->epoll_fd = create_epoll(check->socket);
+    }
+
     // Start the clock
     clock_gettime(CLOCK_REALTIME, &sent_time);
 
     int bytes_sent = 0;
     int tries = 0;
-
-    if (check->socket < 0 || check->epoll_fd < 0) {
-        check->socket = create_socket(logger, addr_family);
-        check->epoll_fd = create_epoll(check->socket);
-    }
 
     do {
         if (addr_family == AF_INET) {
