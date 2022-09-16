@@ -25,6 +25,7 @@
         * may happen if we're stuck on resolving a domain name 
     * Shut down after pressing ctrl + c
     * Support for `%sut` (start uptime) placeholder
+    * Loglevels are now per target
 
 * 0.0.7 (Released on 09.09.2022)
     * Pings now follow period more closely (and no longer shift)
