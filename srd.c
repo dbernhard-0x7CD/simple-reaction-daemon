@@ -112,32 +112,9 @@ int main()
     // for each target in `connectivity_checks` we create one thread
     for (int i = 0; i < connectivity_targets; i++)
     {
-        if (connectivity_checks[i]->loglevel == INVALID_LOGLEVEL) {
-            connectivity_checks[i]->loglevel = loglevel;
-        }
-        
-        /*
-         * Create a logger with the prefix CONFIG_NAME-TARGET_IP
-         */
-        logger_t thread_logger = *logger;
-        thread_logger.level = &connectivity_checks[i]->loglevel;
-
-        size_t confname_length = strlen(connectivity_checks[i]->name);
-        size_t hostname_length = strlen(connectivity_checks[i]->address);
-
-        char* prefix = malloc((6 + confname_length + hostname_length) * sizeof(char));
-        prefix[0] = '[';
-        strncpy(prefix + 1, connectivity_checks[i]->name, confname_length);
-        prefix[1 + confname_length] = '-';
-        strncpy(prefix + 2 + confname_length, connectivity_checks[i]->address, hostname_length);
-        memcpy(prefix + 2 + confname_length + hostname_length, "]: ", 3 * sizeof(char));
-
-        prefix[5 + confname_length + hostname_length] = '\0';
-        thread_logger.prefix = prefix;
-        
-        args[i] = (check_arguments_t) { connectivity_checks, i, connectivity_targets, thread_logger };
-        pthread_create(&threads[i], NULL, (void *)run_check, (void *)&args[i]);
+        start_check(threads, args, connectivity_checks, connectivity_targets, i);
     }
+
     print_info(logger, "Started all target checks (%d).\n", connectivity_targets);
 
     // used to await only specific signals
@@ -277,17 +254,78 @@ int main()
     return EXIT_SUCCESS;
 } // main end
 
-connectivity_check_t* get_dependency(connectivity_check_t **ccs, const int n, char const *ip) {
+connectivity_check_t* get_dependency(connectivity_check_t **ccs, const uint16_t n, char const *ip, uint16_t* idx) {
 
     for (int i = 0; i < n; i++) {
         connectivity_check_t* ptr = ccs[i];
 
         if (strcmp(ip, ptr->address) == 0) {
+            if (idx != NULL) {
+                *idx = i;
+            }
             return ptr;
         }
     }
 
     return NULL;
+}
+
+int start_check(pthread_t* threads, check_arguments_t* args, connectivity_check_t** ccs, const uint16_t n, const uint16_t idx) {
+    connectivity_check_t* check = ccs[idx];
+    // return success if already started
+    if (check->flags & FLAG_STARTED) {
+        return 1;
+    }
+
+    // if we're already starting a dependency then we're in a loop
+    // thus, return error
+    if (check->flags & FLAG_STARTING_DEPENDENCY) {
+        return -1;
+    }
+
+    // check if it has a dependency
+    if (check->depend_ip != NULL) {
+        uint16_t dep_idx = -1;
+        check->flags |= FLAG_AWAITING_DEPENDENCY;
+
+        get_dependency(ccs, n, check->depend_ip, &dep_idx);
+
+        if (start_check(threads, args, ccs, n, dep_idx) < 0) {
+            return -1;
+        }
+        // now the dependency is running
+    }
+
+    // If this check has no own loglevel, take that from srd.conf
+    if (check->loglevel == INVALID_LOGLEVEL) {
+        check->loglevel = loglevel;
+    }
+    /*
+     * Create a logger with the prefix CONFIG_NAME-TARGET_IP
+     */
+    logger_t thread_logger = *logger;
+    thread_logger.level = &check->loglevel;
+
+    size_t confname_length = strlen(check->name);
+    size_t hostname_length = strlen(check->address);
+
+    char* prefix = malloc((6 + confname_length + hostname_length) * sizeof(char));
+    prefix[0] = '[';
+    strncpy(prefix + 1, check->name, confname_length);
+    prefix[1 + confname_length] = '-';
+    strncpy(prefix + 2 + confname_length, check->address, hostname_length);
+    memcpy(prefix + 2 + confname_length + hostname_length, "]: ", 3 * sizeof(char));
+
+    prefix[5 + confname_length + hostname_length] = '\0';
+    thread_logger.prefix = prefix;
+ 
+    args[idx] = (check_arguments_t) { ccs, idx, n, thread_logger };
+
+    print_debug(logger, "Starting thread for %s.\n", check->address);
+    check->flags |= FLAG_STARTED;
+    pthread_create(&threads[idx], NULL, (void *)run_check, (void *)&args[idx]);
+    
+    return 1;
 }
 
 int is_available(connectivity_check_t *check, int strict) {
@@ -322,7 +360,7 @@ void run_check(check_arguments_t *args)
     connectivity_check_t* dependency = NULL;
     
     if (check->depend_ip != NULL) {
-        dependency = get_dependency(args->connectivity_checks, args->amount_targets, check->depend_ip);
+        dependency = get_dependency(args->connectivity_checks, args->amount_targets, check->depend_ip, NULL);
 
         if (dependency == NULL) {
             sprint_error(logger, "Unable to find check: %s\n",  check->depend_ip);
@@ -726,6 +764,9 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
             cc->timestamp_first_failed = time_zero;
             cc->timestamp_first_reply = time_zero;
             cc->timestamp_last_reply = time_zero;
+
+            // set no flags
+            cc->flags = 0;
 
             // load ip
             int length = cur_char - cur_ip_start;

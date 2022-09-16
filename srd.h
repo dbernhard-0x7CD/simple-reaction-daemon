@@ -1,9 +1,18 @@
 #ifndef SRD_H
 #define SRD_H
 
-#include "actions.h"
+#include <stdint.h>
 #include <time.h>
 
+#include "actions.h"
+#include "printing.h"
+
+/*
+ * These flags are used in connectivity_check_t
+ */
+#define FLAG_AWAITING_DEPENDENCY 0b1
+#define FLAG_STARTED 0b10
+#define FLAG_STARTING_DEPENDENCY 0b100
 
 /* A connectivity check is one target to which we do connectivity checks.
  * Each config file represents one such check. As Each target can have its
@@ -70,6 +79,9 @@ typedef struct connectivity_check_t
 
     // loglevel for this target 
     enum loglevel loglevel;
+
+    // Flags for this target
+    uint16_t flags;
 } connectivity_check_t;
 
 /*
@@ -98,6 +110,11 @@ typedef struct check_arguments_t
 int main();
 
 /*
+ * Tries to start the given check. Returns -1 if there is an error.
+ */
+int start_check(pthread_t* threads, check_arguments_t* args, connectivity_check_t** ccs, const uint16_t n, const uint16_t idx);
+
+/*
  * Periodically checks this target.
  */
 void run_check(check_arguments_t *);
@@ -105,8 +122,9 @@ void run_check(check_arguments_t *);
 /*
  * Returns a pointer to some check with the given IP.
  * NULL is returned if no check is found with the given IP.
+ * Also sets idx to the index of the check with the given IP.
  */
-connectivity_check_t* get_dependency(connectivity_check_t **ccs, const int n, char const *ip);
+connectivity_check_t* get_dependency(connectivity_check_t **ccs, const uint16_t n, char const *ip, uint16_t* idx);
 
 /*
  * Checks if the given check is available. Returns 1 if it is, else 0.
