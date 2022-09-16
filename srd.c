@@ -112,10 +112,15 @@ int main()
     // for each target in `connectivity_checks` we create one thread
     for (int i = 0; i < connectivity_targets; i++)
     {
+        if (connectivity_checks[i]->loglevel == INVALID_LOGLEVEL) {
+            connectivity_checks[i]->loglevel = loglevel;
+        }
+        
         /*
          * Create a logger with the prefix CONFIG_NAME-TARGET_IP
          */
         logger_t thread_logger = *logger;
+        thread_logger.level = &connectivity_checks[i]->loglevel;
 
         size_t confname_length = strlen(connectivity_checks[i]->name);
         size_t hostname_length = strlen(connectivity_checks[i]->address);
@@ -782,25 +787,37 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
             config_lookup_int(&cfg, "num_pings", &num_pings);
             cc->num_pings = num_pings;
 
+            // loglevel configuration
+            const char* setting_loglevel = NULL;
+            if (config_lookup_string(&cfg, "loglevel", &setting_loglevel))
+            {
+                enum loglevel new_loglevel = to_loglevel(setting_loglevel);
+                
+                if (new_loglevel == INVALID_LOGLEVEL)
+                {
+                    print_error(logger, "%s contains unknown loglevel: %s\n", cfg_path, setting_loglevel);
+                    config_destroy(&cfg);
+                    return 0;
+                }
+                cc->loglevel = new_loglevel;
+            } else {
+                cc->loglevel = INVALID_LOGLEVEL;
+            } 
+
             // check if this is "srd.conf" (config_main)
             if (ends_with(cfg_path, config_main)) {
-
 #ifndef DEBUG
-                const char *setting_loglevel;
                 // loglevel of srd
-                if (config_lookup_string(&cfg, "loglevel", &setting_loglevel))
-                {
-                    int new_loglevel = to_loglevel(setting_loglevel);
-                    
-                    if (new_loglevel == INVALID_LOGLEVEL)
-                    {
-                        print_error(logger, "%s contains unknown loglevel: %s\n", cfg_path, setting_loglevel);
-                        return 0;
-                    }
-                    loglevel = new_loglevel;
-                } else {
+                if (cc->loglevel == INVALID_LOGLEVEL) {
                     print_error(logger, "No loglevel defined in %s.\n", cfg_path);
+                    config_destroy(&cfg);
+
+                    return 0;
+                } else {
+                    loglevel = to_loglevel(setting_loglevel);
                 }
+#else
+                cc->loglevel = LOGLEVEL_DEBUG;
 #endif
                 // datetime_format
                 const char* format;

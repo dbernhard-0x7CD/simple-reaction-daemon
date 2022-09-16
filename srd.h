@@ -67,6 +67,9 @@ typedef struct connectivity_check_t
 
     // buffer for receiving packets
     char* rcv_buffer;
+
+    // loglevel for this target 
+    enum loglevel loglevel;
 } connectivity_check_t;
 
 /*

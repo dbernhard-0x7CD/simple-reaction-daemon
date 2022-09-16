@@ -99,6 +99,6 @@ typedef struct logger_t
     }
 
 
-int to_loglevel(const char* str_loglevel);
+enum loglevel to_loglevel(const char* str_loglevel);
 
 #endif
