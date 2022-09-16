@@ -577,10 +577,8 @@ int ping(const logger_t *logger,
 
     do {
         if (addr_family == AF_INET) {
-            sprint_debug(logger, "ipv4 sendto\n");
             bytes_sent = sendto(check->socket, check->snd_buffer, PACKETSIZE, 0, (struct sockaddr *)&addr_ping, sizeof(struct sockaddr_in));
         } else {
-            sprint_debug(logger, "ipv6 sendto and packetsize %ld\n", sizeof(struct packet6));
             bytes_sent = sendto(check->socket, check->snd_buffer, PACKETSIZE, 0, (struct sockaddr*)&addr_ping, sizeof(struct sockaddr_in6));
         }
 
