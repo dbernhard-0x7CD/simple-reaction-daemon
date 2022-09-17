@@ -10,7 +10,6 @@
     * test with no replacements done
     * test timeseries.conf (also example_configs)
     * influx: support for ipv6
-    * influx timeout
     * cache if datetime_format contains %%ms (only replace if there)
         * or generally cache what needs to be replaced (bitmap?)
     * dispatch threads in some dependency order
@@ -26,6 +25,7 @@
     * Shut down after pressing ctrl + c
     * Support for `%sut` (start uptime) placeholder
     * Loglevels are now per target
+    * Influx now has a timeout (10s for connecting; 2s for the server to accept data)
 
 * 0.0.7 (Released on 09.09.2022)
     * Pings now follow period more closely (and no longer shift)

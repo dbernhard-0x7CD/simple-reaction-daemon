@@ -567,16 +567,9 @@ void run_check(check_arguments_t *args)
                 } else if (strcmp(this_action.name, "influx") == 0) {
                     action_influx_t* action = this_action.object;
 
-                    action_influx_t copy = *action;
+                    char* actual_line_data = insert_placeholders(action->line_data, check, datetime_format, downtime_s, uptime_s, connected);
 
-                    copy.line_data = insert_placeholders(action->line_data, check, datetime_format, downtime_s, uptime_s, connected);
-
-                    influx(logger, &copy);
-
-                    free((void *)copy.line_data);
-
-                    // because the copy may have established a new connection
-                    action->conn_socket = copy.conn_socket;
+                    influx(logger, action, actual_line_data);
                 }
                 else
                 {

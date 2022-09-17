@@ -259,7 +259,10 @@ int log_to_file(const logger_t* logger, const action_log_t* action_log)
     return ret_code;
 }
 
-int influx(const logger_t* logger, action_influx_t* action) {
+int influx(const logger_t* logger, action_influx_t* action, const char* actual_line) {
+    ssize_t num_ready;
+    ssize_t written_bytes;
+
     if (action->conn_socket <= 0) {
         action->conn_socket = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
 
@@ -270,15 +273,15 @@ int influx(const logger_t* logger, action_influx_t* action) {
         action->conn_epoll_write_fd = epoll_create(1);
         action->conn_epoll_read_fd = epoll_create(1);
 
-        // write fd
+        // create epoll fd for writiting
         struct epoll_event event;
         event.events = EPOLLOUT;
         event.data.fd = action->conn_socket;
 
         epoll_ctl(action->conn_epoll_write_fd, EPOLL_CTL_ADD, action->conn_socket, &event);
 
-        // read fd
-        event.events = EPOLLIN;
+        // create epoll fd for reading
+        event.events = EPOLLIN | EPOLLET;
         event.data.fd = action->conn_socket;
 
         epoll_ctl(action->conn_epoll_read_fd, EPOLL_CTL_ADD, action->conn_socket, &event);
@@ -295,12 +298,7 @@ int influx(const logger_t* logger, action_influx_t* action) {
             if (!resolve_hostname(logger, action->host, (struct sockaddr_storage*)&addr, &family)) {
                 sprint_error(logger, "Unable to get an IP for: %s\n", action->host);
 
-                close(action->conn_socket);
-                close(action->conn_epoll_write_fd);
-                close(action->conn_epoll_read_fd);
-                action->conn_socket = -1;
-                action->conn_epoll_write_fd = -1;
-                action->conn_epoll_read_fd = -1;
+                CLOSE(action);
                 return 0;
             }
         }
@@ -314,28 +312,35 @@ int influx(const logger_t* logger, action_influx_t* action) {
         if (s == 0) {
             sprint_debug(logger, "[Influx]: Connected to %s:%d\n", action->host, action->port);
         } else if (s == -1 && errno == EINPROGRESS) {
-            sprint_debug(logger, "[Influx]: Not immediately connected to %s\n", action->host);
-            
+            sprint_debug(logger, "[Influx]: Not immediately connected to %s:%d\n", action->host, action->port);
+   
+            // wait for maximum 10 seconds until we can write
+            struct epoll_event events_write[1];
+    
+            num_ready = epoll_wait(action->conn_epoll_write_fd, events_write, 1, 10 * 1e3);
+
+            if (num_ready <= 0) {
+                sprint_error(logger, "[Influx]: Unable to connect to %s:%d\n", action->host, action->port);
+                CLOSE(action);
+                
+                return 0;
+            } else {
+                sprint_debug(logger, "[Influx]: Succesfully connected to %s:%d\n", action->host, action->port);
+            }
         } else {
             sprint_error(logger, "[Influx]: Unable to connect to %s: %s\n", action->host, strerror(errno));
 
-            close(action->conn_socket);
-            close(action->conn_epoll_write_fd);
-            close(action->conn_epoll_read_fd);
-
-            action->conn_socket = -1;
-            action->conn_epoll_write_fd = -1;
-            action->conn_epoll_read_fd = -1;
+            CLOSE(action);
             return 0;
         }
     } // end of creating socket
 
     char header[256];
-    int line_len = strlen(action->line_data) + 1;
+    int line_len = strlen(actual_line) + 1;
     char body[line_len];
 
     // create body
-    snprintf(body, line_len, "%s\n", action->line_data);
+    snprintf(body, line_len, "%s\n", actual_line);
 
     // header
     snprintf(header, 256, "POST %s HTTP/1.1\r\n"
@@ -344,76 +349,85 @@ int influx(const logger_t* logger, action_influx_t* action) {
                           "Authorization: %s\r\n\r\n",
                           action->endpoint, action->host, action->port, strlen(body), action->authorization);
 
-    // wait for maximum 5 seconds until we can write
-    struct epoll_event events_write[1];
-    
-    // maximum of
-    int num_ready = epoll_wait(action->conn_epoll_write_fd, events_write, 1, 5 * 1e3);
+    written_bytes = 0;
+    do {
+        written_bytes = write(action->conn_socket, header, strlen(header));
 
-    if (num_ready <= 0) {
-        sprint_error(logger, "Unable to connect to %s:%d\n", action->host, action->port);
-        close(action->conn_socket);
-        close(action->conn_epoll_write_fd);
-        close(action->conn_epoll_read_fd);
+        if (written_bytes == -1 && (errno == EWOULDBLOCK || errno == EAGAIN)) {
+            struct epoll_event events_write[1];
+            num_ready = epoll_wait(action->conn_epoll_write_fd, events_write, 1, 1e3);
 
-        action->conn_socket = -1;
-        action->conn_epoll_write_fd = -1;
-        action->conn_epoll_read_fd = -1;
+            if (num_ready <= 0) {
+                sprint_error(logger, "[Influx]: Timeout while waiting for %s:%d.\n", action->host, action->port);
+
+                CLOSE(action);
+                return 0;
+            }
+            continue;
+        } else if (written_bytes == (ssize_t)strlen(header)) {
+            break;
+        }
+        sprint_error(logger, "[Influx]: Unable to send to %s:%d %s\n", action->host, action->port, strerror(errno));
+        CLOSE(action);
         return 0;
-    }
+    } while (1);
 
-    int written_bytes;
-    written_bytes = write(action->conn_socket, header, strlen(header));
+    sprint_debug(logger, "[Influx]: Written %ld bytes for the header.\n", written_bytes);
 
-    if (written_bytes < 0) {
-        sprint_error(logger, "Unable to send to influx\n");
+    // send the body
+    do {
+        written_bytes = write(action->conn_socket, body, strlen(body));
 
-        close(action->conn_socket);
-        close(action->conn_epoll_write_fd);
-        close(action->conn_epoll_read_fd);
-        action->conn_socket = -1;
-        action->conn_epoll_write_fd = -1;
-        action->conn_epoll_read_fd = -1;
+        if (written_bytes == -1 && (errno == EWOULDBLOCK || errno == EAGAIN)) {
+            struct epoll_event events[1];
+
+            // 2 seconds timeout for waiting until server is ready to receive data
+            num_ready = epoll_wait(action->conn_epoll_write_fd, events, 1, 2 * 1e3);
+
+            if (num_ready <= 0) {
+                sprint_error(logger, "[Influx]: Timeout while waiting for %s:%d.\n", action->host, action->port);
+
+                CLOSE(action);
+                return 0;
+            }
+            continue;
+        } else if (written_bytes == (ssize_t)strlen(body)) {
+            break;
+        }
+        sprint_error(logger, "[Influx]: Unable to send body to %s:%d %s\n", action->host, action->port, strerror(errno));
+        CLOSE(action);
         return 0;
-    }
-    sprint_debug(logger, "[Influx]: Written %d bytes for the header.\n", written_bytes);
-
-    written_bytes = write(action->conn_socket, body, strlen(body));
-
-    if (written_bytes < 0) {
-        sprint_error(logger, "Unable to send body to influx\n");
-        
-        close(action->conn_socket);
-        close(action->conn_epoll_write_fd);
-        close(action->conn_epoll_read_fd);
-        action->conn_socket = -1;
-        action->conn_epoll_write_fd = -1;
-        action->conn_epoll_read_fd = -1;
-        return 0;
-    }
-
-    sprint_debug(logger, "[Influx]: Written %d\n", written_bytes);
-
-    struct epoll_event events_read[1];
-    int num_events = epoll_wait(action->conn_epoll_read_fd, events_read, 1, 1e3);
-
-    if (num_events <= 0) {
-        sprint_error(logger, "[Influx]: Timeout while waiting for a response from %s:%d.\n", action->host, action->port);
-        close(action->conn_socket);
-        close(action->conn_epoll_write_fd);
-        close(action->conn_epoll_read_fd);
-        action->conn_socket = -1;
-        action->conn_epoll_write_fd = -1;
-        action->conn_epoll_read_fd = -1;
-
-        return 0;
-    }
+    } while (1);
 
     // we only need to look at the start to see if we were successfull at
     // writing
-    int read_bytes;
-    char answer[256];
-    read_bytes = read(action->conn_socket, answer, sizeof(answer));
+    int read_bytes = 0;
+    char answer[128];
+
+    do {
+        read_bytes = read(action->conn_socket, answer, sizeof(answer));
+
+        if (read_bytes == -1 && (errno == EWOULDBLOCK || errno == EAGAIN)) {
+            struct epoll_event events[1];
+
+            // 2 seconds timeout for processing
+            num_ready = epoll_wait(action->conn_epoll_read_fd, events, 1, 2 * 1e3);
+
+            if (num_ready <= 0) {
+                sprint_error(logger, "[Influx]: Timeout for an answer while waiting for %s:%d.\n", action->host, action->port);
+
+                CLOSE(action);
+                return 0;
+            }
+            continue;
+        } else if (read_bytes > 22) {
+            break;
+        }
+
+        sprint_error(logger, "[Influx]: Unable to receive answer from %s:%d %s\n", action->host, action->port, strerror(errno));
+        CLOSE(action);
+        return 0;
+    } while (1);
 
     answer[read_bytes] = '\0';
 

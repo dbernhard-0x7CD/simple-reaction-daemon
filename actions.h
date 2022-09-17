@@ -6,6 +6,13 @@
 
 #include "printing.h"
 
+#define CLOSE(action_influx)                    \
+    close(action_influx->conn_socket);          \
+    close(action_influx->conn_epoll_write_fd);  \
+    close(action_influx->conn_epoll_read_fd);   \
+    action_influx->conn_socket = -1;            \
+    action_influx->conn_epoll_write_fd = -1;    \
+    action_influx->conn_epoll_read_fd = -1;     \
 /*
  * Connectivity status for a target (connectivity_check_t).
  */
@@ -129,6 +136,6 @@ int log_to_file(const logger_t* logger, const action_log_t* action_log);
 /*
  * Executes the given influx action. Returns 1 on success, else 0.
  */
-int influx(const logger_t* logger, action_influx_t* action);
+int influx(const logger_t* logger, action_influx_t* action, const char* actual_line);
 
 #endif
