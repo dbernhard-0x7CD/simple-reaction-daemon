@@ -169,15 +169,15 @@ int main()
                 sprint_debug(logger, "Checking threads...\n");
                 continue;
             }
-            print_debug(logger, "Received another signal: %s\n", strerror(errno));
+            sprint_debug(logger, "Received another signal: %s\n", strerror(errno));
         }
 
         running = 0;
 
-        print_debug(logger, "Got signal %d\n", info.si_signo);
+        sprint_debug(logger, "Got signal %d\n", info.si_signo);
     }
 
-    print_info(logger, "Shutting down Simple Reaction Daemon\n");
+    sprint_info(logger, "Shutting down Simple Reaction Daemon\n");
     fflush(stdout);
 
     // kill and join all threads
@@ -194,7 +194,7 @@ int main()
         }
     }
 
-    print_debug(logger, "Killed all threads\n");
+    sprint_debug(logger, "Killed all threads\n");
 
     // free all memory
     for (int i = 0; i < connectivity_targets; i++) {
@@ -592,7 +592,7 @@ void run_check(check_arguments_t *args)
                 char str_time[32];
                 get_current_time(str_time, 32, datetime_format, NULL);
 
-                print_error(logger, "Behind in schedule by %d ms at %s. Check your period and your timeouts of the actions.\n", wait_time, str_time);
+                sprint_error(logger, "Behind in schedule by %d ms at %s. Check your period and your timeouts of the actions.\n", wait_time, str_time);
 
                 next_period = timespec_add(now, period);
 
