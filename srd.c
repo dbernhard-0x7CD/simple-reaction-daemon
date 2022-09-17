@@ -570,6 +570,8 @@ void run_check(check_arguments_t *args)
                     char* actual_line_data = insert_placeholders(action->line_data, check, datetime_format, downtime_s, uptime_s, connected);
 
                     influx(logger, action, actual_line_data);
+
+                    free(actual_line_data);
                 }
                 else
                 {
