@@ -162,7 +162,7 @@ int main()
                     double diff = calculate_difference(check->timestamp_latest_try, now);
 
                     // + 1 to not report some small overhead occured
-                    if (check->period + 1 < diff) {
+                    if (check->period + 1 < diff && ((check->flags & FLAG_AWAITING_DEPENDENCY) == 0)) {
                         sprint_error(logger, "Thread for %s is stalled. Period is %d but last check was %1.2f seconds ago \n", check->address, check->period, diff);
                     }
                 }
@@ -398,12 +398,18 @@ void run_check(check_arguments_t *args)
             if (available == 0) {
                 sprint_info(logger, "Awaiting dependency %s\n", check->depend_ip);
 
+                check->flags |= FLAG_AWAITING_DEPENDENCY;
+
                 next_period = timespec_add(next_period, period);
                 sleep(check->period);
                 
                 continue;
             }
+
+            // Remove flag FLAG_AWAITING_DEPENDENCY
+            check->flags &= ~FLAG_AWAITING_DEPENDENCY;
         }
+        
         int connected = check_connectivity(logger, check);
         if (!running) {
             break;
