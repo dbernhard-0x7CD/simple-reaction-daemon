@@ -25,6 +25,7 @@
     * Shut down after pressing ctrl + c
     * Support for `%sut` (start uptime) placeholder
     * Loglevels are now per target
+    * Report if there is a dependency loop
     * Influx now has a timeout (10s for connecting; 2s for the server to accept data)
 
 * 0.0.7 (Released on 09.09.2022)
