@@ -126,12 +126,12 @@ int restart_system(const logger_t* logger);
  * it'll be killed.
  * Returns 1 if success, else 0.
  */
-int run_command(const logger_t *logger, const action_cmd_t* cmd, const uint32_t timeout_ms);
+int run_command(const logger_t *logger, const action_cmd_t* cmd, const uint32_t timeout_ms, const char* actual_command);
 
 /*
 * Logs the given message to the given file by appending.
 */
-int log_to_file(const logger_t* logger, const action_log_t* action_log);
+int log_to_file(const logger_t* logger, const action_log_t* action_log, const char* actual_line);
 
 /*
  * Executes the given influx action. Returns 1 on success, else 0.

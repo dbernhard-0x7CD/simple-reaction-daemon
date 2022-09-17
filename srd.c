@@ -516,7 +516,7 @@ void run_check(check_arguments_t *args)
                         action_cmd_t cmd_reboot;
                         cmd_reboot.command = cmd;
 
-                        run_command(logger, &cmd_reboot, 5e3);
+                        run_command(logger, &cmd_reboot, 5e3, cmd);
                     } else {
                         sprint_info(logger, "Reboot scheduled. \n");
                     }
@@ -525,9 +525,6 @@ void run_check(check_arguments_t *args)
                 {
                     action_cmd_t *cmd = this_action.object;
 
-                    // we use a copy as the command has placeholders
-                    action_cmd_t copy = *cmd;
-
                     double downtime;
                     if (check->state == STATE_UP_NEW) {
                         downtime = check->previous_downtime;
@@ -535,14 +532,14 @@ void run_check(check_arguments_t *args)
                         downtime = downtime_s; // we are still down (or up)
                     }
 
-                    copy.command = insert_placeholders(cmd->command, check, datetime_format, downtime, uptime_s, connected);
+                    const char* actual_command = insert_placeholders(cmd->command, check, datetime_format, downtime, uptime_s, connected);
                     
-                    sprint_debug(logger, "\tCommand: %s\n", copy.command);
+                    sprint_debug(logger, "\tCommand: %s\n", actual_command);
                     fflush(stdout);
 
-                    run_command(logger, &copy, copy.timeout * 1e3);
+                    run_command(logger, cmd, cmd->timeout * 1e3, actual_command);
 
-                    free((char*)copy.command);
+                    free((char*)actual_command);
                 } else if (strcmp(this_action.name, "log") == 0) { 
                     action_log_t* action_log = (action_log_t*) this_action.object;
 
@@ -555,10 +552,7 @@ void run_check(check_arguments_t *args)
 
                     const char* message = insert_placeholders(action_log->message, check, datetime_format, downtime, uptime_s, connected);
 
-                    action_log_t copy = *action_log;
-                    copy.message = message;
-
-                    int r = log_to_file(logger, &copy);
+                    int r = log_to_file(logger, action_log, message);
                     if (r == 0) {
                         sprint_error(logger, "Unable to log to file %s\n", action_log->path);
                     }

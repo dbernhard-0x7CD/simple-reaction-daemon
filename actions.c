@@ -128,7 +128,7 @@ finish:
     return r >= 0;
 }
 
-int run_command(const logger_t* logger, const action_cmd_t *cmd, const uint32_t timeout_ms)
+int run_command(const logger_t* logger, const action_cmd_t *cmd, const uint32_t timeout_ms, const char* actual_command)
 {
     int stdin[2];
 
@@ -158,7 +158,7 @@ int run_command(const logger_t* logger, const action_cmd_t *cmd, const uint32_t 
             setuid(uid);
         }
        
-        execl("/bin/sh", "sh", "-c", cmd->command, NULL);
+        execl("/bin/sh", "sh", "-c", actual_command, NULL);
 
         sprint_error(logger, "execl failed.\n");
         return 0;
@@ -192,7 +192,7 @@ int run_command(const logger_t* logger, const action_cmd_t *cmd, const uint32_t 
             diff_ms = calculate_difference_ms(start, now);
 
             if (diff_ms >= timeout_ms) {
-                sprint_error(logger, "Command %s took too long. Killing it and continuing.\n", cmd->command);
+                sprint_error(logger, "Command %s took too long. Killing it and continuing.\n", actual_command);
 
                 kill(pid, SIGTERM);
                 waitpid(pid, NULL, WUNTRACED);
@@ -217,7 +217,7 @@ int run_command(const logger_t* logger, const action_cmd_t *cmd, const uint32_t 
     return 1;
 }
 
-int log_to_file(const logger_t* logger, const action_log_t* action_log)
+int log_to_file(const logger_t* logger, const action_log_t* action_log, const char* actual_line)
 {
     FILE *file;
 
@@ -239,7 +239,7 @@ int log_to_file(const logger_t* logger, const action_log_t* action_log)
         fputs("\n", file);
     }
 
-    fputs(action_log->message, file);
+    fputs(actual_line, file);
     fputs("\n", file);
 
     int ret_code = fclose(file) == 0;
