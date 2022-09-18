@@ -409,6 +409,8 @@ void run_check(check_arguments_t *args)
             // Remove flag FLAG_AWAITING_DEPENDENCY
             check->flags &= ~FLAG_AWAITING_DEPENDENCY;
         }
+        clock_gettime(CLOCK_REALTIME, &now);
+        check->timestamp_latest_try = now;
         
         int connected = check_connectivity(logger, check);
         if (!running) {
@@ -418,7 +420,6 @@ void run_check(check_arguments_t *args)
         char current_time[32];
         get_current_time(current_time, 32, datetime_format, NULL);
         clock_gettime(CLOCK_REALTIME, &now);
-        check->timestamp_latest_try = now;
 
         // downtime in seconds
         double downtime_s = -1.0;

@@ -438,6 +438,8 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
     }
 
     sprint_error(logger, "[Influx] Not successfull writing to influxdb. Received: %s\n", answer);
+    
+    CLOSE(action);
 
     return 0;
 }
