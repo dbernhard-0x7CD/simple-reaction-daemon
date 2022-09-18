@@ -615,6 +615,7 @@ void signal_handler(int s)
     if (s == SIGALRM || s == SIGINT || s == SIGKILL || s == SIGSTOP || s == SIGTERM || s == SIGABRT)
     {
         running = 0;
+        sprint_debug(logger, "Received %d\n", s);
         signal(SIGPIPE, SIG_DFL);
         return;
     }
