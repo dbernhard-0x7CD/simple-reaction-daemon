@@ -31,29 +31,31 @@ typedef struct logger_t
 #define sprint(logger, ...)                          \
     if (pthread_mutex_lock(logger->stdout_mut) != 0) \
     {                                                \
-        printf("Unable to get lock: " __VA_ARGS__);  \
+        fprintf(stdout, "Unable to get lock: ");     \
+        fprintf(stdout, "%s", logger->prefix);       \
+        fprintf(stdout, __VA_ARGS__);                \
     }                                                \
     else                                             \
     {                                                \
-        printf(logger->prefix);                      \
-        printf(__VA_ARGS__);                         \
+        fprintf(stdout, "%s", logger->prefix);       \
+        fprintf(stdout, __VA_ARGS__);                \
         pthread_mutex_unlock(logger->stdout_mut);    \
     }
 
-#define sprint_raw(logger, ...)                      \
-    if (pthread_mutex_lock(logger->stdout_mut) != 0) \
-    {                                                \
-        printf("Unable to get lock: " __VA_ARGS__);  \
-    }                                                \
-    else                                             \
-    {                                                \
-        printf(__VA_ARGS__);                         \
-        pthread_mutex_unlock(logger->stdout_mut);    \
+#define sprint_raw(logger, ...)                             \
+    if (pthread_mutex_lock(logger->stdout_mut) != 0)        \
+    {                                                       \
+        fprintf(stdout, "Unable to get lock: ");            \
+    }                                                       \
+    else                                                    \
+    {                                                       \
+        fprintf(stdout, __VA_ARGS__);                                \
+        pthread_mutex_unlock(logger->stdout_mut);           \
     }
 
 #define uprint(logger, ...)     \
-    printf(logger->prefix);     \
-    printf(__VA_ARGS__);
+    fprintf(stdout, logger->prefix);     \
+    fprintf(stdout, __VA_ARGS__);
 
 #define sprint_debug(logger, ...)              \
     if (*logger->level <= LOGLEVEL_DEBUG)      \
