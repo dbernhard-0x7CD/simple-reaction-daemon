@@ -46,11 +46,12 @@ typedef struct logger_t
 #define sprint_raw(logger, ...)                             \
     if (pthread_mutex_lock(logger->stdout_mut) != 0)        \
     {                                                       \
-        fprintf(stdout, "Unable to get lock: ");            \
+        fprintf(stdout, "Unable to get lock: \n");          \
+        fprintf(stdout, __VA_ARGS__);                       \
     }                                                       \
     else                                                    \
     {                                                       \
-        fprintf(stdout, __VA_ARGS__);                                \
+        fprintf(stdout, __VA_ARGS__);                       \
         pthread_mutex_unlock(logger->stdout_mut);           \
     }
 
@@ -88,27 +89,27 @@ typedef struct logger_t
         sprint(logger, "ERROR: " __VA_ARGS__);  \
     }
 
-#define print_debug(logger, ...)          \
-    if (*logger->level <= LOGLEVEL_DEBUG) \
-    {                                     \
+#define print_debug(logger, ...)                 \
+    if (*logger->level <= LOGLEVEL_DEBUG)        \
+    {                                            \
         uprint(logger, "DEBUG: " __VA_ARGS__);   \
     }
 
 #define print_info(logger, ...)          \
     if (*logger->level <= LOGLEVEL_INFO) \
     {                                    \
-        uprint(logger, __VA_ARGS__);            \
+        uprint(logger, __VA_ARGS__);     \
     }
 
 #define print_quiet(logger, ...)          \
     if (*logger->level <= LOGLEVEL_QUIET) \
     {                                     \
-        uprint(logger, __VA_ARGS__);             \
+        uprint(logger, __VA_ARGS__);      \
     }
 
-#define print_error(logger, ...)          \
-    if (*logger->level <= LOGLEVEL_ERROR) \
-    {                                     \
+#define print_error(logger, ...)                 \
+    if (*logger->level <= LOGLEVEL_ERROR)        \
+    {                                            \
         uprint(logger, "ERROR: " __VA_ARGS__);   \
     }
 
