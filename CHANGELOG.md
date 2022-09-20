@@ -26,7 +26,7 @@
     * Support for `%sut` (start uptime) placeholder
     * Loglevels are now per target
     * Report if there is a dependency loop
-    * Influx now has a timeout (10s for connecting; 2s for the server to accept data)
+    * Influx now has a timeout (10s for connecting; in total 6s for the request to be processed by the server)
 
 * 0.0.7 (Released on 09.09.2022)
     * Pings now follow period more closely (and no longer shift)

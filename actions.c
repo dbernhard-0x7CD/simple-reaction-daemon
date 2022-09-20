@@ -314,9 +314,9 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
         } else if (s == -1 && errno == EINPROGRESS) {
             sprint_debug(logger, "[Influx]: Not immediately connected to %s:%d\n", action->host, action->port);
    
-            // wait for maximum 10 seconds until we can write
             struct epoll_event events_write[1];
     
+            // wait for maximum 10 seconds until we can write
             num_ready = epoll_wait(action->conn_epoll_write_fd, events_write, 1, 10 * 1e3);
 
             if (num_ready <= 0) {
@@ -355,7 +355,7 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
 
         if (written_bytes == -1 && (errno == EWOULDBLOCK || errno == EAGAIN)) {
             struct epoll_event events_write[1];
-            num_ready = epoll_wait(action->conn_epoll_write_fd, events_write, 1, 1e3);
+            num_ready = epoll_wait(action->conn_epoll_write_fd, events_write, 1, 2 * 1e3);
 
             if (num_ready <= 0) {
                 sprint_error(logger, "[Influx]: Timeout while waiting for %s:%d.\n", action->host, action->port);
