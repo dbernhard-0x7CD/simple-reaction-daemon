@@ -16,6 +16,8 @@
 #include "printing.h"
 #include "util.h"
 
+#define TIMEOUT_INfLUX 10
+
 int restart_system(const logger_t* logger)
 {
 #ifdef DEBUG
@@ -264,7 +266,24 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
     ssize_t written_bytes;
 
     if (action->conn_socket <= 0) {
-        action->conn_socket = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
+        // address to connect to
+        struct sockaddr_storage addr;
+
+        // calculate address
+        int s;
+        sa_family_t family;
+        s = to_sockaddr(action->host, &addr, &family);
+
+        // if to_sockaddr failed
+        if (s == 0) {
+            if (!resolve_hostname(logger, action->host, &addr, &family)) {
+                sprint_error(logger, "Unable to get an IP for: %s\n", action->host);
+
+                return 0;
+            }
+        }
+
+        action->conn_socket = socket(family, SOCK_STREAM | SOCK_NONBLOCK, 0);
 
         if (action->conn_socket < 0) {
             sprint_debug(logger, "Unable to create socket.\n");
@@ -286,28 +305,18 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
 
         epoll_ctl(action->conn_epoll_read_fd, EPOLL_CTL_ADD, action->conn_socket, &event);
 
-        // connect to addr
-        struct sockaddr_in addr;
+        if (family == AF_INET) {
+            ((struct sockaddr_in*)&addr)->sin_port = htons(action->port);
+            ((struct sockaddr_in*)&addr)->sin_family = family;
 
-        int s;
-        sa_family_t family;
-        s = to_sockaddr(action->host, (struct sockaddr_storage*)&addr, &family);
+            s = connect(action->conn_socket, (struct sockaddr *) &addr, sizeof(struct sockaddr_in));
+        } else {
+            ((struct sockaddr_in6*)&addr)->sin6_port = htons(action->port);
+            ((struct sockaddr_in6*)&addr)->sin6_family = family;
 
-        // if to_sockaddr failed
-        if (s == 0) {
-            if (!resolve_hostname(logger, action->host, (struct sockaddr_storage*)&addr, &family)) {
-                sprint_error(logger, "Unable to get an IP for: %s\n", action->host);
-
-                CLOSE(action);
-                return 0;
-            }
+            s = connect(action->conn_socket, (struct sockaddr *) &addr, sizeof(struct sockaddr_in6));
         }
-
-        addr.sin_port = htons(action->port);
-        addr.sin_family= family;
         
-        s = connect(action->conn_socket, (struct sockaddr *) &addr, sizeof(addr));
-
         // If s == 0, then we are successfully connected
         if (s == 0) {
             sprint_debug(logger, "[Influx]: Connected to %s:%d\n", action->host, action->port);
@@ -355,7 +364,7 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
 
         if (written_bytes == -1 && (errno == EWOULDBLOCK || errno == EAGAIN)) {
             struct epoll_event events_write[1];
-            num_ready = epoll_wait(action->conn_epoll_write_fd, events_write, 1, 2 * 1e3);
+            num_ready = epoll_wait(action->conn_epoll_write_fd, events_write, 1, TIMEOUT_INfLUX * 1e3);
 
             if (num_ready <= 0) {
                 sprint_error(logger, "[Influx]: Timeout while waiting for %s:%d.\n", action->host, action->port);
@@ -372,8 +381,6 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
         return 0;
     } while (1);
 
-    sprint_debug(logger, "[Influx]: Written %ld bytes for the header.\n", written_bytes);
-
     // send the body
     do {
         written_bytes = write(action->conn_socket, body, strlen(body));
@@ -382,7 +389,7 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
             struct epoll_event events[1];
 
             // 2 seconds timeout for waiting until server is ready to receive data
-            num_ready = epoll_wait(action->conn_epoll_write_fd, events, 1, 2 * 1e3);
+            num_ready = epoll_wait(action->conn_epoll_write_fd, events, 1, TIMEOUT_INfLUX * 1e3);
 
             if (num_ready <= 0) {
                 sprint_error(logger, "[Influx]: Timeout while waiting for %s:%d.\n", action->host, action->port);
@@ -411,7 +418,7 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
             struct epoll_event events[1];
 
             // 2 seconds timeout for processing
-            num_ready = epoll_wait(action->conn_epoll_read_fd, events, 1, 2 * 1e3);
+            num_ready = epoll_wait(action->conn_epoll_read_fd, events, 1, TIMEOUT_INfLUX * 1e3);
 
             if (num_ready <= 0) {
                 sprint_error(logger, "[Influx]: Timeout for an answer while waiting for %s:%d.\n", action->host, action->port);
@@ -434,6 +441,7 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
     // check if starts with start_success
     const char* start_success = "HTTP/1.1 204 No Content";
     if (strncmp(answer, start_success, 23) == 0) {
+        sprint_debug(logger, "[Influx]: Success\n");
         return 1;
     }
 
