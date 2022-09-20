@@ -546,7 +546,6 @@ void run_check(check_arguments_t *args)
                     const char* actual_command = insert_placeholders(cmd->command, check, datetime_format, downtime, uptime_s, connected);
                     
                     sprint_debug(logger, "\tCommand: %s\n", actual_command);
-                    fflush(stdout);
 
                     run_command(logger, cmd, cmd->timeout * 1e3, actual_command);
 
@@ -585,8 +584,6 @@ void run_check(check_arguments_t *args)
                 } 
             }
         } // end for loop. (to check if any action has to be taken)
-
-        fflush(stdout);
 
         if (running) {
             // calculate time until next check should be performed
@@ -684,7 +681,6 @@ connectivity_check_t **load(char *directory, int *success, int *count)
     if (children_ptr == NULL)
     {
         print_error(logger, "No config files at %s\n", configd_path);
-        fflush(stdout);
         *success = 0;
         return NULL;
     }
@@ -714,7 +710,6 @@ connectivity_check_t **load(char *directory, int *success, int *count)
     {
         print_error(logger, "Missing config file at %s\n", configd_path);
         print_error(logger, "Configuration files must end with .conf\n");
-        fflush(stdout);
         *success = 0;
 
         fts_close(fts_ptr);
