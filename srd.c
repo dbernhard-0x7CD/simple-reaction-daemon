@@ -410,6 +410,8 @@ void run_check(check_arguments_t *args)
             check->flags &= ~FLAG_AWAITING_DEPENDENCY;
         }
         clock_gettime(CLOCK_REALTIME, &now);
+
+        // Set latest try. Used to calculate if a target check is stalled
         check->timestamp_latest_try = now;
         
         int connected = check_connectivity(logger, check);
@@ -533,6 +535,8 @@ void run_check(check_arguments_t *args)
                     action_cmd_t *cmd = this_action.object;
 
                     double downtime;
+
+                    // if we are newly up; set downtime to previous downtime
                     if (check->state == STATE_UP_NEW) {
                         downtime = check->previous_downtime;
                     } else {
@@ -551,6 +555,7 @@ void run_check(check_arguments_t *args)
                     action_log_t* action_log = (action_log_t*) this_action.object;
 
                     double downtime;
+                    // set previous_downtime as downtime when we're newly up
                     if (check->state == STATE_UP_NEW) {
                         downtime = check->previous_downtime;
                     } else {
