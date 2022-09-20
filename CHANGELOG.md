@@ -8,11 +8,8 @@
     * print to stdout action `stdout` with message
     * test scenarios for all events (inside testfile)
     * test with no replacements done
-    * test timeseries.conf (also example_configs)
-    * influx: support for ipv6
     * cache if datetime_format contains %%ms (only replace if there)
         * or generally cache what needs to be replaced (bitmap?)
-    * dispatch threads in some dependency order
     * ignore-below (for down-new and up-new)
 
 <br />
@@ -26,7 +23,8 @@
     * Support for `%sut` (start uptime) placeholder
     * Loglevels are now per target
     * Report if there is a dependency loop
-    * Influx now has a timeout (10s for connecting; in total 6s for the request to be processed by the server)
+    * Influx now has a timeout (10s for connecting; in total 30s for the request to be processed by the server)
+    * Influx: support for ipv6
 
 * 0.0.7 (Released on 09.09.2022)
     * Pings now follow period more closely (and no longer shift)
