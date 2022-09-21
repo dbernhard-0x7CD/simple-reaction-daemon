@@ -450,7 +450,7 @@ int create_socket(const logger_t* logger, const int address_family) {
         return 0;
     }
 
-    sprint_debug(logger, "Created socket with family: %d\n", address_family);
+    // sprint_debug(logger, "Created socket with family: %d\n", address_family);
 
     return sd;
 }
