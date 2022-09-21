@@ -11,6 +11,9 @@
     * cache if datetime_format contains %%ms (only replace if there)
         * or generally cache what needs to be replaced (bitmap?)
     * ignore-below (for down-new and up-new)
+    * precalculate ip_addr; do not for hostnames
+    * do not mark targets which wait for a dependency as stalled
+    * behind in schedule when influx is slow
 
 <br />
 
