@@ -660,7 +660,7 @@ int ping(const logger_t *logger,
         size_t bytes_rcved = recv(check->socket, check->rcv_buffer, PACKETSIZE, 0);
         
         if (bytes_rcved != 64) {
-            sprint_debug(logger, "just received: %ld bytes: %s\n", bytes_rcved, check->rcv_buffer);
+            sprint_debug(logger, "just received: %zd bytes: %s\n", bytes_rcved, check->rcv_buffer);
 
             return (-1);
         }
