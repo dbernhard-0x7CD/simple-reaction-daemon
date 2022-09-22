@@ -360,7 +360,7 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
     // header
     snprintf(header, 256, "POST %s HTTP/1.1\r\n"
                           "Host: %s:%d\r\n"
-                          "Content-Length: %ld\r\n"
+                          "Content-Length: %zd\r\n"
                           "Authorization: %s\r\n\r\n",
                           action->endpoint, action->host, action->port, strlen(body), action->authorization);
 
