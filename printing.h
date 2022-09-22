@@ -43,16 +43,16 @@ typedef struct logger_t
         pthread_mutex_unlock(logger->stdout_mut);    \
     }
 
-#define sprint_raw(logger, ...)                             \
-    if (pthread_mutex_lock(logger->stdout_mut) != 0)        \
-    {                                                       \
-        fprintf(stdout, "Unable to get lock: \n");          \
-        fprintf(stdout, __VA_ARGS__);                       \
-    }                                                       \
-    else                                                    \
-    {                                                       \
-        fprintf(stdout, __VA_ARGS__);                       \
-        pthread_mutex_unlock(logger->stdout_mut);           \
+#define sprint_raw(logger, ...)                       \
+    if (pthread_mutex_lock(logger->stdout_mut) != 0)  \
+    {                                                 \
+        fprintf(stdout, "Unable to get lock: \n");    \
+        fprintf(stdout, __VA_ARGS__);                 \
+    }                                                 \
+    else                                              \
+    {                                                 \
+        fprintf(stdout, __VA_ARGS__);                 \
+        pthread_mutex_unlock(logger->stdout_mut);     \
     }
 
 #define uprint(logger, ...)     \
