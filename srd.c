@@ -1100,6 +1100,11 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
                     }
                     action_influx->line_data = str_replace(linedata, "%ip", cc->address);
 
+                    // load timeout
+                    if (!config_setting_lookup_int(action, "timeout", &action_influx->timeout)) {
+                        action_influx->timeout = 2;
+                    }
+
                     this_action->object = action_influx;
                 }
                 else

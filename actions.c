@@ -16,8 +16,6 @@
 #include "printing.h"
 #include "util.h"
 
-#define TIMEOUT_INfLUX 10
-
 int restart_system(const logger_t* logger)
 {
 #ifdef DEBUG
@@ -264,7 +262,9 @@ int log_to_file(const logger_t* logger, const action_log_t* action_log, const ch
 int influx(const logger_t* logger, action_influx_t* action, const char* actual_line) {
     ssize_t num_ready;
     ssize_t written_bytes;
+    float timeout_left = action->timeout;
 
+    sprint_debug(logger, "[Influx]: with timeout %1.2f started\n", timeout_left);
     if (action->conn_socket <= 0) {
         // address to connect to
         struct sockaddr_storage addr;
@@ -305,6 +305,8 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
 
         epoll_ctl(action->conn_epoll_read_fd, EPOLL_CTL_ADD, action->conn_socket, &event);
 
+        time_t t1;
+        time(&t1);
         if (family == AF_INET) {
             ((struct sockaddr_in*)&addr)->sin_port = htons(action->port);
             ((struct sockaddr_in*)&addr)->sin_family = family;
@@ -334,6 +336,10 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
                 
                 return 0;
             } else {
+                time_t t2;
+                time(&t2);
+
+                timeout_left -= t2 - t1;
                 sprint_debug(logger, "[Influx]: Succesfully connected to %s:%d\n", action->host, action->port);
             }
         } else {
@@ -363,14 +369,25 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
         written_bytes = write(action->conn_socket, header, strlen(header));
 
         if (written_bytes == -1 && (errno == EWOULDBLOCK || errno == EAGAIN)) {
+            time_t t1;
+            time(&t1);
+
             struct epoll_event events_write[1];
-            num_ready = epoll_wait(action->conn_epoll_write_fd, events_write, 1, TIMEOUT_INfLUX * 1e3);
+            num_ready = epoll_wait(action->conn_epoll_write_fd, events_write, 1, timeout_left * 1e3);
 
             if (num_ready <= 0) {
                 sprint_error(logger, "[Influx]: Timeout while waiting for %s:%d.\n", action->host, action->port);
 
                 CLOSE(action);
                 return 0;
+            }
+            time_t t2;
+            time(&t2);
+
+            timeout_left -= t2 - t1;
+            if (timeout_left <= 0) {
+                sprint_error(logger, "[Influx]: Timeout for %s:%d\n", action->host, action->port);
+                return 0; 
             }
             continue;
         } else if (written_bytes == (ssize_t)strlen(header)) {
@@ -386,16 +403,26 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
         written_bytes = write(action->conn_socket, body, strlen(body));
 
         if (written_bytes == -1 && (errno == EWOULDBLOCK || errno == EAGAIN)) {
+            time_t t1;
             struct epoll_event events[1];
+            time(&t1);
 
             // 2 seconds timeout for waiting until server is ready to receive data
-            num_ready = epoll_wait(action->conn_epoll_write_fd, events, 1, TIMEOUT_INfLUX * 1e3);
+            num_ready = epoll_wait(action->conn_epoll_write_fd, events, 1, timeout_left * 1e3);
 
             if (num_ready <= 0) {
                 sprint_error(logger, "[Influx]: Timeout while waiting for %s:%d.\n", action->host, action->port);
 
                 CLOSE(action);
                 return 0;
+            }
+            time_t t2;
+            time(&t2);
+
+            timeout_left -= t2 - t1;
+            if (timeout_left <= 0) {
+                sprint_error(logger, "[Influx]: Timeout for %s:%d\n", action->host, action->port);
+                return 0; 
             }
             continue;
         } else if (written_bytes == (ssize_t)strlen(body)) {
@@ -415,10 +442,13 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
         read_bytes = read(action->conn_socket, answer, sizeof(answer));
 
         if (read_bytes == -1 && (errno == EWOULDBLOCK || errno == EAGAIN)) {
+            time_t t1;
+            time(&t1);
+
             struct epoll_event events[1];
 
             // 2 seconds timeout for processing
-            num_ready = epoll_wait(action->conn_epoll_read_fd, events, 1, TIMEOUT_INfLUX * 1e3);
+            num_ready = epoll_wait(action->conn_epoll_read_fd, events, 1, timeout_left * 1e3);
 
             if (num_ready <= 0) {
                 sprint_error(logger, "[Influx]: Timeout for an answer while waiting for %s:%d.\n", action->host, action->port);

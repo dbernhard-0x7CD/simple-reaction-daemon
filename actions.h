@@ -104,6 +104,9 @@ typedef struct action_influx_t {
 
     // epoll fd to receive an answer
     int conn_epoll_read_fd;
+
+    // timeout for the insertion of one line
+    int timeout;
 } action_influx_t;
 
 /*
