@@ -29,8 +29,7 @@ typedef struct logger_t
 
 /* Define some macros to print inside a mutex */
 #define sprint(logger, ...)                          \
-    const struct timespec timeout = { .tv_nsec = 0, .tv_sec = 1 }; \
-    if (pthread_mutex_timedlock(logger->stdout_mut, &timeout) != 0) \
+    if (pthread_mutex_lock(logger->stdout_mut) != 0) \
     {                                                \
         fprintf(stdout, "Unable to get lock: ");     \
         fprintf(stdout, "%s", logger->prefix);       \
