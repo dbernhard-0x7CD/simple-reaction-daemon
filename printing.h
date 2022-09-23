@@ -55,7 +55,7 @@ typedef struct logger_t
     }
 
 #define uprint(logger, ...)     \
-    fprintf(stdout, logger->prefix);     \
+    fprintf(stdout, "%s", logger->prefix);     \
     fprintf(stdout, __VA_ARGS__);
 
 #define sprint_debug(logger, ...)              \
