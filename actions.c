@@ -13,6 +13,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "srd.h"
 #include "actions.h"
 #include "printing.h"
 #include "util.h"
@@ -376,6 +377,10 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
             struct epoll_event events_write[1];
             num_ready = epoll_wait(action->conn_epoll_write_fd, events_write, 1, timeout_left * 1e3);
 
+            if (!running) {
+                return 0;
+            }
+
             if (num_ready <= 0) {
                 sprint_error(logger, "[Influx]: Timeout while waiting for %s:%d.\n", action->host, action->port);
 
@@ -410,6 +415,10 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
 
             // 2 seconds timeout for waiting until server is ready to receive data
             num_ready = epoll_wait(action->conn_epoll_write_fd, events, 1, timeout_left * 1e3);
+
+            if (!running) {
+                return 0;
+            }
 
             if (num_ready <= 0) {
                 sprint_error(logger, "[Influx]: Timeout while waiting for %s:%d.\n", action->host, action->port);
@@ -450,6 +459,10 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
 
             // 2 seconds timeout for processing
             num_ready = epoll_wait(action->conn_epoll_read_fd, events, 1, timeout_left * 1e3);
+
+            if (!running) {
+                return 0;
+            }
 
             if (num_ready <= 0) {
                 sprint_error(logger, "[Influx]: Timeout for an answer while waiting for %s:%d.\n", action->host, action->port);

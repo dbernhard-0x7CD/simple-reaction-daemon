@@ -103,6 +103,13 @@ typedef struct check_arguments_t
     logger_t logger;
 } check_arguments_t;
 
+
+/*
+ * Defines if the daemon is still running.
+ * Any positive value means we're running and zero means we're stopping.
+ */
+extern int running;
+
 /*
  * Entry point into this service. Loads all configs and starts a thread for each
  * of them.
