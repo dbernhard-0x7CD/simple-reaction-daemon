@@ -163,7 +163,11 @@ int main()
 
                     // + 1 to not report some small overhead occured
                     if (check->period + 1 < diff && ((check->flags & FLAG_AWAITING_DEPENDENCY) == 0)) {
-                        sprint_error(logger, "Thread for %s is stalled. Period is %d but last check was %1.2f seconds ago \n", args[i].logger.prefix, check->period, diff);
+
+                        char str_now[32];
+                        get_current_time(str_now, 32, datetime_format, NULL);
+
+                        sprint_error(logger, "%s: thread for %s is stalled. Period is %d but last check was %1.2f seconds ago \n", str_now, args[i].logger.prefix, check->period, diff);
                     }
                 }
                 sprint_debug(logger, "Checking threads...\n");
