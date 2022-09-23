@@ -266,7 +266,6 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
     ssize_t written_bytes;
     float timeout_left = action->timeout;
 
-    sprint_debug(logger, "[Influx]: with timeout %1.2f started\n", timeout_left);
     if (action->conn_socket <= 0) {
         // address to connect to
         struct sockaddr_storage addr;
@@ -325,8 +324,6 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
         if (s == 0) {
             sprint_debug(logger, "[Influx]: Connected to %s:%d\n", action->host, action->port);
         } else if (s == -1 && errno == EINPROGRESS) {
-            sprint_debug(logger, "[Influx]: Not immediately connected to %s:%d\n", action->host, action->port);
-   
             struct epoll_event events_write[1];
     
             // wait for maximum 10 seconds until we can write
