@@ -586,6 +586,8 @@ void run_check(check_arguments_t *args)
         } // end for loop. (to check if any action has to be taken)
 
         if (running) {
+            fflush(stdout);
+
             // calculate time until next check should be performed
             clock_gettime(CLOCK_REALTIME, &now);
 
