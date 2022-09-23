@@ -525,6 +525,7 @@ void initialize_packet(char* packet_base, int family, const char* address) {
 int ping(const logger_t *logger,
          connectivity_check_t* check)
 {
+    int flags = MSG_NOSIGNAL;
     struct sockaddr_storage addr_ping;
 
     sa_family_t addr_family;
@@ -577,9 +578,9 @@ int ping(const logger_t *logger,
 
     do {
         if (addr_family == AF_INET) {
-            bytes_sent = sendto(check->socket, check->snd_buffer, PACKETSIZE, 0, (struct sockaddr *)&addr_ping, sizeof(struct sockaddr_in));
+            bytes_sent = sendto(check->socket, check->snd_buffer, PACKETSIZE, flags, (struct sockaddr *)&addr_ping, sizeof(struct sockaddr_in));
         } else {
-            bytes_sent = sendto(check->socket, check->snd_buffer, PACKETSIZE, 0, (struct sockaddr*)&addr_ping, sizeof(struct sockaddr_in6));
+            bytes_sent = sendto(check->socket, check->snd_buffer, PACKETSIZE, flags, (struct sockaddr*)&addr_ping, sizeof(struct sockaddr_in6));
         }
 
         if (tries >= 3) {
