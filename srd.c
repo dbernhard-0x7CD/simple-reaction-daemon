@@ -645,6 +645,8 @@ int check_connectivity(const logger_t* logger, connectivity_check_t* cc)
             break;
         } else if (ping_success < 0) {
             return (-1);
+        } else if (!running) {
+            return (-1);
         }
     }
     if (i == cc->num_pings && success == 0) {
