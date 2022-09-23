@@ -22,10 +22,10 @@ valgrind: srd
 	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./srd
 
 check_includes: util.c
-	include-what-you-use util.c
-	include-what-you-use srd.c
-	include-what-you-use actions.c
-	include-what-you-use printing.c
+	include-what-you-use -D_GNU_SOURCE util.c
+	include-what-you-use -D_GNU_SOURCE srd.c
+	include-what-you-use -D_GNU_SOURCE actions.c
+	include-what-you-use -D_GNU_SOURCE printing.c
 
 clean:
 	rm -f *.o srd
