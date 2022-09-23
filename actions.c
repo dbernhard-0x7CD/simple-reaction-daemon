@@ -365,7 +365,7 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
 
     written_bytes = 0;
     do {
-        written_bytes = write(action->conn_socket, header, strlen(header));
+        written_bytes = send(action->conn_socket, header, strlen(header), MSG_NOSIGNAL);
 
         if (written_bytes == -1 && (errno == EWOULDBLOCK || errno == EAGAIN)) {
             time_t t1;
@@ -403,7 +403,7 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
 
     // send the body
     do {
-        written_bytes = write(action->conn_socket, body, strlen(body));
+        written_bytes = send(action->conn_socket, body, strlen(body), MSG_NOSIGNAL);
 
         if (written_bytes == -1 && (errno == EWOULDBLOCK || errno == EAGAIN)) {
             time_t t1;
