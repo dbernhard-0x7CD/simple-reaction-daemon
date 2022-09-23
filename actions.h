@@ -2,6 +2,7 @@
 #ifndef SRD_ACTIONS_H
 #define SRD_ACTIONS_H
 
+#include <unistd.h>
 #include <stdint.h>
 
 #include "printing.h"
