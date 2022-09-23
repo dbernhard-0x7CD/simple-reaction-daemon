@@ -623,14 +623,11 @@ void signal_handler(int s)
         signal(SIGPIPE, SIG_DFL);
         return;
     }
-    if (s == SIGPIPE) {
-        char str_now[32];
+    char str_now[32];
 
-        get_current_time(str_now, 32, datetime_format, NULL);
+    get_current_time(str_now, 32, datetime_format, NULL);
 
-        sprint_error(logger, "Got SIGPIPE at %s.\n", str_now); 
-    }
-    sprint_error(logger, "Unhandled signal %d\n", s);
+    sprint_error(logger, "Unhandled signal %d at %s\n", s, str_now);
     fflush(stdout);
 }
 
