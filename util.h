@@ -98,12 +98,12 @@ int create_epoll(const int fd);
  * and to AF_INET6 if it's an IPv6 address.
  * Returns 1 on success, else 0.
  */
-int to_sockaddr(const char* address, struct sockaddr_storage* socket_addr, sa_family_t* address_family);
+int to_sockaddr(const char* address, struct sockaddr_storage* socket_addr);
 
 /*
  * Tries to resolve hostname into an IP iside socket_addr.
  * Returns 1 on success, else 0.
  */
-int resolve_hostname(const logger_t* logger, const char *hostname, struct sockaddr_storage *socket_addr, sa_family_t* address_family);
+int resolve_hostname(const logger_t* logger, const char *hostname, struct sockaddr_storage *socket_addr);
 
 #endif

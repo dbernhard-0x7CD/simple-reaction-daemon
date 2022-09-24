@@ -394,21 +394,25 @@ struct timespec timespec_add(const struct timespec t1, const struct timespec t2)
     return result;
 }
 
-int to_sockaddr(const char* address, struct sockaddr_storage* socket_addr, sa_family_t* address_family) {
+int to_sockaddr(const char* address, struct sockaddr_storage* socket_addr) {
     struct sockaddr_in* ipv4_addr = (struct sockaddr_in*) socket_addr;
     int success = inet_pton(AF_INET, address, &ipv4_addr->sin_addr);
 
-    *address_family = AF_INET;
     // might be ipv6
     if (!success) {
         success = inet_pton(AF_INET6, address, &((struct sockaddr_in6*) socket_addr)->sin6_addr);
-        *address_family = AF_INET6;
+        if (success) {
+            socket_addr->ss_family = AF_INET6;
+        }
+    } else {
+        // |> IPv4 worked
+        socket_addr->ss_family = AF_INET;
     }
 
     return success;
 }
 
-int resolve_hostname(const logger_t* logger, const char *hostname, struct sockaddr_storage *socket_addr, sa_family_t* address_family)
+int resolve_hostname(const logger_t* logger, const char *hostname, struct sockaddr_storage *socket_addr)
 {
     struct addrinfo hint, *pai;
     int rv;
@@ -424,11 +428,12 @@ int resolve_hostname(const logger_t* logger, const char *hostname, struct sockad
     }
 
     if (pai->ai_family == AF_INET) {
+        socket_addr->ss_family = AF_INET;
         memcpy(socket_addr, pai->ai_addr, sizeof(struct sockaddr_in));
     } else {
+        socket_addr->ss_family = AF_INET6;
         memcpy(socket_addr, pai->ai_addr, sizeof(struct sockaddr_in6));
     }
-    *address_family = pai->ai_family;
 
     freeaddrinfo(pai);
     return 1;
@@ -526,15 +531,12 @@ int ping(const logger_t *logger,
          connectivity_check_t* check)
 {
     int flags = MSG_NOSIGNAL;
-    struct sockaddr_storage addr_ping;
 
-    sa_family_t addr_family;
-    
-    memset(&addr_ping, 0, sizeof(addr_ping));
-    if (!to_sockaddr(check->address, &addr_ping, &addr_family)) {
+    // resolve hostname each ping
+    if (check->flags & FLAG_IS_HOSTNAME) {
         // could be a hostname
         sprint_debug(logger, "Trying as a hostname: %s\n", check->address);
-        if (!resolve_hostname(logger, check->address, &addr_ping, &addr_family)) {
+        if (!resolve_hostname(logger, check->address, check->sockaddr)) {
             return (-1);
         }
     }
@@ -546,11 +548,9 @@ int ping(const logger_t *logger,
     if (check->epoll_fd > 0) {
         close(check->epoll_fd);
     }
-    check->socket = create_socket(logger, addr_family);
+    check->socket = create_socket(logger, check->sockaddr->ss_family);
     check->epoll_fd = create_epoll(check->socket);
 #endif
-
-    addr_ping.ss_family = addr_family;
 
     struct timespec sent_time;
     struct timespec rcvd_time;
@@ -558,7 +558,7 @@ int ping(const logger_t *logger,
     // construct packet and send
     memset(check->rcv_buffer, 0, PACKETSIZE);
 
-    initialize_packet(check->snd_buffer, addr_family, check->address);
+    initialize_packet(check->snd_buffer, check->sockaddr->ss_family, check->address);
 
     // Send the message
 #if DEBUG
@@ -566,7 +566,7 @@ int ping(const logger_t *logger,
 #endif
 
     if (check->socket < 0 || check->epoll_fd < 0) {
-        check->socket = create_socket(logger, addr_family);
+        check->socket = create_socket(logger, check->sockaddr->ss_family);
         check->epoll_fd = create_epoll(check->socket);
     }
 
@@ -577,10 +577,10 @@ int ping(const logger_t *logger,
     int tries = 0;
 
     do {
-        if (addr_family == AF_INET) {
-            bytes_sent = sendto(check->socket, check->snd_buffer, PACKETSIZE, flags, (struct sockaddr *)&addr_ping, sizeof(struct sockaddr_in));
+        if (check->sockaddr->ss_family == AF_INET) {
+            bytes_sent = sendto(check->socket, check->snd_buffer, PACKETSIZE, flags, (struct sockaddr *)check->sockaddr, sizeof(struct sockaddr_in));
         } else {
-            bytes_sent = sendto(check->socket, check->snd_buffer, PACKETSIZE, flags, (struct sockaddr*)&addr_ping, sizeof(struct sockaddr_in6));
+            bytes_sent = sendto(check->socket, check->snd_buffer, PACKETSIZE, flags, (struct sockaddr*)check->sockaddr, sizeof(struct sockaddr_in6));
         }
 
         if (tries >= 3) {
@@ -588,12 +588,12 @@ int ping(const logger_t *logger,
 
             int res = fstat(check->socket, &info);
 
-            sprint_error(logger, "Unable to send on socket %d after %d tries: %s. fstat returned %d family: %d\n", check->socket, tries, strerror(errno), res, addr_family);
+            sprint_error(logger, "Unable to send on socket %d after %d tries: %s. fstat returned %d family: %d\n", check->socket, tries, strerror(errno), res, check->sockaddr->ss_family);
 
             close(check->socket);
             close(check->epoll_fd);
 
-            check->socket = create_socket(logger, addr_family);
+            check->socket = create_socket(logger, check->sockaddr->ss_family);
             check->epoll_fd = create_epoll(check->socket);
 
             return (-1);
@@ -603,7 +603,7 @@ int ping(const logger_t *logger,
             close(check->socket);
             close(check->epoll_fd);
             
-            check->socket = create_socket(logger, addr_family);
+            check->socket = create_socket(logger, check->sockaddr->ss_family);
             check->epoll_fd = create_epoll(check->socket);
 
             sprint_debug(logger, "Created new socket for %s\n", check->address);

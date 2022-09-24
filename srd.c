@@ -7,6 +7,7 @@
 #include <signal.h>
 #include <stdint.h>
 #include <string.h>
+#include <sys/socket.h>
 #include <pthread.h>
 
 
@@ -247,6 +248,7 @@ int main()
                 action_influx_t* influx = (action_influx_t*) ptr->actions[i].object;
 
                 free((char *)influx->host);
+                free(influx->sockaddr);
                 free((char *)influx->authorization);
                 free((char *)influx->endpoint);
                 free((char *)influx->line_data);
@@ -255,6 +257,7 @@ int main()
             free((char *)ptr->actions[i].name);
         }
         free(ptr->actions);
+        free(ptr->sockaddr);
         free(ptr);
     }
     free(connectivity_checks);
@@ -799,6 +802,16 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
             cc->address = str_replace(ip, "%gw", default_gw);
             free(ip);
 
+            // try to load as sockaddr
+            cc->sockaddr = malloc(sizeof(struct sockaddr_storage));
+            int is_addr = to_sockaddr(cc->address, cc->sockaddr);
+
+            if (is_addr) {
+                print_debug(logger, "This is an address and is now stored: %s\n", cc->address);
+            } else {
+                cc->flags |= FLAG_IS_HOSTNAME;
+            }
+
             // set initial connectivity_check values
             cc->state = STATE_NONE;
 
@@ -1069,6 +1082,15 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
                     }
                     action_influx->host = strdup(host);
 
+                    action_influx->sockaddr = malloc(sizeof(struct sockaddr_storage));
+                    int is_ip = to_sockaddr(host, action_influx->sockaddr);
+
+                    if (is_ip) {
+                        print_debug(logger, "This is an address and is now stored: %s\n", action_influx->host);
+                    } else {
+                        action_influx->flags |= FLAG_IS_HOSTNAME;
+                    }
+                    
                     // load the port
                     if (!config_setting_lookup_int(action, "port", &action_influx->port))
                     {

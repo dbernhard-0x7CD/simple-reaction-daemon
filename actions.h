@@ -86,6 +86,8 @@ typedef struct action_influx_t {
     // host
     const char* host;
 
+    struct sockaddr_storage* sockaddr;
+
     int port;
 
     // path for the endpoint, may include bucket and organization
@@ -108,6 +110,9 @@ typedef struct action_influx_t {
 
     // timeout for the insertion of one line
     int timeout;
+
+    // Used to store some properties of this action
+    int flags;
 } action_influx_t;
 
 /*

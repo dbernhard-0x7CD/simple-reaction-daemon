@@ -1,7 +1,9 @@
 #ifndef SRD_H
 #define SRD_H
 
+#include <pthread.h>
 #include <stdint.h>
+#include <sys/un.h>
 #include <time.h>
 
 #include "actions.h"
@@ -13,6 +15,7 @@
 #define FLAG_AWAITING_DEPENDENCY 0b1
 #define FLAG_STARTED 0b10
 #define FLAG_STARTING_DEPENDENCY 0b100
+#define FLAG_IS_HOSTNAME 0b1000
 
 /* A connectivity check is one target to which we do connectivity checks.
  * Each config file represents one such check. As Each target can have its
@@ -25,6 +28,9 @@ typedef struct connectivity_check_t
 
     // target IP address
     const char *address;
+
+    // target IP
+    struct sockaddr_storage* sockaddr;
 
     // IP address this check depends on
     const char *depend_ip;
