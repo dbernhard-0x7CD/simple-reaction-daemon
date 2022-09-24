@@ -19,7 +19,7 @@ srd: util.o srd.o actions.o printing.o Makefile
 	$(CC) -c $(CFLAGS) $< -o $@
 
 valgrind: srd
-	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes ./srd
+	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --show-reachable=yes --num-callers=30 --trace-children=yes ./srd
 
 check_includes: util.c
 	include-what-you-use -D_GNU_SOURCE util.c
