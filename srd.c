@@ -626,7 +626,7 @@ void signal_handler(int s)
     if (s == SIGALRM || s == SIGINT || s == SIGKILL || s == SIGSTOP || s == SIGTERM || s == SIGABRT)
     {
         running = 0;
-        sprint_debug(logger, "Received %d\n", s);
+        print_debug(logger, "Received %d\n", s);
         signal(SIGPIPE, SIG_DFL);
         return;
     }
@@ -634,7 +634,7 @@ void signal_handler(int s)
 
     get_current_time(str_now, 32, datetime_format, NULL);
 
-    sprint_error(logger, "Unhandled signal %d at %s\n", s, str_now);
+    print_error(logger, "Unhandled signal %d at %s\n", s, str_now);
     fflush(stdout);
 }
 
