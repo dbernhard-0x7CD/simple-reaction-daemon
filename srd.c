@@ -763,7 +763,7 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
     while (cur_char <= end) {
         if (*(cur_char) == '\0' || *cur_char == ',') {
 
-            connectivity_check_t* cc = (connectivity_check_t* )malloc(sizeof(connectivity_check_t));
+            connectivity_check_t* cc = (connectivity_check_t* )calloc(sizeof(connectivity_check_t), 1);
 
             // initial values for a target
             cc->socket = -1;
@@ -803,7 +803,7 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
             free(ip);
 
             // try to load as sockaddr
-            cc->sockaddr = malloc(sizeof(struct sockaddr_storage));
+            cc->sockaddr = calloc(sizeof(struct sockaddr_storage), 1);
             int is_addr = to_sockaddr(cc->address, cc->sockaddr);
 
             if (is_addr) {
