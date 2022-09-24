@@ -617,7 +617,7 @@ void run_check(check_arguments_t *args)
         }
     } // end check while(running)
 
-    sprint_debug(logger, "Shutting this target check down.\n");
+    print_debug(logger, "Shutting this target check down.\n");
 }
 
 void signal_handler(int s)
