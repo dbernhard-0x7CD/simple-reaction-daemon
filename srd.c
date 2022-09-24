@@ -154,6 +154,9 @@ int main()
         struct timespec now;
         
         while ((result = sigtimedwait(&waitset, &info, &timeout)) < 0) {
+            if (!running) {
+                goto shutdown;
+            }
             if (errno == EAGAIN) {
                 clock_gettime(CLOCK_REALTIME, &now);
 
@@ -183,6 +186,7 @@ int main()
         sprint_debug(logger, "Got signal %d\n", info.si_signo);
     }
 
+shutdown:
     sprint_info(logger, "Shutting down Simple Reaction Daemon\n");
     fflush(stdout);
 
