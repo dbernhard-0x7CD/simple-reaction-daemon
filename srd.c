@@ -1,5 +1,6 @@
 #include <errno.h>
 #include <fts.h>
+#include <netinet/in.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -1072,6 +1073,12 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
                     action_influx_t *action_influx = malloc(sizeof(action_influx_t));
                     action_influx->conn_socket = -1;
 
+                    // load the port
+                    if (!config_setting_lookup_int(action, "port", &action_influx->port))
+                    {
+                        action_influx->port = 8086;
+                    }
+
                     // load the host
                     const char* host;
                     if (!config_setting_lookup_string(action, "host", &host))
@@ -1087,16 +1094,16 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
 
                     if (is_ip) {
                         print_debug(logger, "This is an address and is now stored: %s\n", action_influx->host);
+
+                        if (action_influx->sockaddr->ss_family == AF_INET) {
+                            ((struct sockaddr_in*)action_influx->sockaddr)->sin_port = htons(action_influx->port);
+                        } else {
+                            ((struct sockaddr_in6*)action_influx->sockaddr)->sin6_port = htons(action_influx->port);
+                        }
                     } else {
                         action_influx->flags |= FLAG_IS_HOSTNAME;
                     }
                     
-                    // load the port
-                    if (!config_setting_lookup_int(action, "port", &action_influx->port))
-                    {
-                        action_influx->port = 8086;
-                    }
-
                     // load the endpoint
                     const char* endpoint;
                     if (!config_setting_lookup_string(action, "endpoint", &endpoint))

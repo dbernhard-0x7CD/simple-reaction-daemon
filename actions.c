@@ -267,19 +267,21 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
     float timeout_left = action->timeout;
 
     if (action->conn_socket <= 0) {
-        // address to connect to
-        struct sockaddr_storage addr;
-
         // calculate address
         if (action->flags & FLAG_IS_HOSTNAME) {
-            if (!resolve_hostname(logger, action->host, &addr)) {
+            if (!resolve_hostname(logger, action->host, action->sockaddr)) {
                 sprint_error(logger, "Unable to get an IP for: %s\n", action->host);
 
                 return 0;
             }
+            if (action->sockaddr->ss_family == AF_INET) {
+                ((struct sockaddr_in*)action->sockaddr)->sin_port = htons(action->port);
+            } else {
+                ((struct sockaddr_in6*)action->sockaddr)->sin6_port = htons(action->port);
+            }
         }
 
-        action->conn_socket = socket(addr.ss_family, SOCK_STREAM | SOCK_NONBLOCK, 0);
+        action->conn_socket = socket(action->sockaddr->ss_family, SOCK_STREAM | SOCK_NONBLOCK, 0);
 
         if (action->conn_socket < 0) {
             sprint_debug(logger, "Unable to create socket.\n");
@@ -305,13 +307,12 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
         time(&t1);
         int s;
         if (action->sockaddr->ss_family == AF_INET) {
-            ((struct sockaddr_in*)&addr)->sin_port = htons(action->port);
 
-            s = connect(action->conn_socket, (struct sockaddr *) &addr, sizeof(struct sockaddr_in));
+            s = connect(action->conn_socket, (struct sockaddr *) &action->sockaddr, sizeof(struct sockaddr_in));
         } else {
-            ((struct sockaddr_in6*)&addr)->sin6_port = htons(action->port);
+            ((struct sockaddr_in6*)action->sockaddr)->sin6_port = htons(action->port);
 
-            s = connect(action->conn_socket, (struct sockaddr *) &addr, sizeof(struct sockaddr_in6));
+            s = connect(action->conn_socket, (struct sockaddr *) action->sockaddr, sizeof(struct sockaddr_in6));
         }
         
         // If s == 0, then we are successfully connected
