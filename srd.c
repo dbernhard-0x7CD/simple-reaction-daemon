@@ -223,8 +223,12 @@ shutdown:
         free((char *)ptr->snd_buffer);
         free((char *)ptr->rcv_buffer);
 
-        close(ptr->epoll_fd);
-        close(ptr->socket);
+        if (ptr->epoll_fd > 0) {
+            close(ptr->epoll_fd);
+        }
+        if (ptr->socket > 0) {
+            close(ptr->socket);
+        }
 
         // free cmd if it is a command (contains the command) or service-restart (contains service name)
         for (int i = 0; i < ptr->actions_count; i++) {
