@@ -261,6 +261,15 @@ shutdown:
                 free((char *)influx->authorization);
                 free((char *)influx->endpoint);
                 free((char *)influx->line_data);
+                if (influx->conn_epoll_read_fd > 0) {
+                    close(influx->conn_epoll_read_fd);
+                }
+                if (influx->conn_epoll_write_fd > 0) {
+                    close(influx->conn_epoll_write_fd);
+                }
+                if (influx->conn_socket > 0) {
+                    close(influx->conn_socket);
+                }
                 free(ptr->actions[i].object);
             }
             free((char *)ptr->actions[i].name);
