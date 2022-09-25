@@ -137,7 +137,7 @@ int main()
 
         sigaddset(&waitset, SIGINT);
         sigaddset(&waitset, SIGALRM);
-        sigaddset(&waitset, SIGTERM);
+        sigaddset(&waitset, SIGTERM); // sent by systemd
         sigaddset(&waitset, SIGABRT);
         sigaddset(&waitset, SIGKILL);
         sigaddset(&waitset, SIGSTOP);
