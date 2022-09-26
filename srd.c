@@ -1108,7 +1108,7 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
                     }
                     action_influx->host = strdup(host);
 
-                    action_influx->sockaddr = malloc(sizeof(struct sockaddr_storage));
+                    action_influx->sockaddr = calloc(sizeof(struct sockaddr_storage), 1);
                     int is_ip = to_sockaddr(host, action_influx->sockaddr);
 
                     if (is_ip) {
