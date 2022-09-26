@@ -460,7 +460,6 @@ void run_check(check_arguments_t *args)
             // set timestamp if the current statue is not STATE_UP
             if ((check->state & STATE_UP) == 0) {
                 check->timestamp_first_reply = now;
-                
             }
 
             // if we're not up (do not set state to STATE_UP_NEW if previous state was STATE_NONE)
