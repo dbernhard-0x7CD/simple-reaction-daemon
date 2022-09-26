@@ -1089,6 +1089,8 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
                 else if (strcmp(action_name, "influx") == 0) {
                     action_influx_t *action_influx = malloc(sizeof(action_influx_t));
                     action_influx->conn_socket = -1;
+                    action_influx->conn_epoll_read_fd = -1;
+                    action_influx->conn_epoll_write_fd = -1;
 
                     // load the port
                     if (!config_setting_lookup_int(action, "port", &action_influx->port))
