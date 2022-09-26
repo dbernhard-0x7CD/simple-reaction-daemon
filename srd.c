@@ -157,6 +157,7 @@ int main()
             if (!running) {
                 goto shutdown;
             }
+            if (errno == EINTR) continue;
             if (errno == EAGAIN) {
                 clock_gettime(CLOCK_REALTIME, &now);
 
