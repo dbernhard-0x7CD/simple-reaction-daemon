@@ -118,7 +118,7 @@ int main()
         int s = start_check(threads, args, connectivity_checks, connectivity_targets, i);
         if (s < 0) {
             running = 0;
-            print_error(logger, "There is a dependency loop in your configs.\n");
+            sprint_error(logger, "Unable to start\n");
             break;
         }
     }
@@ -320,6 +320,8 @@ int start_check(pthread_t* threads, check_arguments_t* args, connectivity_check_
     // if we're already starting a dependency then we're in a loop
     // thus, return error
     if (check->flags & FLAG_STARTING_DEPENDENCY) {
+        print_error(logger, "There is a dependency loop in one of your configs with %s.\n", check->address);
+
         return -1;
     }
 
@@ -328,7 +330,10 @@ int start_check(pthread_t* threads, check_arguments_t* args, connectivity_check_
         uint16_t dep_idx = -1;
         check->flags |= FLAG_STARTING_DEPENDENCY;
 
-        get_dependency(ccs, n, check->depend_ip, &dep_idx);
+        if (get_dependency(ccs, n, check->depend_ip, &dep_idx) == NULL) {
+            sprint_error(logger, "Unable to find dependency: %s\n", check->depend_ip);
+            return -1;
+        }
 
         if (start_check(threads, args, ccs, n, dep_idx) < 0) {
             return -1;
