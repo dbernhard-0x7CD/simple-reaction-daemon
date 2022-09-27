@@ -1,3 +1,6 @@
+#ifndef SRD_UTIL_H
+#define SRD_UTIL_H
+
 #include <stdint.h>
 #include <sys/un.h>
 #include <time.h>
@@ -8,8 +11,6 @@ struct timespec;
 struct sockaddr_storage;
 
 
-#ifndef SRD_UTIL_H
-#define SRD_UTIL_H
 
 /*
  * Returns 1 if the given character needs to be escaped.
