@@ -62,12 +62,12 @@ char *insert_placeholders(const char *raw_message, const connectivity_check_t *c
 /*
  * Calculates the difference in seconds of old and new
  */
-double calculate_difference(struct timespec old, struct timespec new);
+double calculate_difference(const struct timespec old, const struct timespec new);
 
 /*
  * Calculates the difference in milliseconds of old and new.
  */
-int32_t calculate_difference_ms(struct timespec old, struct timespec new);
+int32_t calculate_difference_ms(const struct timespec old, const struct timespec new);
 
 /*
  * Adds to timespec structs.

@@ -372,11 +372,11 @@ char* insert_placeholders(const char* raw_message,
     return message;
 }
 
-double calculate_difference(struct timespec old, struct timespec new) {
+double calculate_difference(const struct timespec old, const struct timespec new) {
     return (new.tv_sec - old.tv_sec) + (new.tv_nsec - old.tv_nsec) / 1.0e9;
 }
 
-int32_t calculate_difference_ms(struct timespec old, struct timespec new) {
+int32_t calculate_difference_ms(const struct timespec old, const struct timespec new) {
     return (new.tv_sec - old.tv_sec) * 1000 + (new.tv_nsec - old.tv_nsec) / 1000000;
 }
 
