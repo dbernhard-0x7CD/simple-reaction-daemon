@@ -111,7 +111,10 @@ typedef struct action_influx_t {
     // timeout for the insertion of one line
     int timeout;
 
-    // Used to store some properties of this action
+    /* Used to store some properties of this action.
+     * FLAG_IS_HOSTNAME indicates that host is not an IP
+     * address and needs to be resolved.
+     */
     int flags;
 } action_influx_t;
 
