@@ -44,6 +44,17 @@
     "istream": "c",
     "ostream": "c",
     "*.inc": "c",
-    "*.rh": "c"
+    "*.rh": "c",
+    "perf_metric.h": "c",
+    "*.def": "c",
+    "*.tcc": "c",
+    "bitset": "c",
+    "source_location": "c",
+    "typeinfo": "c",
+    "span": "c",
+    "printing.h": "c",
+    "srd.h": "c",
+    "stdint.h": "c",
+    "un.h": "c"
   }
 }
