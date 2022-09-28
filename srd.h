@@ -3,7 +3,6 @@
 
 #include <pthread.h>
 #include <stdint.h>
-#include <sys/un.h>
 #include <time.h>
 
 #include "actions.h"
