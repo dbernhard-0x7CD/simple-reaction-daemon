@@ -2,7 +2,6 @@
 #define SRD_UTIL_H
 
 #include <stdint.h>
-#include <sys/un.h>
 #include <time.h>
 
 #include "srd.h"
