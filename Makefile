@@ -21,6 +21,7 @@ srd: util.o srd.o actions.o printing.o Makefile
 valgrind: srd
 	valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --show-reachable=yes --num-callers=50 --trace-children=yes ./srd
 
+# This needs to have include-what-you-use installed
 check_includes: util.c
 	include-what-you-use -D_GNU_SOURCE util.c
 	include-what-you-use -D_GNU_SOURCE srd.c
