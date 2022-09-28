@@ -235,7 +235,7 @@ shutdown:
         for (int i = 0; i < ptr->actions_count; i++) {
             if (strcmp(ptr->actions[i].name, "command") == 0) {
                 action_cmd_t* cmd = (action_cmd_t*) ptr->actions[i].object;
-                free ((char *)cmd->command);
+                free ((char *)cmd->cmd_ph.raw_message);
                 free ((char *)cmd->user);
                 free(ptr->actions[i].object);
             } else if (strcmp(ptr->actions[i].name, "reboot") == 0) {
@@ -245,7 +245,7 @@ shutdown:
             } else if (strcmp(ptr->actions[i].name, "log") == 0) {
                 action_log_t* action_log = (action_log_t*) ptr->actions[i].object;
 
-                free((char *)action_log->message);
+                free((char *)action_log->message_ph.raw_message);
                 free((char *)action_log->path);
                 if (action_log->username) {
                     free((char *)action_log->username);
@@ -261,7 +261,7 @@ shutdown:
                 free(influx->sockaddr);
                 free((char *)influx->authorization);
                 free((char *)influx->endpoint);
-                free((char *)influx->line_data);
+                free((char *)influx->line.raw_message);
                 if (influx->conn_epoll_read_fd > 0) {
                     close(influx->conn_epoll_read_fd);
                 }
@@ -551,9 +551,10 @@ void run_check(check_arguments_t *args)
                     if (res == 0) { // unable to restart
                         sprint_error(logger, "Unable to restart using dbus. Will try command\n");
 
+                        placeholder_t placeholder = {.raw_message = "reboot", .info = 0};
+                        
                         const char* cmd = "reboot";
-                        action_cmd_t cmd_reboot;
-                        cmd_reboot.command = cmd;
+                        action_cmd_t cmd_reboot = {.cmd_ph = placeholder};
 
                         run_command(logger, &cmd_reboot, 5e3, cmd);
                     } else {
@@ -573,7 +574,7 @@ void run_check(check_arguments_t *args)
                         downtime = downtime_s; // we are still down (or up)
                     }
 
-                    const char* actual_command = insert_placeholders(cmd->command, check, datetime_format, downtime, uptime_s, connected);
+                    const char* actual_command = insert_placeholders(cmd->cmd_ph, check, datetime_format, downtime, uptime_s, connected);
                     
                     sprint_debug(logger, "\tCommand: %s\n", actual_command);
 
@@ -591,7 +592,7 @@ void run_check(check_arguments_t *args)
                         downtime = downtime_s; // we are still down (or up)
                     }
 
-                    const char* message = insert_placeholders(action_log->message, check, datetime_format, downtime, uptime_s, connected);
+                    const char* message = insert_placeholders(action_log->message_ph, check, datetime_format, downtime, uptime_s, connected);
 
                     int r = log_to_file(logger, action_log, message);
                     if (r == 0) {
@@ -602,7 +603,7 @@ void run_check(check_arguments_t *args)
                 } else if (strcmp(this_action.name, "influx") == 0) {
                     action_influx_t* action = this_action.object;
 
-                    char* actual_line_data = insert_placeholders(action->line_data, check, datetime_format, downtime_s, uptime_s, connected);
+                    char* actual_line_data = insert_placeholders(action->line, check, datetime_format, downtime_s, uptime_s, connected);
 
                     influx(logger, action, actual_line_data);
 
@@ -1022,7 +1023,11 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
                     }
                     command = str_replace(command, "%ip", (char *)cc->address);
 
-                    cmd->command = command;
+                    const placeholder_t placeholder = {
+                        .info = get_replacements(command),
+                        .raw_message = command
+                    };
+                    cmd->cmd_ph = placeholder;
 
                     // load username
                     const char* username;
@@ -1068,9 +1073,12 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
                         print_error(logger, "%s: element is missing the message\n", cfg_path);
                         config_destroy(&cfg);
                         return 0;
-                    } else {
-                        action_log->message = str_replace(message, "%ip", (char *)cc->address);
                     }
+                    placeholder_t placeholder = {
+                        .info = get_replacements(message),
+                        .raw_message = str_replace(message, "%ip", (char *)cc->address)
+                    };
+                    action_log->message_ph = placeholder;
 
                     // Load header
                     const char* header;
@@ -1156,7 +1164,11 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
                         config_destroy(&cfg);
                         return 0;
                     }
-                    action_influx->line_data = str_replace(linedata, "%ip", cc->address);
+                    placeholder_t placeholder = {
+                        .raw_message = str_replace(linedata, "%ip", cc->address),
+                        .info = get_replacements(linedata)
+                    };
+                    action_influx->line = placeholder;
 
                     // load timeout
                     if (!config_setting_lookup_int(action, "timeout", &action_influx->timeout)) {

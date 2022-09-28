@@ -7,9 +7,19 @@
 
 #include "srd.h"
 #include "printing.h"
+#include "actions.h"
 struct timespec;
 struct sockaddr_storage;
 
+#define FLAG_CONTAINS_MS         0b1
+#define FLAG_CONTAINS_NOW        0b10
+#define FLAG_CONTAINS_SDT        0b100
+#define FLAG_CONTAINS_SUT        0b1000
+#define FLAG_CONTAINS_DOWNTIME   0b10000
+#define FLAG_CONTAINS_UPTIME     0b100000
+#define FLAG_CONTAINS_LAT_MS     0b1000000
+#define FLAG_CONTAINS_STATUS     0b10000000
+#define FLAG_CONTAINS_TIMESTAMP  0b100000000
 
 
 /*
@@ -55,9 +65,14 @@ void seconds_to_string(const int seconds, char* dt_string);
 void get_current_time(char *str, const int str_len, const char *format, time_t* timestamp);
 
 /*
+ * Returns the bitmap where all replacements are set.
+ */
+replacement_info_t get_replacements(const char* message);
+
+/*
  * Replaces all placeholders inside raw_message and returns a pointer to the updated string (which must be free'd).
  */
-char *insert_placeholders(const char *raw_message, const connectivity_check_t *check, const char *datetime_format, const double downtime_s, const double uptime_s, const int connected);
+char *insert_placeholders(const placeholder_t placeholder, const connectivity_check_t *check, const char *datetime_format, const double downtime_s, const double uptime_s, const int connected);
 
 /*
  * Calculates the difference in seconds of old and new

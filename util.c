@@ -244,18 +244,51 @@ void seconds_to_string(const int seconds, char* dt_string) {
     }
 }
 
-char* insert_placeholders(const char* raw_message, 
+replacement_info_t get_replacements(const char* message) {
+    replacement_info_t info = 0;
+
+    if (strstr(message, "%uptime")) {
+        info |= FLAG_CONTAINS_UPTIME;
+    }
+    if (strstr(message, "%sdt")) {
+        info |= FLAG_CONTAINS_SDT;
+    }
+    if (strstr(message, "%sut")) {
+        info |= FLAG_CONTAINS_SUT;
+    }
+    if (strstr(message, "%downtime")) {
+        info |= FLAG_CONTAINS_DOWNTIME;
+    }
+    if (strstr(message, "%lat_ms")) {
+        info |= FLAG_CONTAINS_LAT_MS;
+    }
+    if (strstr(message, "%status")) {
+        info |= FLAG_CONTAINS_STATUS;
+    }
+    if (strstr(message, "%now")) {
+        info |= FLAG_CONTAINS_NOW;
+    }
+    if (strstr(message, "%timestamp")) {
+        info |= FLAG_CONTAINS_TIMESTAMP;
+    }
+
+    return info;
+}
+
+
+char* insert_placeholders(const placeholder_t placeholder, 
                         const connectivity_check_t* check,
                         const char* datetime_format,
                         const double downtime,
                         const double uptime,
                         const int connected) {
-    char* message = strdup(raw_message);
+    char* message = strdup(placeholder.raw_message);
+    replacement_info_t info = placeholder.info;
 
     const conn_state_t state = check->state;
 
     // replace %uptime
-    if ((state & STATE_UP) || (state == STATE_DOWN_NEW)) {
+    if ((info & FLAG_CONTAINS_UPTIME) && ((state & STATE_UP) || (state == STATE_DOWN_NEW))) {
         char dt_string[24];
         seconds_to_string((int)uptime, dt_string);
 
@@ -267,7 +300,7 @@ char* insert_placeholders(const char* raw_message,
     }
 
     // replace %sdt
-    if (state == STATE_UP_NEW || state & STATE_DOWN) {
+    if ((info & FLAG_CONTAINS_SDT) && (state == STATE_UP_NEW || state & STATE_DOWN)) {
         char str_time[32];
         struct tm time;
         localtime_r(&check->timestamp_first_failed.tv_sec, &time);
@@ -289,7 +322,7 @@ char* insert_placeholders(const char* raw_message,
     }
 
     // replace %sut
-    if (state == STATE_DOWN_NEW || state & STATE_UP) {
+    if ((info & FLAG_CONTAINS_SUT) && (state == STATE_DOWN_NEW || state & STATE_UP)) {
         char str_time[32];
         struct tm time;
         localtime_r(&check->timestamp_first_reply.tv_sec, &time);
@@ -311,7 +344,7 @@ char* insert_placeholders(const char* raw_message,
     }
 
     // replace %downtime
-    if (state == STATE_UP_NEW || state & STATE_DOWN) {
+    if ((info & FLAG_CONTAINS_DOWNTIME) && (state == STATE_UP_NEW || state & STATE_DOWN)) {
         char dt_string[24];
         seconds_to_string((int)downtime, dt_string);
         
@@ -322,53 +355,65 @@ char* insert_placeholders(const char* raw_message,
     }
 
     // replace %lat_ms
-    if (check->latency >= 0) {
-        // latency +1 to avoid negative logarithms (are negative in ]1, 0[); 
-        // +2 for null-term and one off by log10
-        // +1 for period '.'
-        // +2 for some precision
-        int length = (int)log10f(check->latency * 1e3 + 1.0) + 5;
+    if (info & FLAG_CONTAINS_LAT_MS) {
+        if (check->latency >= 0) {
+            // latency +1 to avoid negative logarithms (are negative in ]1, 0[); 
+            // +2 for null-term and one off by log10
+            // +1 for period '.'
+            // +2 for some precision
+            int length = (int)log10f(check->latency * 1e3 + 1.0) + 5;
 
-        char* latency_str = malloc(length * sizeof(char));
+            char* latency_str = malloc(length * sizeof(char));
 
-        const char* old = message;
+            const char* old = message;
 
-        snprintf(latency_str, length, "%1.2lf", check->latency * 1e3);
-        message = str_replace(message, "%lat_ms", latency_str);
+            snprintf(latency_str, length, "%1.2lf", check->latency * 1e3);
+            message = str_replace(message, "%lat_ms", latency_str);
 
-        free(latency_str);
-        free((char *)old);
-    } else {
-        const char* old = message;
-        message = str_replace(message, "%lat_ms", "-1.0");
-        free((char *)old);
+            free(latency_str);
+            free((char *)old);
+        } else {
+            const char* old = message;
+            message = str_replace(message, "%lat_ms", "-1.0");
+            free((char *)old);
+        }
     }
 
     // replace %status
-    const char* old = message;
-    if (connected) {
-        message = str_replace(message, "%status", "success");
-    } else {
-        message = str_replace(message, "%status", "failed");
+    if (info & FLAG_CONTAINS_STATUS) {
+        const char* old = message;
+        if (connected) {
+            message = str_replace(message, "%status", "success");
+        } else {
+            message = str_replace(message, "%status", "failed");
+        }
+        free((char *) old);
     }
-    free((char *) old);
 
     // replace %now
-    char str_now[32];
-    time_t timestamp;
-    get_current_time(str_now, 32, datetime_format, &timestamp);
-    old = message;
+    if (info & FLAG_CONTAINS_NOW) {
+        const char* old = message;
+
+        char str_now[32];
+        get_current_time(str_now, 32, datetime_format, NULL);
+        message = str_replace(message, "%now", str_now);
+
+        free((char *) old);
+    }
     
     // replace %timestamp with the unix time
-    char str_ts[16];
-    sprintf(str_ts, "%ld", timestamp);
-    message = str_replace(message, "%now", str_now);
-    free((void*)old);
-    old = message;
-    
-    message = str_replace(message, "%timestamp", str_ts);
-    free((void*)old);
+    if (info & FLAG_CONTAINS_TIMESTAMP) {
+        const char* old = message;
+        time_t timestamp;
+        time(&timestamp);
+        char str_ts[16];
+        sprintf(str_ts, "%ld", timestamp);
+        
+        message = str_replace(message, "%timestamp", str_ts);
 
+        free((void*)old);
+    }
+    
     return message;
 }
 

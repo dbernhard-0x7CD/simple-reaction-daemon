@@ -7,6 +7,14 @@
 
 #include "printing.h"
 
+typedef uint32_t replacement_info_t;
+
+typedef struct placeholder_t {
+    const char* raw_message;
+
+    replacement_info_t info;
+} placeholder_t;
+
 #define CLOSE(action_influx)                    \
     close(action_influx->conn_socket);          \
     close(action_influx->conn_epoll_write_fd);  \
@@ -57,7 +65,14 @@ typedef struct action_t {
 * if down for a specific duration.
 */
 typedef struct action_cmd_t {
-    const char* command;
+    /* 
+     * Placeholder for the command to be executed.
+     */
+    struct placeholder_t cmd_ph;
+
+    /*
+     * User under which this command is executed.
+     */
     const char* user;
     uint32_t timeout;
 } action_cmd_t;
@@ -70,7 +85,7 @@ typedef struct action_log_t {
     const char* path;
 
     // Message to log. May contain placeholders: %ip, %sdt (start of downtime)
-    const char* message;
+    struct placeholder_t message_ph;
 
     // Username of the owner from the logfile
     const char* username;
@@ -96,8 +111,11 @@ typedef struct action_influx_t {
     // authorization token
     const char* authorization;
 
-    // format of one line. Something like: latency,host=%ip value=%lat_ms %timestamp
-    char* line_data;
+    /* placeholder_t for one line which is sent.
+     * raw_message could be something like: 
+     *          latency,host=%ip value=%lat_ms %timestamp
+     */
+    struct placeholder_t line;
 
     // socket to send the data
     int conn_socket;
