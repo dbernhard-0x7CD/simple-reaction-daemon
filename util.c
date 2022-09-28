@@ -631,9 +631,7 @@ int ping(const logger_t *logger,
         if (tries >= 3) {
             struct stat info;
 
-            int res = fstat(check->socket, &info);
-
-            sprint_error(logger, "Unable to send on socket %d after %d tries: %s. fstat returned %d family: %d\n", check->socket, tries, strerror(errno), res, check->sockaddr->ss_family);
+            sprint_error(logger, "Unable to send ping: %s\n", strerror(errno));
 
             close(check->socket);
             close(check->epoll_fd);
