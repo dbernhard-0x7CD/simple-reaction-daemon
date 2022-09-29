@@ -221,7 +221,7 @@ Valid values for `run_if`:
 * `always`
 
 ### Placeholders
-Currently supported by `command.cmd` and `log.message`:
+Currently supported by `command.cmd`, `log.message` and `influx.linedata`:
 
 Always available:
 * `%ip` is the actual IP of the current target
