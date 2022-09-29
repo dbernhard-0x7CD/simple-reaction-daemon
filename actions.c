@@ -336,7 +336,7 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
                 sprint_debug(logger, "[Influx]: Succesfully connected to %s:%d\n", action->host, action->port);
             }
         } else {
-            sprint_error(logger, "[Influx]: Unable to connect to %s: %s\n", action->host, strerror(errno));
+            sprint_error(logger, "[Influx]: Unable to connect to %s:%d:  %s\n", action->host, action->port, strerror(errno));
 
             CLOSE(action);
             return 0;
