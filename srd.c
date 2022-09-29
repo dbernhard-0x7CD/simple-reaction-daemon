@@ -787,7 +787,7 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
     while (cur_char <= end) {
         if (*(cur_char) == '\0' || *cur_char == ',') {
 
-            connectivity_check_t* cc = (connectivity_check_t* )calloc(sizeof(connectivity_check_t), 1);
+            connectivity_check_t* cc = (connectivity_check_t* )calloc(1, sizeof(connectivity_check_t));
 
             // initial values for a target
             cc->socket = -1;
@@ -827,7 +827,7 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
             free(ip);
 
             // try to load as sockaddr
-            cc->sockaddr = calloc(sizeof(struct sockaddr_storage), 1);
+            cc->sockaddr = calloc(1, sizeof(struct sockaddr_storage));
             int is_addr = to_sockaddr(cc->address, cc->sockaddr);
 
             if (is_addr) {
@@ -1121,7 +1121,7 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
                     }
                     action_influx->host = strdup(host);
 
-                    action_influx->sockaddr = calloc(sizeof(struct sockaddr_storage), 1);
+                    action_influx->sockaddr = calloc(1, sizeof(struct sockaddr_storage));
                     int is_ip = to_sockaddr(host, action_influx->sockaddr);
 
                     if (is_ip) {
