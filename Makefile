@@ -1,6 +1,3 @@
-makefile_path := $(abspath $(lastword $(MAKEFILE_LIST)))
-proj_dir := $(dir $(makefile_path))
-
 CC = gcc
 CFLAGS = -O3 -Wall -Wextra -pthread -lrt \
 		-lsystemd \
