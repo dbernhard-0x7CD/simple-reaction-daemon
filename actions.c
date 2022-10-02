@@ -312,8 +312,6 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
         if (action->sockaddr->ss_family == AF_INET) {
             s = connect(action->conn_socket, (struct sockaddr *) action->sockaddr, sizeof(struct sockaddr_in));
         } else {
-            ((struct sockaddr_in6*)action->sockaddr)->sin6_port = htons(action->port);
-
             s = connect(action->conn_socket, (struct sockaddr *) action->sockaddr, sizeof(struct sockaddr_in6));
         }
         
