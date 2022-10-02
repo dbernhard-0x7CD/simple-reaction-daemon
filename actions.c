@@ -273,6 +273,8 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
 
                 return 0;
             }
+
+            // set the port accordingly
             if (action->sockaddr->ss_family == AF_INET) {
                 ((struct sockaddr_in*)action->sockaddr)->sin_port = htons(action->port);
             } else {
@@ -280,10 +282,12 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
             }
         }
 
+        // sprint_debug(logger, "[Influx]: Creating socket for family: %d\n", action->sockaddr->ss_family);
+
         action->conn_socket = socket(action->sockaddr->ss_family, SOCK_STREAM | SOCK_NONBLOCK, 0);
 
         if (action->conn_socket < 0) {
-            sprint_debug(logger, "Unable to create socket.\n");
+            sprint_debug(logger, "[Influx]: Unable to create socket.\n");
             return 0;
         }
         action->conn_epoll_write_fd = epoll_create(1);
