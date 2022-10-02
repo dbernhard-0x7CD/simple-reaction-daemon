@@ -287,7 +287,7 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
         action->conn_socket = socket(action->sockaddr->ss_family, SOCK_STREAM | SOCK_NONBLOCK, 0);
 
         if (action->conn_socket < 0) {
-            sprint_debug(logger, "[Influx]: Unable to create socket.\n");
+            sprint_error(logger, "[Influx]: Unable to create socket.\n");
             return 0;
         }
         action->conn_epoll_write_fd = epoll_create(1);
