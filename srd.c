@@ -1105,12 +1105,6 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
                     action_influx->conn_epoll_read_fd = -1;
                     action_influx->conn_epoll_write_fd = -1;
 
-                    // load the port
-                    if (!config_setting_lookup_int(action, "port", &action_influx->port))
-                    {
-                        action_influx->port = 8086;
-                    }
-
                     // load the host
                     const char* host;
                     if (!config_setting_lookup_string(action, "host", &host))
@@ -1121,6 +1115,13 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
                     }
                     action_influx->host = strdup(host);
 
+                    // load the port
+                    if (!config_setting_lookup_int(action, "port", &action_influx->port))
+                    {
+                        action_influx->port = 8086;
+                    }
+
+                    // Store sockaddr if host is an IP
                     action_influx->sockaddr = calloc(1, sizeof(struct sockaddr_storage));
                     int is_ip = to_sockaddr(host, action_influx->sockaddr);
 
