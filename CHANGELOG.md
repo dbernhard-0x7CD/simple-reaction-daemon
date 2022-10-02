@@ -26,6 +26,7 @@
     * Report if there is a dependency loop
     * Influx now has a timeout (10s for connecting; in total 30s for the request to be processed by the server)
     * Influx: support for ipv6
+    * Cache which replacements need to be done in placeholders (command.cmd, log.message, influx.linedata)
 
 * 0.0.7 (Released on 09.09.2022)
     * Pings now follow period more closely (and no longer shift)
