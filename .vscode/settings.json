@@ -55,6 +55,7 @@
     "printing.h": "c",
     "srd.h": "c",
     "stdint.h": "c",
-    "un.h": "c"
+    "un.h": "c",
+    "in.h": "c"
   }
 }
