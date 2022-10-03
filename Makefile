@@ -3,6 +3,7 @@ CFLAGS = -O3 -Wall -Wextra -pthread -lrt \
 		-lsystemd \
 		-lconfig \
 		-lm \
+		-lanl \
 		-D_GNU_SOURCE \
 		# -DDEBUG \
 		# -fsanitize=address
@@ -24,6 +25,7 @@ check_includes: util.c
 	include-what-you-use -D_GNU_SOURCE srd.c
 	include-what-you-use -D_GNU_SOURCE actions.c
 	include-what-you-use -D_GNU_SOURCE printing.c
+	include-what-you-use -D_GNU_SOURCE perf_metric.h
 
 clean:
 	rm -f *.o srd

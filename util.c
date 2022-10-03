@@ -18,6 +18,7 @@
 
 #include "util.h"
 #include "actions.h"
+#include "perf_metric.h"
 #include "srd.h"
 
 struct packet
@@ -244,6 +245,27 @@ void seconds_to_string(const int seconds, char* dt_string) {
     }
 }
 
+void ms_to_string(const int ms, char* dt_string) {
+    int remainingSeconds = ms / 1000;
+
+    int days = remainingSeconds / (60*60*24);
+    remainingSeconds = remainingSeconds % (60*60*24);
+    
+    int hours = remainingSeconds / (60*60);
+    remainingSeconds = remainingSeconds % (60*60);
+    
+    int minutes = remainingSeconds / 60;
+    int sec = remainingSeconds % 60;
+
+    int ms_remaining = ms % 1000;
+
+    if (days != 0) {
+        sprintf(dt_string, "%d days %02d:%02d:%02d.%03d", days, hours, minutes, sec, ms_remaining);
+    } else { // exclude days
+        sprintf(dt_string, "%02d:%02d:%02d.%03d", hours, minutes, sec, ms_remaining);
+    }
+}
+
 replacement_info_t get_replacements(const char* message) {
     replacement_info_t info = 0;
 
@@ -457,31 +479,91 @@ int to_sockaddr(const char* address, struct sockaddr_storage* socket_addr) {
     return success;
 }
 
-int resolve_hostname(const logger_t* logger, const char *hostname, struct sockaddr_storage *socket_addr)
+int resolve_hostname(const logger_t* logger, const char *hostname, struct sockaddr_storage *socket_addr, float timeout_s)
 {
-    struct addrinfo hint, *pai;
+    float nsec = timeout_s - (float)((int) timeout_s);
+    const struct timespec timeout = { .tv_nsec = (int)(nsec * 1e9), .tv_sec = (int) timeout_s };
     int rv;
 
-    memset(&hint, 0, sizeof(hint));
-    hint.ai_family = AF_UNSPEC;
-    hint.ai_socktype = SOCK_DGRAM;
+    print_debug(logger, "resolve_hostname INDEV: %s is called\n", hostname);
 
-    if ((rv = getaddrinfo(hostname, NULL, &hint, &pai)) < 0)
-    {
-        sprint_error(logger, "Unable to get address info: %s\n", gai_strerror(rv));
+    struct gaicb *reqs;
+
+    reqs = calloc(1, sizeof(struct gaicb));
+    reqs->ar_name = hostname;
+
+	rv = getaddrinfo_a(GAI_NOWAIT, &reqs, 1, NULL);
+	if (rv != 0) {
+		sprint_error(logger, "Unable to to get address for %s: %s", hostname, gai_strerror(rv));
+
+        if (reqs->ar_request) {
+            freeaddrinfo((struct addrinfo*) reqs->ar_request);
+        }
+        if (reqs->ar_result) {
+            freeaddrinfo(reqs->ar_result);
+        }
+        free(reqs);
+
+		return 0;
+	}
+
+	rv = gai_suspend((const struct gaicb * const*)&reqs, 1, &timeout);
+
+    if (rv == 0 || rv == EAI_ALLDONE || rv == EAI_INTR) {
+        struct addrinfo* ainfo = reqs->ar_result;
+
+        if ((rv = gai_error(reqs)) != 0) {
+            sprint_error(logger, "Unable to resolve hostname %s: %s\n", hostname, gai_strerror(rv))
+
+            freeaddrinfo((struct addrinfo *) reqs->ar_request);
+            free(reqs);
+
+            return 0;
+        }
+
+        // write resolved address to socket_addr
+        if (ainfo->ai_family == AF_INET) {
+            memcpy(socket_addr, reqs->ar_result->ai_addr, sizeof(struct sockaddr_in));
+        } else {
+            memcpy(socket_addr, reqs->ar_result->ai_addr, sizeof(struct sockaddr_in6));
+        }
+
+        socket_addr->ss_family = ainfo->ai_family;
+
+        print_debug(logger, "INDEV: %s was resolved and has family %d\n", hostname, socket_addr->ss_family);
+
+        if (gai_cancel(reqs) == EAI_NOTCANCELED) {
+            sprint_info(logger, "Leaking memory\n");
+
+            return 1;
+    	}
+
+        if ((struct addrinfo *) reqs->ar_request) {
+            sprint_debug(logger, "freed ar_request\n");
+            free((struct addrinfo *) reqs->ar_request);
+        }
+        if (reqs->ar_result) {
+            sprint_debug(logger, "freed ar_result\n");
+            freeaddrinfo(reqs->ar_result);
+        }
+        free(reqs);
+
+        return 1;
+    } else if (rv == EAI_AGAIN) {
+        sprint_error(logger, "Timeout when resolving %s\n", hostname);
+
+        freeaddrinfo((struct addrinfo *) reqs->ar_request);
+        free(reqs);
+
         return 0;
     }
 
-    if (pai->ai_family == AF_INET) {
-        socket_addr->ss_family = AF_INET;
-        memcpy(socket_addr, pai->ai_addr, sizeof(struct sockaddr_in));
-    } else {
-        socket_addr->ss_family = AF_INET6;
-        memcpy(socket_addr, pai->ai_addr, sizeof(struct sockaddr_in6));
-    }
+    sprint_error(logger, "Unable to resolve hostname %s: %s\n", hostname, gai_strerror(rv))
 
-    freeaddrinfo(pai);
-    return 1;
+    freeaddrinfo((struct addrinfo *) reqs->ar_request);
+    free(reqs);
+
+    return 0;
 }
 
 int create_socket(const logger_t* logger, const int address_family) {
@@ -581,9 +663,17 @@ int ping(const logger_t *logger,
     if (check->flags & FLAG_IS_HOSTNAME) {
         // could be a hostname
         sprint_debug(logger, "Trying as a hostname: %s\n", check->address);
-        if (!resolve_hostname(logger, check->address, check->sockaddr)) {
+
+        MEASURE_INIT(resolve_dns);
+        MEASURE_START(resolve_dns);
+
+        if (!resolve_hostname(logger, check->address, check->sockaddr, DNS_RESOLVE_TIMEOUT)) {
             return (-1);
         }
+        char duration[32];
+        MEASURE_GET_SINCE_STR(resolve_dns, duration);
+
+        sprint_debug(logger, "Resolving hostname %s took: %s\n", check->address, duration);
     }
 
 #if DEBUG

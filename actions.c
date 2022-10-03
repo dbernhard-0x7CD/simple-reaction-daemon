@@ -14,6 +14,7 @@
 
 #include "srd.h"
 #include "actions.h"
+#include "perf_metric.h"
 #include "printing.h"
 #include "util.h"
 
@@ -268,11 +269,25 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
     if (action->conn_socket <= 0) {
         // calculate address
         if (action->flags & FLAG_IS_HOSTNAME) {
-            if (!resolve_hostname(logger, action->host, action->sockaddr)) {
+            MEASURE_INIT(resolve_dns);
+            MEASURE_START(resolve_dns);
+
+            if (!resolve_hostname(logger, action->host, action->sockaddr, timeout_left)) {
                 sprint_error(logger, "Unable to get an IP for: %s\n", action->host);
 
                 return 0;
             }
+            char duration[32];
+            MEASURE_GET_SINCE_STR(resolve_dns, duration)
+            float resolve_duration = MEASURE_GET_SINCE(resolve_dns);
+
+            timeout_left -= resolve_duration;
+            if (timeout_left <= 0.0) {
+                sprint_error(logger, "Timeout when resolving %s\n", action->host);
+                return 0;
+            }
+
+            sprint_debug(logger, "Resolving hostname %s took: %s\n", action->host, duration);
 
             // set the port accordingly
             if (action->sockaddr->ss_family == AF_INET) {

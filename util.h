@@ -20,6 +20,7 @@ struct sockaddr_storage;
 #define FLAG_CONTAINS_STATUS     0b10000000
 #define FLAG_CONTAINS_TIMESTAMP  0b100000000
 
+#define DNS_RESOLVE_TIMEOUT 2
 
 /*
  * Returns 1 if the given character needs to be escaped.
@@ -53,9 +54,16 @@ char *get_default_gw();
 /*
  * Converts seconds to a string in the following format:
  * [%d days] %h:%m:%s. Where %d is only contained if it's
- * more than one day.
+ * more than one day. dt_string should be at least 23 chars.
  */
 void seconds_to_string(const int seconds, char* dt_string);
+
+/*
+ * Converts seconds to a string in the following format:
+ * [%d days] %h:%m:%s.%ms. Where %d is only contained if it's
+ * more than one day. dt_string should be at least 23 chars.
+ */
+void ms_to_string(const int ms, char* dt_string);
 
 /*
  * Writes the current time into str with the given format.
@@ -119,6 +127,6 @@ int to_sockaddr(const char* address, struct sockaddr_storage* socket_addr);
  * Tries to resolve hostname into an IP inside socket_addr.
  * Returns 1 on success, else 0.
  */
-int resolve_hostname(const logger_t* logger, const char *hostname, struct sockaddr_storage *socket_addr);
+int resolve_hostname(const logger_t* logger, const char *hostname, struct sockaddr_storage *socket_addr, float timeout_s);
 
 #endif
