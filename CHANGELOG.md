@@ -8,10 +8,10 @@
     * print to stdout action `stdout` with message
     * test scenarios for all events (inside testfile)
     * test with no replacements done
-    * cache if datetime_format contains %%ms (only replace if there)
-        * or generally cache what needs to be replaced (bitmap?)
+    * test with loop
+    * test with missing dependency
+    * test with very low bandwidth (needs restart)
     * ignore-below (for down-new and up-new)
-    * precalculate ip_addr; do not for hostnames
 
 <br />
 
