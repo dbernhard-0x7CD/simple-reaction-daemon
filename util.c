@@ -539,11 +539,9 @@ int resolve_hostname(const logger_t* logger, const char *hostname, struct sockad
     	}
 
         if ((struct addrinfo *) reqs->ar_request) {
-            sprint_debug(logger, "freed ar_request\n");
             free((struct addrinfo *) reqs->ar_request);
         }
         if (reqs->ar_result) {
-            sprint_debug(logger, "freed ar_result\n");
             freeaddrinfo(reqs->ar_result);
         }
         free(reqs);
@@ -719,8 +717,6 @@ int ping(const logger_t *logger,
         }
 
         if (tries >= 3) {
-            struct stat info;
-
             sprint_error(logger, "Unable to send ping: %s\n", strerror(errno));
 
             close(check->socket);

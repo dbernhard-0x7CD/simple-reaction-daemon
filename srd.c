@@ -830,9 +830,7 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
             cc->sockaddr = calloc(1, sizeof(struct sockaddr_storage));
             int is_addr = to_sockaddr(cc->address, cc->sockaddr);
 
-            if (is_addr) {
-                print_debug(logger, "This is an address and is now stored: %s\n", cc->address);
-            } else {
+            if (!is_addr) {
                 cc->flags |= FLAG_IS_HOSTNAME;
             }
 
@@ -1126,8 +1124,6 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
                     int is_ip = to_sockaddr(host, action_influx->sockaddr);
 
                     if (is_ip) {
-                        print_debug(logger, "This is an address and is now stored: %s\n", action_influx->host);
-
                         if (action_influx->sockaddr->ss_family == AF_INET) {
                             ((struct sockaddr_in*)action_influx->sockaddr)->sin_port = htons(action_influx->port);
                         } else {

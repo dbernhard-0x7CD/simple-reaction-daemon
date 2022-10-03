@@ -297,8 +297,6 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
             }
         }
 
-        // sprint_debug(logger, "[Influx]: Creating socket for family: %d\n", action->sockaddr->ss_family);
-
         action->conn_socket = socket(action->sockaddr->ss_family, SOCK_STREAM | SOCK_NONBLOCK, 0);
 
         if (action->conn_socket < 0) {
