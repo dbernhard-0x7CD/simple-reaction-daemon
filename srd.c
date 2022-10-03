@@ -500,7 +500,7 @@ void run_check(check_arguments_t *args)
         } else if (!running) {
             break; 
         } else {
-            sprint_error(logger, "%s: Error when checking connectivity. (connected: %d)\n", current_time, connected);
+            sprint_error(logger, "%s: Error when checking connectivity. Retry in next period.\n", current_time);
 
             check->state = STATE_NONE;
 
