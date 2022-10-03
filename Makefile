@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -O3 -Wall -Wextra -pthread -lrt \
+CFLAGS = -O3 --std=c17 -Wall -Wextra -pthread -lrt \
 		-lsystemd \
 		-lconfig \
 		-lm \
