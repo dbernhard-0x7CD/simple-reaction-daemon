@@ -266,11 +266,11 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
     ssize_t written_bytes;
     float timeout_left = action->timeout;
 
+    MEASURE_INIT(measure);
     if (action->conn_socket <= 0) {
         // calculate address
         if (action->flags & FLAG_IS_HOSTNAME) {
-            MEASURE_INIT(resolve_dns);
-            MEASURE_START(resolve_dns);
+            MEASURE_START(measure);
 
             if (!resolve_hostname(logger, action->host, action->sockaddr, timeout_left)) {
                 sprint_error(logger, "Unable to get an IP for: %s\n", action->host);
@@ -278,8 +278,8 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
                 return 0;
             }
             char duration[32];
-            MEASURE_GET_SINCE_STR(resolve_dns, duration)
-            float resolve_duration = MEASURE_GET_SINCE(resolve_dns);
+            MEASURE_GET_SINCE_STR(measure, duration)
+            float resolve_duration = MEASURE_GET_SINCE(measure);
 
             timeout_left -= resolve_duration;
             if (timeout_left <= 0.0) {
@@ -321,8 +321,8 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
 
         epoll_ctl(action->conn_epoll_read_fd, EPOLL_CTL_ADD, action->conn_socket, &event);
 
-        time_t t1;
-        time(&t1);
+        // connect and measure time
+        MEASURE_START(measure);
         int s;
         if (action->sockaddr->ss_family == AF_INET) {
             s = connect(action->conn_socket, (struct sockaddr *) action->sockaddr, sizeof(struct sockaddr_in));
@@ -337,19 +337,27 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
             struct epoll_event events_write[1];
     
             // wait for maximum 10 seconds until we can write
-            num_ready = epoll_wait(action->conn_epoll_write_fd, events_write, 1, 10 * 1e3);
+            num_ready = epoll_wait(action->conn_epoll_write_fd, events_write, 1, timeout_left * 1e3);
 
-            if (num_ready <= 0) {
-                sprint_error(logger, "[Influx]: Unable to connect to %s:%d\n", action->host, action->port);
+            if (num_ready < 0) {
+                sprint_error(logger, "[Influx]: Unable to connect to %s:%d: %s\n", action->host, action->port, strerror(errno));
                 CLOSE(action);
                 
                 return 0;
-            } else {
-                time_t t2;
-                time(&t2);
+            } else if (num_ready == 0) {
+                sprint_error(logger, "[Influx]: Timeout when waiting for the connection to be established to %s:%d\n", action->host, action->port);
 
-                timeout_left -= t2 - t1;
-                sprint_debug(logger, "[Influx]: Succesfully connected to %s:%d\n", action->host, action->port);
+                return 0;
+            } else {
+                double took_s = MEASURE_GET_SINCE(measure);
+
+                timeout_left -= took_s;
+                if (timeout_left <= 0) {
+                    sprint_error(logger, "[Influx]: Timeout for %s:%d\n", action->host, action->port);
+                    return 0; 
+                }
+
+                sprint_debug(logger, "[Influx]: Succesfully connected to %s:%d in %1.3f seconds\n", action->host, action->port, took_s);
             }
         } else {
             sprint_error(logger, "[Influx]: Unable to connect to %s:%d:  %s\n", action->host, action->port, strerror(errno));
@@ -375,12 +383,11 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
 
     written_bytes = 0;
     do {
+        MEASURE_START(measure);
+
         written_bytes = send(action->conn_socket, header, strlen(header), MSG_NOSIGNAL);
 
         if (written_bytes == -1 && (errno == EWOULDBLOCK || errno == EAGAIN)) {
-            time_t t1;
-            time(&t1);
-
             struct epoll_event events_write[1];
             num_ready = epoll_wait(action->conn_epoll_write_fd, events_write, 1, timeout_left * 1e3);
 
@@ -394,10 +401,9 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
                 CLOSE(action);
                 return 0;
             }
-            time_t t2;
-            time(&t2);
+            double took_s = MEASURE_GET_SINCE(measure);
 
-            timeout_left -= t2 - t1;
+            timeout_left -= took_s;
             if (timeout_left <= 0) {
                 sprint_error(logger, "[Influx]: Timeout for %s:%d\n", action->host, action->port);
                 return 0; 
@@ -413,12 +419,11 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
 
     // send the body
     do {
+        MEASURE_START(measure);
         written_bytes = send(action->conn_socket, body, strlen(body), MSG_NOSIGNAL);
 
         if (written_bytes == -1 && (errno == EWOULDBLOCK || errno == EAGAIN)) {
-            time_t t1;
             struct epoll_event events[1];
-            time(&t1);
 
             // 2 seconds timeout for waiting until server is ready to receive data
             num_ready = epoll_wait(action->conn_epoll_write_fd, events, 1, timeout_left * 1e3);
@@ -427,16 +432,21 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
                 return 0;
             }
 
-            if (num_ready <= 0) {
-                sprint_error(logger, "[Influx]: Timeout while waiting for %s:%d.\n", action->host, action->port);
+            if (num_ready < 0) {
+                sprint_error(logger, "[Influx]: Error while waiting for %s:%d: %s.\n", action->host, action->port, strerror(errno));
 
                 CLOSE(action);
                 return 0;
-            }
-            time_t t2;
-            time(&t2);
+            } else if (num_ready == 0) {
+                sprint_error(logger, "[Influx]: Timeout when waiting for the connection to be established to %s:%d\n", action->host, action->port);
 
-            timeout_left -= t2 - t1;
+                CLOSE(action);
+
+                return 0;
+            }
+            double took_s = MEASURE_GET_SINCE(measure);
+
+            timeout_left -= took_s;
             if (timeout_left <= 0) {
                 sprint_error(logger, "[Influx]: Timeout for %s:%d\n", action->host, action->port);
                 return 0; 
@@ -456,12 +466,10 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
     char answer[128];
 
     do {
+        MEASURE_START(measure);
         read_bytes = read(action->conn_socket, answer, sizeof(answer));
 
         if (read_bytes == -1 && (errno == EWOULDBLOCK || errno == EAGAIN)) {
-            time_t t1;
-            time(&t1);
-
             struct epoll_event events[1];
 
             // 2 seconds timeout for processing
@@ -471,12 +479,22 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
                 return 0;
             }
 
-            if (num_ready <= 0) {
-                sprint_error(logger, "[Influx]: Timeout for an answer while waiting for %s:%d.\n", action->host, action->port);
+            if (num_ready < 0) {
+                sprint_error(logger, "[Influx]: Error while waiting for an answer %s:%d: %s.\n", action->host, action->port, strerror(errno));
 
                 CLOSE(action);
                 return 0;
+            } else if (num_ready == 0) {
+                sprint_error(logger, "[Influx]: Timeout when waiting for the connection to be established to %s:%d\n", action->host, action->port);
+
+                CLOSE(action);
+
+                return 0;
             }
+            double took_s = MEASURE_GET_SINCE(measure);
+
+            timeout_left -= took_s;
+            
             continue;
         } else if (read_bytes > 22) {
             break;
@@ -492,11 +510,13 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
     // check if starts with start_success
     const char* start_success = "HTTP/1.1 204 No Content";
     if (strncmp(answer, start_success, 23) == 0) {
-        sprint_debug(logger, "[Influx]: Success\n");
+        double influx_time_s = action->timeout * 1.0 - timeout_left;
+
+        sprint_debug(logger, "[Influx]: Success. Took %1.3f seconds\n", influx_time_s);
         return 1;
     }
 
-    sprint_error(logger, "[Influx] Not successfull writing to influxdb. Received: %s\n", answer);
+    sprint_error(logger, "[Influx] Failed wo send to influxdb. Received: %s\n", answer);
     
     CLOSE(action);
 
