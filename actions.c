@@ -344,6 +344,8 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
                 return 0;
             } else if (num_ready == 0) {
                 sprint_error(logger, "[Influx]: Timeout when waiting for the connection to be established to %s:%d\n", action->host, action->port);
+                
+                CLOSE(action);
 
                 return 0;
             } else {
@@ -352,6 +354,8 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
                 timeout_left -= took_s;
                 if (timeout_left <= 0) {
                     sprint_error(logger, "[Influx]: Timeout for %s:%d\n", action->host, action->port);
+
+                    CLOSE(action);
                     return 0; 
                 }
 
