@@ -485,8 +485,6 @@ int resolve_hostname(const logger_t* logger, const char *hostname, struct sockad
     const struct timespec timeout = { .tv_nsec = (int)(nsec * 1e9), .tv_sec = (int) timeout_s };
     int rv;
 
-    print_debug(logger, "resolve_hostname INDEV: %s is called\n", hostname);
-
     struct gaicb *reqs;
 
     reqs = calloc(1, sizeof(struct gaicb));
@@ -529,8 +527,6 @@ int resolve_hostname(const logger_t* logger, const char *hostname, struct sockad
         }
 
         socket_addr->ss_family = ainfo->ai_family;
-
-        print_debug(logger, "INDEV: %s was resolved and has family %d\n", hostname, socket_addr->ss_family);
 
         if (gai_cancel(reqs) == EAI_NOTCANCELED) {
             sprint_info(logger, "Leaking memory\n");
