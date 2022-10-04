@@ -8,14 +8,16 @@
     * print to stdout action `stdout` with message
     * test scenarios for all events (inside testfile)
     * test with no replacements done
-    * test with loop
+    * test with dependency loop
     * test with missing dependency
     * test with very low bandwidth (needs restart)
     * ignore-below (for down-new and up-new)
+    * cache FILE* for log action
+    * GUEST (clients which are logged WHEN they are UP) config file
 
 <br />
 
-* 0.0.8 (Released on XX.09.2022)
+* 0.0.8 (Released on XX.10.2022)
     * Wait instead of shutting down when no default gateway was found (may happen if the service is started too early)
     * Fixed missing decimal places for pings greater than 99ms
     * Report targets which we stopped pinging
