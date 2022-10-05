@@ -56,6 +56,9 @@
     "srd.h": "c",
     "stdint.h": "c",
     "un.h": "c",
-    "in.h": "c"
+    "in.h": "c",
+    "mutex": "c",
+    "stop_token": "c",
+    "util": "c"
   }
 }
