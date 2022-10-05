@@ -11,7 +11,6 @@
     * test with dependency loop
     * test with missing dependency
     * test with very low bandwidth (needs restart)
-    * ignore-below (for down-new and up-new)
     * cache FILE* for log action
     * GUEST (clients which are logged WHEN they are UP) config file
 
@@ -30,6 +29,7 @@
     * Influx: support for ipv6
     * Cache which replacements need to be done in placeholders (command.cmd, log.message, influx.linedata)
     * Calculate time taken for resolving hostnames (debug output)
+    * `down-new` also supports `delay`
 
 * 0.0.7 (Released on 09.09.2022)
     * Pings now follow period more closely (and no longer shift)
