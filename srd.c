@@ -11,7 +11,6 @@
 #include <sys/socket.h>
 #include <pthread.h>
 
-
 // Our includes
 #include "util.h"
 #include "srd.h"
@@ -37,6 +36,8 @@ char* default_gw;
 // format used for datetimes
 const char* datetime_format = "%Y-%m-%d %H:%M:%S";
 int use_custom_datetime_format = 0;
+
+placeholder_t datetime_ph;
 
 // used for printing to stdout
 logger_t* logger;
@@ -107,6 +108,9 @@ int main()
 
     print_debug(logger, "default gateway %s\n", default_gw);
 
+    // Create placeholder for datetime_format
+    datetime_ph = (placeholder_t) { .info = get_replacements(datetime_format), .raw_message = datetime_format };
+
     pthread_t threads[connectivity_targets];
     check_arguments_t args[connectivity_targets];
 
@@ -171,7 +175,9 @@ int main()
                     if (check->period + 1 < diff && ((check->flags & FLAG_AWAITING_DEPENDENCY) == 0)) {
 
                         char str_now[32];
-                        get_current_time(str_now, 32, datetime_format, NULL);
+                        struct timespec now;
+                        clock_gettime(CLOCK_REALTIME_COARSE, &now);
+                        format_time(datetime_ph, str_now, 32, &now);
 
                         sprint_error(logger, "%s: thread for %s is stalled. Period is %d but last check was %1.2f seconds ago \n", str_now, args[i].logger.prefix, check->period, diff);
                     }
@@ -451,7 +457,7 @@ void run_check(check_arguments_t *args)
         }
         
         char current_time[32];
-        get_current_time(current_time, 32, datetime_format, NULL);
+        format_time(datetime_ph, current_time, 32, &now);
         clock_gettime(CLOCK_REALTIME, &now);
 
         double downtime_s = -1.0;
@@ -601,7 +607,7 @@ void run_check(check_arguments_t *args)
                         downtime = downtime_s; // we are still down (or up)
                     }
 
-                    const char* actual_command = insert_placeholders(cmd->cmd_ph, check, datetime_format, downtime, uptime_s, connected);
+                    const char* actual_command = insert_placeholders(cmd->cmd_ph, check, datetime_ph, downtime, uptime_s, connected);
                     
                     sprint_debug(logger, "\tCommand: %s\n", actual_command);
 
@@ -619,7 +625,7 @@ void run_check(check_arguments_t *args)
                         downtime = downtime_s; // we are still down (or up)
                     }
 
-                    const char* message = insert_placeholders(action_log->message_ph, check, datetime_format, downtime, uptime_s, connected);
+                    const char* message = insert_placeholders(action_log->message_ph, check, datetime_ph, downtime, uptime_s, connected);
 
                     int r = log_to_file(logger, action_log, message);
                     if (r == 0) {
@@ -630,7 +636,7 @@ void run_check(check_arguments_t *args)
                 } else if (strcmp(this_action->name, "influx") == 0) {
                     action_influx_t* action = this_action->object;
 
-                    char* actual_line_data = insert_placeholders(action->line, check, datetime_format, downtime_s, uptime_s, connected);
+                    char* actual_line_data = insert_placeholders(action->line, check, datetime_ph, downtime_s, uptime_s, connected);
 
                     influx(logger, action, actual_line_data);
 
@@ -653,7 +659,7 @@ void run_check(check_arguments_t *args)
 
             if (wait_time < 0) {
                 char str_time[32];
-                get_current_time(str_time, 32, datetime_format, NULL);
+                format_time(datetime_ph, str_time, 32, &now);
 
                 sprint_error(logger, "Behind in schedule by %d ms at %s. Check your period and your timeouts of the actions.\n", wait_time, str_time);
 
@@ -683,7 +689,9 @@ void signal_handler(int s)
     }
     char str_now[32];
 
-    get_current_time(str_now, 32, datetime_format, NULL);
+    struct timespec now;
+    clock_gettime(CLOCK_REALTIME_COARSE, &now);
+    format_time(datetime_ph, str_now, 32, &now);
 
     print_error(logger, "Unhandled signal %d at %s\n", s, str_now);
     fflush(stdout);

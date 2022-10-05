@@ -66,10 +66,9 @@ void seconds_to_string(const int seconds, char* dt_string);
 void ms_to_string(const int ms, char* dt_string);
 
 /*
- * Writes the current time into str with the given format.
- * str_len denotes the maximum length str may be (including nul terminator). timestamp will contain the used time (if it is not NULL)
+ * Prints the time given by 'time' in the given format into str_time.
  */
-void get_current_time(char *str, const int str_len, const char *format, time_t* timestamp);
+void format_time(const placeholder_t format, char* str_time, const size_t len, const struct timespec* time);
 
 /*
  * Returns the bitmap where all replacements are set.
@@ -81,7 +80,7 @@ replacement_info_t get_replacements(const char* message);
  */
 char* insert_placeholders(const placeholder_t placeholder,
                         const connectivity_check_t* check,
-                        const char* datetime_format,
+                        const placeholder_t datetime_ph,
                         const double downtime,
                         const double uptime,
                         const int connected);

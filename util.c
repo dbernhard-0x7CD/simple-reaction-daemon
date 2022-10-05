@@ -202,27 +202,25 @@ char *get_default_gw()
     return NULL;
 }
 
-void get_current_time(char* str, const int str_len, const char* format, time_t* timestamp) {
+void format_time(const placeholder_t format, char* str_time, const size_t len, const struct timespec* time) {
     struct tm tm;
-    struct timespec now;
-
-    clock_gettime(CLOCK_REALTIME, &now);
-    time_t t = now.tv_sec;
     
-    localtime_r(&t, &tm);
+    localtime_r(&time->tv_sec, &tm);
 
-    int ms = (int)(now.tv_nsec * 1e-6);
-    char ms_str[4];
-    snprintf(ms_str, 4, "%03d", ms);
+    if (format.info & FLAG_CONTAINS_MS) {
+        char* ms_replaced = (char *)format.raw_message;
 
-    char* ms_replaced = str_replace(format, "%%ms", ms_str);
+        int ms = (int)(time->tv_nsec * 1e-6);
+        char ms_str[4];
+        snprintf(ms_str, 4, "%03d", ms);
 
-    strftime(str, str_len, ms_replaced, &tm);
+        ms_replaced = str_replace(format.raw_message, "%%ms", ms_str);
+        
+        strftime(str_time, len, ms_replaced, &tm);
 
-    free(ms_replaced);
-
-    if (timestamp != NULL) {
-        *timestamp = t;
+        free(ms_replaced);
+    } else {
+        strftime(str_time, len, format.raw_message, &tm);
     }
 }
 
@@ -300,76 +298,48 @@ replacement_info_t get_replacements(const char* message) {
 
 char* insert_placeholders(const placeholder_t placeholder, 
                         const connectivity_check_t* check,
-                        const char* datetime_format,
+                        const placeholder_t datetime_ph,
                         const double downtime,
                         const double uptime,
                         const int connected) {
     char* message = strdup(placeholder.raw_message);
     replacement_info_t info = placeholder.info;
 
+    char temp_str[48];
+
     // replace %uptime
     if (info & FLAG_CONTAINS_UPTIME) {
-        char dt_string[24];
-        seconds_to_string((int)uptime, dt_string);
+        seconds_to_string((int)uptime, temp_str);
 
         const char* old = message;
-
-        message = str_replace(message, "%uptime", dt_string);
-
+        message = str_replace(message, "%uptime", temp_str);
         free((void*)old);
     }
 
     // replace %sdt
     if (info & FLAG_CONTAINS_SDT) {
-        char str_time[32];
-        struct tm time;
-        localtime_r(&check->timestamp_first_failed.tv_sec, &time);
-
-        strftime(str_time, 32, datetime_format, &time);
-
-        int ms = (int)(check->timestamp_first_failed.tv_nsec * 1e-6);
-        char ms_str[4];
-        snprintf(ms_str, 4, "%03d", ms);
-
-        char* ms_replaced = str_replace(str_time, "%ms", ms_str);
+        format_time(datetime_ph, temp_str, 48, &check->timestamp_first_failed);
 
         const char* old = message;
-
-        message = str_replace(message, "%sdt", ms_replaced);
-
-        free((void *) ms_replaced);
+        message = str_replace(message, "%sdt", temp_str);
         free((void*)old);
     }
 
     // replace %sut
     if (info & FLAG_CONTAINS_SUT) {
-        char str_time[32];
-        struct tm time;
-        localtime_r(&check->timestamp_first_reply.tv_sec, &time);
-
-        strftime(str_time, 32, datetime_format, &time);
-
-        int ms = (int)(check->timestamp_first_reply.tv_nsec * 1e-6);
-        char ms_str[4];
-        snprintf(ms_str, 4, "%03d", ms);
-
-        char* ms_replaced = str_replace(str_time, "%ms", ms_str);
+        format_time(datetime_ph, temp_str, 48, &check->timestamp_first_reply);
 
         const char* old = message;
-
-        message = str_replace(message, "%sut", ms_replaced);
-
-        free((void *) ms_replaced);
+        message = str_replace(message, "%sut", temp_str);
         free((void*)old);
     }
 
     // replace %downtime
     if (info & FLAG_CONTAINS_DOWNTIME) {
-        char dt_string[24];
-        seconds_to_string((int)downtime, dt_string);
+        seconds_to_string((int)downtime, temp_str);
         
         const char* old = message;
-        message = str_replace(message, "%downtime", dt_string);
+        message = str_replace(message, "%downtime", temp_str);
 
         free((void*)old);
     }
@@ -414,9 +384,11 @@ char* insert_placeholders(const placeholder_t placeholder,
     if (info & FLAG_CONTAINS_NOW) {
         const char* old = message;
 
-        char str_now[32];
-        get_current_time(str_now, 32, datetime_format, NULL);
-        message = str_replace(message, "%now", str_now);
+        struct timespec now;
+        clock_gettime(CLOCK_REALTIME, &now);
+
+        format_time(datetime_ph, temp_str, 48, &now);
+        message = str_replace(message, "%now", temp_str);
 
         free((char *) old);
     }
