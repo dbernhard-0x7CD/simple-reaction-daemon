@@ -969,7 +969,7 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
                     } else if (strcmp(run_if_str, "down-new") == 0) {
                         this_action->run = STATE_DOWN_NEW;
                     } else {
-                        print_error(logger, "%s: Action %s is has unknown run_if: %s\n", cfg_path, action_name, run_if_str);
+                        print_error(logger, "%s: Action %s is has an unknown value for run_if: %s\n", cfg_path, action_name, run_if_str);
                         config_destroy(&cfg);
                         return 0;
                     }
