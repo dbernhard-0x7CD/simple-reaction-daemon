@@ -454,54 +454,58 @@ void run_check(check_arguments_t *args)
         get_current_time(current_time, 32, datetime_format, NULL);
         clock_gettime(CLOCK_REALTIME, &now);
 
-        // downtime in seconds
         double downtime_s = -1.0;
         double uptime_s = -1.0;
+        conn_state_t prev_state = check->state;
 
         if (connected == 1)
         {
-            sprint_info(logger, "Reachable %s\n", current_time);
-            
-            // set timestamp if the current statue is not STATE_UP
-            if ((check->state & STATE_UP) == 0) {
+            // set timestamp_first_reply when we're not in STATE_UP
+            if (!(check->state & STATE_UP)) {
                 check->timestamp_first_reply = now;
             }
 
-            // if we're not up (do not set state to STATE_UP_NEW if previous state was STATE_NONE)
-            if ((check->state & STATE_UP) == 0 && check->state != STATE_NONE) {
-                check->previous_downtime = calculate_difference(check->timestamp_last_reply, now);
-                check->state = STATE_UP_NEW;
-            } else {
-                check->state = STATE_UP;
+            // when we're UP, the downtime is the previous downtime
+            downtime_s = calculate_difference(check->timestamp_first_failed, check->timestamp_first_reply);
+
+            // normal
+            uptime_s = calculate_difference(check->timestamp_first_reply, now); 
+
+            // only print if we were not up previously
+            if (check->state != STATE_UP) {
+                sprint_info(logger, "Reachable %s\n", current_time);
             }
 
             check->timestamp_last_reply = now;
-            downtime_s = 0;
 
-            uptime_s = calculate_difference(check->timestamp_first_reply, now);
+            check->state = STATE_UP;
         }
         else if (connected == 0)
         {
-            if ((check->state & STATE_DOWN) == 0) {
+            // set timestamp_first_failed when we're not in STATE_DOWN
+            if (check->state != STATE_DOWN) {
+                sprint_debug(logger, "Setting first failed\n");
                 check->timestamp_first_failed = now;
-
-                uptime_s = calculate_difference(check->timestamp_first_reply, check->timestamp_last_reply);
-            }
-            // if we're not down
-            if ((check->state & STATE_DOWN) == 0 && check->state != STATE_NONE) {
-                check->state = STATE_DOWN_NEW;
-            } else {
-                check->state = STATE_DOWN;
             }
 
+            // when we're DOWN the uptime is the previous uptime
+            uptime_s = calculate_difference(check->timestamp_first_reply, check->timestamp_last_reply);
+
+            // normal
             downtime_s = calculate_difference(check->timestamp_first_failed, now);
 
-            sprint_info(logger, "%s: Ping FAILED. Now for %0.3fs\n", current_time, downtime_s);
+            // only print if we were not down previously
+            if (check->state != STATE_DOWN) {
+                sprint_info(logger, "%s: Ping FAILED. Now for %0.3fs\n", current_time, downtime_s);
+            }
+
+            check->state = STATE_DOWN;
         } else if (!running) {
             break; 
         } else {
             sprint_error(logger, "%s: Error when checking connectivity. Retry in next period.\n", current_time);
 
+            // it is unknown if we are at fault or the other endpoint, thus set state to STATE_NONE
             check->state = STATE_NONE;
 
             clock_gettime(CLOCK_REALTIME, &now);
@@ -516,34 +520,57 @@ void run_check(check_arguments_t *args)
         // check if any action is required
         for (int i = 0; running && i < check->actions_count; i++)
         {
-            action_t this_action = check->actions[i];
+            action_t* this_action = &check->actions[i];
+
+            if (check->state == STATE_DOWN) {
+                this_action->flags &= ~FLAG_RAN_UP_NEW;
+            }
+            if (check->state == STATE_UP) {
+                this_action->flags &= ~FLAG_RAN_DOWN_NEW;
+            }
             
-            // print_debug(logger, "action: %s this_action.run %d\n", check->ip, this_action.name, this_action.run);
+            // is 1 if we need to run this action
+            int run = -1;
+            
+            // the state matches or the action is run in ALL states
+            if (check->state == this_action->run_state || this_action->run_state == STATE_ALL) {
+                run = 1;
+            } else if (!(prev_state == STATE_NONE)) {
+                // is now DOWN for longer than 'delay'
+                if (check->state == STATE_DOWN && 
+                    this_action->run_state == STATE_DOWN_NEW &&
+                    this_action->delay <= downtime_s &&
+                    !(this_action->flags & FLAG_RAN_DOWN_NEW))
+                {
+                    run = 1;
+                    this_action->flags |= FLAG_RAN_DOWN_NEW;
+                }
+                // the target is now UP again and downtime was greater than 'delay'
+                // not immediately run STATE_UP_NEW, but regard 'delay'
+                else if (check->state == STATE_UP &&
+                    this_action->run_state == STATE_UP_NEW && 
+                    this_action->delay <= downtime_s &&
+                    !(this_action->flags & FLAG_RAN_UP_NEW))
+                {
+                    run = 1;
+                    this_action->flags |= FLAG_RAN_UP_NEW;
+                }
+            }
 
-            unsigned int state_match = check->state & this_action.run;
-            int superior = (state_match >= this_action.run || this_action.run == STATE_ALL);
+            // not immediately print STATE_DOWN, but regard 'delay'
+            int state_down_diff = this_action->run_state != STATE_DOWN || 
+                                check->actions[i].delay <= downtime_s;
 
-            int state_up_new_diff = (this_action.run != STATE_UP_NEW || check->actions[i].delay <= check->previous_downtime);
-
-            int state_down_diff = (this_action.run != STATE_DOWN || check->actions[i].delay <= downtime_s);
-
-            // printf("\tstate_match: %d", state_match);
-            // printf("\tsuperior: %d", superior);
-            // printf("\tstate_up_new: %d ", state_up_new_diff);
-            // printf("\tstate_down_diff: %d\n ", state_down_diff);
-
-            int should_run = state_match && superior &&
-                                    state_up_new_diff &&
-                                    state_down_diff;
-            if (should_run)
+            if (run == 1 &&
+                state_down_diff)
             {
                 sprint_info(logger, "Performing action: %s\n", check->actions[i].name);
 
-                if (strcmp(this_action.name, "service-restart") == 0)
+                if (strcmp(this_action->name, "service-restart") == 0)
                 {
-                    restart_service(logger, this_action.object);
+                    restart_service(logger, this_action->object);
                 }
-                else if (strcmp(this_action.name, "reboot") == 0)
+                else if (strcmp(this_action->name, "reboot") == 0)
                 {
                     sprint_info(logger, "Sending restart signal\n");
                     int res = restart_system(logger);
@@ -561,9 +588,9 @@ void run_check(check_arguments_t *args)
                         sprint_info(logger, "Reboot scheduled. \n");
                     }
                 }
-                else if (strcmp(this_action.name, "command") == 0)
+                else if (strcmp(this_action->name, "command") == 0)
                 {
-                    action_cmd_t *cmd = this_action.object;
+                    action_cmd_t *cmd = this_action->object;
 
                     double downtime;
 
@@ -581,8 +608,8 @@ void run_check(check_arguments_t *args)
                     run_command(logger, cmd, cmd->timeout * 1e3, actual_command);
 
                     free((char*)actual_command);
-                } else if (strcmp(this_action.name, "log") == 0) { 
-                    action_log_t* action_log = (action_log_t*) this_action.object;
+                } else if (strcmp(this_action->name, "log") == 0) { 
+                    action_log_t* action_log = (action_log_t*) this_action->object;
 
                     double downtime;
                     // set previous_downtime as downtime when we're newly up
@@ -600,8 +627,8 @@ void run_check(check_arguments_t *args)
                     }
                     
                     free((char *)message);
-                } else if (strcmp(this_action.name, "influx") == 0) {
-                    action_influx_t* action = this_action.object;
+                } else if (strcmp(this_action->name, "influx") == 0) {
+                    action_influx_t* action = this_action->object;
 
                     char* actual_line_data = insert_placeholders(action->line, check, datetime_format, downtime_s, uptime_s, connected);
 
@@ -611,7 +638,7 @@ void run_check(check_arguments_t *args)
                 }
                 else
                 {
-                    sprint_error(logger, "This action is NOT implemented: %s\n", this_action.name);
+                    sprint_error(logger, "This action is NOT implemented: %s\n", this_action->name);
                 } 
             }
         } // end for loop. (to check if any action has to be taken)
@@ -939,6 +966,9 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
                 const config_setting_t *action = config_setting_get_elem(setting, i);
                 action_t* this_action = &cc->actions[i];
 
+                // To not run up-new, down-new when we start
+                this_action->flags = FLAG_RAN_DOWN_NEW | FLAG_RAN_UP_NEW;
+
                 // action name configuration
                 const char *action_name;
                 if (!config_setting_lookup_string(action, "action", &action_name))
@@ -956,18 +986,18 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
                 if (!config_setting_lookup_string(action, "run_if", &run_if_str))
                 {
                     // default run_if setting is RUN_DOWN
-                    this_action->run = STATE_DOWN;
+                    this_action->run_state = STATE_DOWN;
                 } else {
                     if (strcmp(run_if_str, "down") == 0) {
-                        this_action->run = STATE_DOWN;
+                        this_action->run_state = STATE_DOWN;
                     } else if (strcmp(run_if_str, "up") == 0) {
-                        this_action->run = STATE_UP;
+                        this_action->run_state = STATE_UP;
                     } else if (strcmp(run_if_str, "always") == 0) {
-                        this_action->run = STATE_ALL;
+                        this_action->run_state = STATE_ALL;
                     } else if (strcmp(run_if_str, "up-new") == 0) {
-                        this_action->run = STATE_UP_NEW;
+                        this_action->run_state = STATE_UP_NEW;
                     } else if (strcmp(run_if_str, "down-new") == 0) {
-                        this_action->run = STATE_DOWN_NEW;
+                        this_action->run_state = STATE_DOWN_NEW;
                     } else {
                         print_error(logger, "%s: Action %s is has an unknown value for run_if: %s\n", cfg_path, action_name, run_if_str);
                         config_destroy(&cfg);

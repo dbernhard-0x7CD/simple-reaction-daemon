@@ -9,6 +9,9 @@
 
 typedef uint32_t replacement_info_t;
 
+#define FLAG_RAN_UP_NEW 0b1
+#define FLAG_RAN_DOWN_NEW 0b10
+
 typedef struct placeholder_t {
     const char* raw_message;
 
@@ -57,7 +60,10 @@ typedef struct action_t {
     uint32_t    delay;
 
     // When to run this action
-    conn_state_t run;
+    conn_state_t run_state;
+
+    // Flags for this
+    uint16_t flags;
 } action_t;
 
 /* 

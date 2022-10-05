@@ -307,10 +307,8 @@ char* insert_placeholders(const placeholder_t placeholder,
     char* message = strdup(placeholder.raw_message);
     replacement_info_t info = placeholder.info;
 
-    const conn_state_t state = check->state;
-
     // replace %uptime
-    if ((info & FLAG_CONTAINS_UPTIME) && ((state & STATE_UP) || (state == STATE_DOWN_NEW))) {
+    if (info & FLAG_CONTAINS_UPTIME) {
         char dt_string[24];
         seconds_to_string((int)uptime, dt_string);
 
@@ -322,7 +320,7 @@ char* insert_placeholders(const placeholder_t placeholder,
     }
 
     // replace %sdt
-    if ((info & FLAG_CONTAINS_SDT) && (state == STATE_UP_NEW || state & STATE_DOWN)) {
+    if (info & FLAG_CONTAINS_SDT) {
         char str_time[32];
         struct tm time;
         localtime_r(&check->timestamp_first_failed.tv_sec, &time);
@@ -344,7 +342,7 @@ char* insert_placeholders(const placeholder_t placeholder,
     }
 
     // replace %sut
-    if ((info & FLAG_CONTAINS_SUT) && (state == STATE_DOWN_NEW || state & STATE_UP)) {
+    if (info & FLAG_CONTAINS_SUT) {
         char str_time[32];
         struct tm time;
         localtime_r(&check->timestamp_first_reply.tv_sec, &time);
@@ -366,7 +364,7 @@ char* insert_placeholders(const placeholder_t placeholder,
     }
 
     // replace %downtime
-    if ((info & FLAG_CONTAINS_DOWNTIME) && (state == STATE_UP_NEW || state & STATE_DOWN)) {
+    if (info & FLAG_CONTAINS_DOWNTIME) {
         char dt_string[24];
         seconds_to_string((int)downtime, dt_string);
         
