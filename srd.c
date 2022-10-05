@@ -398,7 +398,10 @@ void run_check(check_arguments_t *args)
 
     check->flags |= FLAG_STARTED;
 
+#if DEBUG
+    // Sets the name for this thread (useful for gdb)
     pthread_setname_np(pthread_self(), check->address);
+#endif
 
     logger_t* logger = &args->logger;
 
