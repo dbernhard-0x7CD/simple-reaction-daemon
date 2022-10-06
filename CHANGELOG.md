@@ -30,6 +30,7 @@
     * Cache which replacements need to be done in placeholders (command.cmd, log.message, influx.linedata)
     * Calculate time taken for resolving hostnames (debug output)
     * `down-new` also supports `delay`
+    * `%sdt` is now set when the first ping fails (if `num_pings` is greater than 1)
 
 * 0.0.7 (Released on 09.09.2022)
     * Pings now follow period more closely (and no longer shift)
