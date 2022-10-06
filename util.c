@@ -385,7 +385,7 @@ char* insert_placeholders(const placeholder_t placeholder,
         const char* old = message;
 
         struct timespec now;
-        clock_gettime(CLOCK_REALTIME, &now);
+        clock_gettime(CLOCK, &now);
 
         format_time(datetime_ph, temp_str, 48, &now);
         message = str_replace(message, "%now", temp_str);
@@ -670,7 +670,7 @@ int ping(const logger_t *logger,
     }
 
     // Start the clock
-    clock_gettime(CLOCK_REALTIME, &sent_time);
+    clock_gettime(CLOCK, &sent_time);
 
     int bytes_sent = 0;
     int tries = 0;
@@ -733,7 +733,7 @@ int ping(const logger_t *logger,
 
         return 0;
     } else if (num_ready == 0) { // timeout
-        clock_gettime(CLOCK_REALTIME, &rcvd_time);
+        clock_gettime(CLOCK, &rcvd_time);
 
         double diff = calculate_difference(sent_time, rcvd_time);
 
@@ -762,7 +762,7 @@ int ping(const logger_t *logger,
         }
     }
 
-    clock_gettime(CLOCK_REALTIME, &rcvd_time);
+    clock_gettime(CLOCK, &rcvd_time);
 
     // check if the message matches
     int difference = memcmp(check->snd_buffer + 8, check->rcv_buffer + 8, PACKETSIZE - 8);

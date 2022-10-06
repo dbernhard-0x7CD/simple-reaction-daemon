@@ -163,7 +163,7 @@ int main()
             }
             if (errno == EINTR) continue;
             if (errno == EAGAIN) {
-                clock_gettime(CLOCK_REALTIME, &now);
+                clock_gettime(CLOCK, &now);
 
                 for (int i = 0; i < connectivity_targets; i++)
                 {
@@ -176,7 +176,7 @@ int main()
 
                         char str_now[32];
                         struct timespec now;
-                        clock_gettime(CLOCK_REALTIME_COARSE, &now);
+                        clock_gettime(CLOCK, &now);
                         format_time(datetime_ph, str_now, 32, &now);
 
                         sprint_error(logger, "%s: thread for %s is stalled. Period is %d but last check was %1.2f seconds ago \n", str_now, args[i].logger.prefix, check->period, diff);
@@ -407,7 +407,7 @@ void run_check(check_arguments_t *args)
 
     // store time to calculate the time of the next ping
     struct timespec now;
-    clock_gettime(CLOCK_REALTIME, &now);
+    clock_gettime(CLOCK, &now);
 
     const struct timespec period = { .tv_nsec = 0, .tv_sec = check->period };
 
@@ -449,7 +449,7 @@ void run_check(check_arguments_t *args)
             // Remove flag FLAG_AWAITING_DEPENDENCY
             check->flags &= ~FLAG_AWAITING_DEPENDENCY;
         }
-        clock_gettime(CLOCK_REALTIME, &now);
+        clock_gettime(CLOCK, &now);
 
         // Set latest try. Used to calculate if a target check is stalled
         check->timestamp_latest_try = now;
@@ -461,7 +461,7 @@ void run_check(check_arguments_t *args)
         
         char current_time[32];
         format_time(datetime_ph, current_time, 32, &now);
-        clock_gettime(CLOCK_REALTIME, &now);
+        clock_gettime(CLOCK, &now);
 
         double downtime_s = -1.0;
         double uptime_s = -1.0;
@@ -517,7 +517,7 @@ void run_check(check_arguments_t *args)
             // it is unknown if we are at fault or the other endpoint, thus set state to STATE_NONE
             check->state = STATE_NONE;
 
-            clock_gettime(CLOCK_REALTIME, &now);
+            clock_gettime(CLOCK, &now);
 
             int32_t wait_time = calculate_difference_ms(now, next_period);
             next_period = timespec_add(now, period);
@@ -656,7 +656,7 @@ void run_check(check_arguments_t *args)
             fflush(stdout);
 
             // calculate time until next check should be performed
-            clock_gettime(CLOCK_REALTIME, &now);
+            clock_gettime(CLOCK, &now);
 
             int32_t wait_time = calculate_difference_ms(now, next_period);
 
@@ -693,7 +693,7 @@ void signal_handler(int s)
     char str_now[32];
 
     struct timespec now;
-    clock_gettime(CLOCK_REALTIME_COARSE, &now);
+    clock_gettime(CLOCK, &now);
     format_time(datetime_ph, str_now, 32, &now);
 
     print_error(logger, "Unhandled signal %d at %s\n", s, str_now);

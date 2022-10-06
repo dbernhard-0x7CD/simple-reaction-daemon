@@ -8,6 +8,9 @@
 #include "actions.h"
 #include "printing.h"
 
+#define CLOCK CLOCK_REALTIME_COARSE
+
+
 /*
  * These flags are used in connectivity_check_t
  */

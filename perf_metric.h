@@ -24,7 +24,7 @@
  * Starts the clock for the metric 'name'
  */
 #define MEASURE_START(name)                         \
-    clock_gettime(CLOCK_REALTIME, &CONCAT(MEASUREMENT_PREFIX, name));
+    clock_gettime(CLOCK, &CONCAT(MEASUREMENT_PREFIX, name));
 
 /*
  * Writes the duration in the format "[%d days] %H:%M:%S.%3N" into str_ptr
@@ -52,7 +52,7 @@
  * Starts the clock for the metric 'name'
  */
 #define DEBUG_START_DEBUG(name)              \
-    clock_gettime(CLOCK_REALTIME, &name);
+    clock_gettime(CLOCK, &name);
      
 /*
  * Writes the duration in the format "[%d days] %H:%M:%S.%3N" into str_ptr
@@ -86,14 +86,14 @@
  */
 static inline double measure_get_since(struct timespec* start_time) {
     struct timespec now;
-    clock_gettime(CLOCK_REALTIME, &now);
+    clock_gettime(CLOCK, &now);
 
     return calculate_difference(*start_time, now);
 }
 
 static inline int32_t measure_get_since_ms(struct timespec* start_time) {
     struct timespec now;
-    clock_gettime(CLOCK_REALTIME, &now);
+    clock_gettime(CLOCK, &now);
 
     return calculate_difference_ms(*start_time, now);
 }

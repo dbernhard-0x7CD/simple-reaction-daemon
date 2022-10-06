@@ -175,7 +175,7 @@ int run_command(const logger_t* logger, const action_cmd_t *cmd, const uint32_t 
 
         int res;
         struct timespec start;
-        clock_gettime(CLOCK_REALTIME, &start);
+        clock_gettime(CLOCK, &start);
         struct timespec now;
 
         const uint32_t delta_ms = 1e5; // 100ms
@@ -189,7 +189,7 @@ int run_command(const logger_t* logger, const action_cmd_t *cmd, const uint32_t 
             }
             usleep(delta_ms); // sleep 100ms
 
-            clock_gettime(CLOCK_REALTIME, &now);
+            clock_gettime(CLOCK, &now);
 
             diff_ms = calculate_difference_ms(start, now);
 
