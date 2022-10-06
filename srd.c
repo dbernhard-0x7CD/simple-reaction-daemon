@@ -454,7 +454,8 @@ void run_check(check_arguments_t *args)
         // Set latest try. Used to calculate if a target check is stalled
         check->timestamp_latest_try = now;
         
-        int connected = check_connectivity(logger, check);
+        struct timespec first_failed = { .tv_nsec = 0, .tv_sec = 0 };
+        int connected = check_connectivity(logger, check, &first_failed);
         if (!running) {
             break;
         }
@@ -494,7 +495,7 @@ void run_check(check_arguments_t *args)
             // set timestamp_first_failed when we're not in STATE_DOWN
             if (check->state != STATE_DOWN) {
                 sprint_debug(logger, "Setting first failed\n");
-                check->timestamp_first_failed = now;
+                check->timestamp_first_failed = first_failed;
             }
 
             // when we're DOWN the uptime is the previous uptime
@@ -700,13 +701,14 @@ void signal_handler(int s)
     fflush(stdout);
 }
 
-int check_connectivity(const logger_t* logger, connectivity_check_t* cc)
+int check_connectivity(const logger_t* logger, connectivity_check_t *target, struct timespec* first_failed)
 {
     int success = 0;
-
     int i;
-    for (i = 0; i < cc->num_pings; i++) {
-        int ping_success = ping(logger, cc);
+    struct timespec loc_first_failed = { .tv_nsec = 0, .tv_sec = 0 };
+
+    for (i = 0; i < target->num_pings; i++) {
+        int ping_success = ping(logger, target);
 
         if (ping_success == 1) {
             success = 1;
@@ -715,13 +717,22 @@ int check_connectivity(const logger_t* logger, connectivity_check_t* cc)
             return (-1);
         } else if (!running) {
             return (-1);
+        } else if (ping_success == 0) {
+
+            // set loc_first_failed exactly once, and if we end up not reaching we set it as
+            // first_failed
+            if (target->state == STATE_UP && loc_first_failed.tv_sec == 0) {
+                clock_gettime(CLOCK, &loc_first_failed);
+            }
         }
     }
-    if (i == cc->num_pings && success == 0) {
+    if (i == target->num_pings && success == 0) {
+        *first_failed = loc_first_failed;
+
         return 0;
     }
 
-    sprint_debug(logger, "Ping has success: %d with latency: %2.3fms\n", success, cc->latency * 1000);
+    sprint_debug(logger, "Ping has success: %d with latency: %2.3fms\n", success, target->latency * 1000);
 
     return success;
 }

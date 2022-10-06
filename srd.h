@@ -155,12 +155,15 @@ int is_available(connectivity_check_t *check, int strict);
 connectivity_check_t **load(char *const directory, int *success, int *count);
 
 /*
- * Checks if this machine is still able to ping the target.
- * Returns 1 if the IP is still reachable in the given timeout,
- * else 0. If we cannot determine connectivity a negative value
+ * Checks if we are still able to ping the target.
+ * Returns 1 if the target is still reachable, else 0.
+ * 
+ * If the target is not reachable and it was in state STATE_UP 
+ * first_failed will be set.
+ * If we cannot determine connectivity a negative value
  * is returned.
  */
-int check_connectivity(const logger_t* logger, connectivity_check_t *check);
+int check_connectivity(const logger_t* logger, connectivity_check_t *target, struct timespec* first_failed);
 
 /* Loads the configuration file at the given path and appends
  * all found connectivity targets to conns.
