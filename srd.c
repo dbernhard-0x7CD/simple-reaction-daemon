@@ -27,6 +27,8 @@ enum loglevel loglevel = LOGLEVEL_DEBUG;
 /* used to exit the main loop and stop all threads */
 int running = 1;
 
+const placeholder_t* datetime_ph;
+
 /* used to lock stdout as all threads write to it */
 pthread_mutex_t stdout_mut;
 
@@ -37,7 +39,6 @@ char* default_gw;
 const char* datetime_format = "%Y-%m-%d %H:%M:%S";
 int use_custom_datetime_format = 0;
 
-placeholder_t datetime_ph;
 
 // used for printing to stdout
 logger_t* logger;
@@ -109,7 +110,8 @@ int main()
     print_debug(logger, "default gateway %s\n", default_gw);
 
     // Create placeholder for datetime_format
-    datetime_ph = (placeholder_t) { .info = get_replacements(datetime_format), .raw_message = datetime_format };
+    placeholder_t placeholder = { .info = get_replacements(datetime_format), .raw_message = datetime_format };
+    datetime_ph = &placeholder;
 
     pthread_t threads[connectivity_targets];
     check_arguments_t args[connectivity_targets];
@@ -611,7 +613,7 @@ void run_check(check_arguments_t *args)
                         downtime = downtime_s; // we are still down (or up)
                     }
 
-                    const char* actual_command = insert_placeholders(cmd->cmd_ph, check, datetime_ph, downtime, uptime_s, connected);
+                    const char* actual_command = insert_placeholders(&cmd->cmd_ph, check, downtime, uptime_s, connected);
                     
                     sprint_debug(logger, "\tCommand: %s\n", actual_command);
 
@@ -629,7 +631,7 @@ void run_check(check_arguments_t *args)
                         downtime = downtime_s; // we are still down (or up)
                     }
 
-                    const char* message = insert_placeholders(action_log->message_ph, check, datetime_ph, downtime, uptime_s, connected);
+                    const char* message = insert_placeholders(&action_log->message_ph, check, downtime, uptime_s, connected);
 
                     int r = log_to_file(logger, action_log, message);
                     if (r == 0) {
@@ -640,7 +642,7 @@ void run_check(check_arguments_t *args)
                 } else if (strcmp(this_action->name, "influx") == 0) {
                     action_influx_t* action = this_action->object;
 
-                    char* actual_line_data = insert_placeholders(action->line, check, datetime_ph, downtime_s, uptime_s, connected);
+                    char* actual_line_data = insert_placeholders(&action->line, check, downtime_s, uptime_s, connected);
 
                     influx(logger, action, actual_line_data);
 

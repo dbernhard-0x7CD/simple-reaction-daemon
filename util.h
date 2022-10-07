@@ -68,7 +68,7 @@ void ms_to_string(const int ms, char* dt_string);
 /*
  * Prints the time given by 'time' in the given format into str_time.
  */
-void format_time(const placeholder_t format, char* str_time, const size_t len, const struct timespec* time);
+void format_time(const placeholder_t* format, char* str_time, const size_t len, const struct timespec* time);
 
 /*
  * Returns the bitmap where all replacements are set.
@@ -78,9 +78,8 @@ replacement_info_t get_replacements(const char* message);
 /*
  * Replaces all placeholders inside raw_message and returns a pointer to the updated string (which must be free'd).
  */
-char* insert_placeholders(const placeholder_t placeholder,
+char* insert_placeholders(const placeholder_t* placeholder,
                         const connectivity_check_t* check,
-                        const placeholder_t datetime_ph,
                         const double downtime,
                         const double uptime,
                         const int connected);

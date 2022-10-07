@@ -202,25 +202,25 @@ char *get_default_gw()
     return NULL;
 }
 
-void format_time(const placeholder_t format, char* str_time, const size_t len, const struct timespec* time) {
+void format_time(const placeholder_t* format, char* str_time, const size_t len, const struct timespec* time) {
     struct tm tm;
     
     localtime_r(&time->tv_sec, &tm);
 
-    if (format.info & FLAG_CONTAINS_MS) {
-        char* ms_replaced = (char *)format.raw_message;
+    if (format->info & FLAG_CONTAINS_MS) {
+        char* ms_replaced = (char *)format->raw_message;
 
         int ms = (int)(time->tv_nsec * 1e-6);
         char ms_str[4];
         snprintf(ms_str, 4, "%03d", ms);
 
-        ms_replaced = str_replace(format.raw_message, "%%ms", ms_str);
+        ms_replaced = str_replace(format->raw_message, "%%ms", ms_str);
         
         strftime(str_time, len, ms_replaced, &tm);
 
         free(ms_replaced);
     } else {
-        strftime(str_time, len, format.raw_message, &tm);
+        strftime(str_time, len, format->raw_message, &tm);
     }
 }
 
@@ -296,14 +296,13 @@ replacement_info_t get_replacements(const char* message) {
 }
 
 
-char* insert_placeholders(const placeholder_t placeholder, 
+char* insert_placeholders(const placeholder_t* placeholder, 
                         const connectivity_check_t* check,
-                        const placeholder_t datetime_ph,
                         const double downtime,
                         const double uptime,
                         const int connected) {
-    char* message = strdup(placeholder.raw_message);
-    replacement_info_t info = placeholder.info;
+    char* message = strdup(placeholder->raw_message);
+    replacement_info_t info = placeholder->info;
 
     char temp_str[48];
 

@@ -120,6 +120,11 @@ typedef struct check_arguments_t
 extern int running;
 
 /*
+ * Pointer to the datetime format this application uses.
+*/
+extern const placeholder_t* datetime_ph;
+
+/*
  * Entry point into this service. Loads all configs and starts a thread for each
  * of them.
  */
