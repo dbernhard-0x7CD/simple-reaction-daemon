@@ -351,6 +351,24 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
             } else {
                 double took_s = MEASURE_GET_SINCE(measure);
 
+                // Check socket
+                int val;
+                socklen_t len = sizeof(val);
+                if ((s = getsockopt(action->conn_socket, SOL_SOCKET, SO_ERROR, &val, &len))) {
+                    sprint_error(logger, "[Influx]: Unable to get status for socket: %d %s\n", s, strerror(s));
+
+                    CLOSE(action);
+
+                    return 0;
+                }
+                if (val != 0) {
+                    sprint_error(logger, "Unable to connect to %s:%d: %s\n", action->host, action->port, strerror(val));
+
+                    CLOSE(action);
+
+                    return 0;
+                }
+
                 timeout_left -= took_s;
                 if (timeout_left <= 0) {
                     sprint_error(logger, "[Influx]: Timeout for %s:%d\n", action->host, action->port);
