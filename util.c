@@ -667,8 +667,9 @@ int ping(const logger_t *logger,
         check->epoll_fd = create_epoll(check->socket);
     }
 
-    // Start the clock
-    clock_gettime(CLOCK, &sent_time);
+    // Start the clock. Uses CLOCK_REALTIME to get an
+    // accurate measure of the latency
+    clock_gettime(CLOCK_REALTIME, &sent_time);
 
     int bytes_sent = 0;
     int tries = 0;
@@ -731,7 +732,7 @@ int ping(const logger_t *logger,
 
         return 0;
     } else if (num_ready == 0) { // timeout
-        clock_gettime(CLOCK, &rcvd_time);
+        clock_gettime(CLOCK_REALTIME, &rcvd_time);
 
         double diff = calculate_difference(sent_time, rcvd_time);
 
@@ -760,7 +761,7 @@ int ping(const logger_t *logger,
         }
     }
 
-    clock_gettime(CLOCK, &rcvd_time);
+    clock_gettime(CLOCK_REALTIME, &rcvd_time);
 
     // check if the message matches
     int difference = memcmp(check->snd_buffer + 8, check->rcv_buffer + 8, PACKETSIZE - 8);
