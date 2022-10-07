@@ -337,7 +337,7 @@ int start_check(pthread_t* threads, check_arguments_t* args, connectivity_check_
         check->flags |= FLAG_STARTING_DEPENDENCY;
 
         if (get_dependency(ccs, n, check->depend_ip, &dep_idx) == NULL) {
-            sprint_error(logger, "Unable to find dependency: %s\n", check->depend_ip);
+            sprint_error(logger, "Unable to find dependency \"%s\" for %s\n", check->depend_ip, check->address);
             return -1;
         }
 
