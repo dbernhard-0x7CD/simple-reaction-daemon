@@ -2,8 +2,11 @@
 #ifndef SRD_PERF_METRIC_H
 #define SRD_PERF_METRIC_H
 
+#include <stdint.h>
 #include <time.h>
+struct timespec;
 
+#include "srd.h"
 #include "util.h"
 
 #define CONCAT_(a, b) a##b

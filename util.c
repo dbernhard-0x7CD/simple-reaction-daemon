@@ -6,7 +6,6 @@
 #include <stdio.h>
 #include <sys/epoll.h>
 #include <sys/socket.h>
-#include <sys/stat.h>
 #include <time.h>
 #include <math.h>
 #include <net/if.h>

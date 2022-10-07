@@ -4,6 +4,7 @@
 #include <pthread.h>
 #include <stdint.h>
 #include <time.h>
+struct timespec;
 
 #include "actions.h"
 #include "printing.h"
