@@ -59,6 +59,7 @@
     "in.h": "c",
     "mutex": "c",
     "stop_token": "c",
-    "util": "c"
+    "util": "c",
+    "errno-base.h": "c"
   }
 }
