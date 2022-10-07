@@ -261,6 +261,9 @@ shutdown:
                 if (action_log->header) {
                     free((char *)action_log->header);
                 }
+                if (action_log->file) {
+                    fclose(action_log->file);
+                }
                 free(ptr->actions[i].object);
             } else if (strcmp(ptr->actions[i].name, "influx") == 0) {
                 action_influx_t* influx = (action_influx_t*) ptr->actions[i].object;
@@ -1103,7 +1106,7 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
                     this_action->object = cmd;
                 }
                 else if (strcmp(action_name, "log") == 0) {
-                    action_log_t *action_log = malloc(sizeof(action_log_t));
+                    action_log_t *action_log = calloc(1, sizeof(action_log_t));
 
                     const char* path;
                     if (!config_setting_lookup_string(action, "path", &path))

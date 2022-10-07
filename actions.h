@@ -4,6 +4,7 @@
 
 #include <unistd.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #include "printing.h"
 
@@ -90,6 +91,9 @@ typedef struct action_log_t {
     // Path to the file (folder must exist)
     const char* path;
 
+    /* File handle */
+    FILE* file;
+
     // Message to log. May contain placeholders: %ip, %sdt (start of downtime)
     struct placeholder_t message_ph;
 
@@ -167,7 +171,7 @@ int run_command(const logger_t *logger, const action_cmd_t* cmd, const uint32_t 
 /*
 * Logs the given message to the given file by appending.
 */
-int log_to_file(const logger_t* logger, const action_log_t* action_log, const char* actual_line);
+int log_to_file(const logger_t* logger, action_log_t* action_log, const char* actual_line);
 
 /*
  * Executes the given influx action. Returns 1 on success, else 0.

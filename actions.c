@@ -219,9 +219,9 @@ int run_command(const logger_t* logger, const action_cmd_t *cmd, const uint32_t 
     return 1;
 }
 
-int log_to_file(const logger_t* logger, const action_log_t* action_log, const char* actual_line)
+int log_to_file(const logger_t* logger, action_log_t* action_log, const char* actual_line)
 {
-    FILE *file;
+    int s = 0; // status
 
     // check if the file is beeing created
     int is_new = 0;
@@ -229,22 +229,24 @@ int log_to_file(const logger_t* logger, const action_log_t* action_log, const ch
         is_new = 1;
     }
 
-    file = fopen(action_log->path, "a");
+    if (action_log->file == NULL) {
+        sprint_info(logger, "Opening file %s\n", action_log->path);
+        action_log->file = fopen(action_log->path, "a");
+    }
 
-    if (file == NULL)
+    if (action_log->file == NULL)
     {
         sprint_error(logger, "Unable to open file: %s (Reason: %s)\n", action_log->path, strerror(errno));
         return 0;
     }
+
     if (is_new && action_log->header != NULL) {
-        fputs(action_log->header, file);
-        fputs("\n", file);
+        fputs(action_log->header, action_log->file);
+        fputs("\n", action_log->file);
     }
 
-    fputs(actual_line, file);
-    fputs("\n", file);
-
-    int ret_code = fclose(file) == 0;
+    fputs(actual_line, action_log->file);
+    fputs("\n", action_log->file);
 
     // set permissions for the file when 
     // it's newly created
@@ -257,8 +259,9 @@ int log_to_file(const logger_t* logger, const action_log_t* action_log, const ch
             sprint_error(logger, "Unable to chown log file %s: %s\n", action_log->path, strerror(errno));
         }
     }
+    fflush(action_log->file);
 
-    return ret_code;
+    return 1;
 }
 
 int influx(const logger_t* logger, action_influx_t* action, const char* actual_line) {
