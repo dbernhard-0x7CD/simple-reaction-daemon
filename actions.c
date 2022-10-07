@@ -343,7 +343,12 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
                 
                 return 0;
             } else if (num_ready == 0) {
-                sprint_error(logger, "[Influx]: Timeout when waiting for the connection to be established to %s:%d\n", action->host, action->port);
+                char str_tmp[32];
+                struct timespec now;
+                clock_gettime(CLOCK, &now);
+                format_time(datetime_ph, str_tmp, 32, &now);
+
+                sprint_error(logger, "[Influx]: %s: Timeout when waiting for the connection to be established to %s:%d\n", str_tmp, action->host, action->port);
                 
                 CLOSE(action);
 
