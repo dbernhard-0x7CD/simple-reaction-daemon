@@ -221,8 +221,6 @@ int run_command(const logger_t* logger, const action_cmd_t *cmd, const uint32_t 
 
 int log_to_file(const logger_t* logger, action_log_t* action_log, const char* actual_line)
 {
-    int s = 0; // status
-
     // check if the file is beeing created
     int is_new = 0;
     if (access(action_log->path, F_OK) != 0) {
