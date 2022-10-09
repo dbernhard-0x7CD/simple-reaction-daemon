@@ -513,7 +513,7 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
                 CLOSE(action);
                 return 0;
             } else if (num_ready == 0) {
-                sprint_error(logger, "[Influx]: Timeout when waiting for the connection to be established to %s:%d\n", action->host, action->port);
+                sprint_error(logger, "[Influx]: Timeout when waiting for an answer from %s:%d\n", action->host, action->port);
 
                 CLOSE(action);
 
