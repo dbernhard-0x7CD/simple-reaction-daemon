@@ -519,8 +519,8 @@ void run_check(check_arguments_t *args)
         } else {
             sprint_error(logger, "%s: Error when checking connectivity. Retry in next period.\n", current_time);
 
-            // it is unknown if we are at fault or the other endpoint, thus set state to STATE_NONE
-            check->state = STATE_NONE;
+            // it is unknown if we are at fault or the other endpoint
+            // so we do not touch the state
 
             clock_gettime(CLOCK, &now);
 
