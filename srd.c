@@ -161,7 +161,7 @@ int main()
         
         while ((result = sigtimedwait(&waitset, &info, &timeout)) < 0) {
             if (!running) {
-                goto shutdown;
+                break;
             }
             if (errno == EINTR) continue;
             if (errno == EAGAIN) {
@@ -193,9 +193,8 @@ int main()
         running = 0;
 
         sprint_debug(logger, "Got signal %d\n", info.si_signo);
-    }
+    } // end of while(running)
 
-shutdown:
     sprint_info(logger, "Shutting down Simple Reaction Daemon\n");
     fflush(stdout);
 
