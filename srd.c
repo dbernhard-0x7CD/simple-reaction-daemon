@@ -188,7 +188,7 @@ int main()
                         clock_gettime(CLOCK, &now);
                         format_time(datetime_ph, str_now, 32, &now);
 
-                        sprint_error(logger, "%s: thread for %s is stalled. Period is %d but last check was %1.2f seconds ago \n", str_now, args[i].logger.prefix, check->period, diff);
+                        sprint_error(logger, "%s: thread for %s-%s is stalled. Period is %d but last check was %1.2f seconds ago \n", str_now, connectivity_checks[i]->name, connectivity_checks[i]->address, check->period, diff);
                     }
                 }
                 sprint_debug(logger, "Checking threads...\n");
