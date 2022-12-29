@@ -212,10 +212,15 @@ int main()
             pthread_kill(threads[i], SIGALRM);
         }
     }
+    // Iterate over all threads and see if they exited. Kill them if they are still running (instead of joining which may run forever)
     for (int i = 0; i < connectivity_targets; i++)
     {
-        if (connectivity_checks[i]->flags & FLAG_STARTED) {
-            pthread_join(threads[i], NULL);
+        if ((connectivity_checks[i]->flags & FLAG_ENDED) == 0) {
+            usleep(5e5); // 500ms
+            if ((connectivity_checks[i]->flags & FLAG_ENDED) == 0) {
+                sprint_debug(logger, "Thread %d is still running: %s %s\n", i, connectivity_checks[i]->name, connectivity_checks[i]->address);
+                pthread_kill(threads[i], SIGKILL);
+            }
         }
     }
 
@@ -431,8 +436,12 @@ void run_check(check_arguments_t *args)
 
         if (dependency == NULL) {
             sprint_error(logger, "Unable to find check: %s\n",  check->depend_ip);
+
+            // Stop srd
             running = 0;
             kill(getpid(), SIGALRM);
+
+            check->flags |= FLAG_ENDED;
             return;
         }
     }
@@ -689,6 +698,7 @@ void run_check(check_arguments_t *args)
         }
     } // end check while(running)
 
+    check->flags |= FLAG_ENDED;
     print_debug(logger, "Shutting this target check down.\n");
 }
 

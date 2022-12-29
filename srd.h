@@ -15,10 +15,11 @@ struct timespec;
 /*
  * These flags are used in connectivity_check_t
  */
-#define FLAG_AWAITING_DEPENDENCY 0b1
-#define FLAG_STARTED 0b10
-#define FLAG_STARTING_DEPENDENCY 0b100
-#define FLAG_IS_HOSTNAME 0b1000
+#define FLAG_AWAITING_DEPENDENCY    0b1
+#define FLAG_STARTED                0b10
+#define FLAG_STARTING_DEPENDENCY    0b100
+#define FLAG_IS_HOSTNAME            0b1000
+#define FLAG_ENDED                  0b10000
 
 /* A connectivity check is one target to which we do connectivity checks.
  * Each config file represents one such check. As Each target can have its
