@@ -576,7 +576,7 @@ void fill_message(char* point, const char* end, const char* address) {
     *cptr = '_';
     cptr++;
 
-    const int seq_str_len = 5; // maximum size of uint16_t as a string
+    const size_t seq_str_len = 5; // maximum size of uint16_t as a string
     char seq_str[seq_str_len];
 
 #pragma GCC diagnostic push
