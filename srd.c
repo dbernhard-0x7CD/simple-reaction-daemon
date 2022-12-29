@@ -523,7 +523,7 @@ void run_check(check_arguments_t *args)
 
             // only print if we were not down previously
             if (check->state != STATE_DOWN) {
-                sprint_info(logger, "%s: Ping FAILED. Now for %0.3fs\n", current_time, downtime_s);
+                sprint_info(logger, "%s: State is now DOWN.\n", current_time);
             }
 
             check->state = STATE_DOWN;
