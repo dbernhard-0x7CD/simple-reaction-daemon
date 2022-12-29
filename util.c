@@ -586,6 +586,7 @@ void fill_message(char* point, const char* end, const char* address) {
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstringop-truncation"
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
     strncpy(cptr, seq_str, strlen(seq_str));
 #pragma GCC diagnostic pop
 
