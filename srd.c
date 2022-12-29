@@ -397,10 +397,7 @@ int start_check(pthread_t* threads, check_arguments_t* args, connectivity_check_
 
 int is_available(connectivity_check_t *check, int strict) {
     // status could be STATE_UP or STATE_UP_NEW
-    if (check->state & STATE_UP) {
-        return 1;
-    }
-    if (check->state == STATE_NONE && strict == 0) {
+    if (check->state & STATE_UP || (check->state == STATE_NONE && strict == 0)) {
         return 1;
     }
 
