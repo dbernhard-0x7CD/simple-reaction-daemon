@@ -40,6 +40,8 @@ const char* datetime_format = "%Y-%m-%d %H:%M:%S";
 int use_custom_datetime_format = 0;
 
 
+time_t startup_time;
+
 // used for printing to stdout
 logger_t* logger;
 
@@ -49,6 +51,11 @@ int main()
     signal(SIGALRM, signal_handler); 
     signal(SIGINT, signal_handler);
     signal(SIGPIPE, signal_handler);
+    
+    time(&startup_time);
+
+    char time[32];
+    strftime(time, 32, datetime_format, localtime(&startup_time));
 
     logger_t log;
     log.level = &loglevel;
@@ -56,7 +63,7 @@ int main()
     log.prefix = "[main]: ";
     logger = &log;
 
-    print_info(logger, "Starting srd (Simple Reaction Daemon) version %s\n", version);
+    print_info(logger, "Starting srd (Simple Reaction Daemon) version %s at %s\n", version, time);
 
     // create a mutex; if unsuccessful we stop
     if (pthread_mutex_init(&stdout_mut, NULL) != 0)
@@ -458,7 +465,7 @@ void run_check(check_arguments_t *args)
         // Set latest try. Used to calculate if a target check is stalled
         check->timestamp_latest_try = now;
         
-        struct timespec first_failed = { .tv_nsec = 0, .tv_sec = 0 };
+        struct timespec first_failed = { .tv_nsec = 0, .tv_sec = startup_time };
         int connected = check_connectivity(logger, check, &first_failed);
         if (!running) {
             break;
@@ -487,7 +494,7 @@ void run_check(check_arguments_t *args)
 
             // only print if we were not up previously
             if (check->state != STATE_UP) {
-                sprint_info(logger, "Reachable %s\n", current_time);
+                sprint_info(logger, "%s: State is now UP.\n", current_time);
             }
 
             check->timestamp_last_reply = now;
@@ -709,7 +716,7 @@ int check_connectivity(const logger_t* logger, connectivity_check_t *target, str
 {
     int success = 0;
     int i;
-    struct timespec loc_first_failed = { .tv_nsec = 0, .tv_sec = 0 };
+    struct timespec loc_first_failed = { .tv_nsec = 0, .tv_sec = startup_time };
 
     for (i = 0; i < target->num_pings; i++) {
         int ping_success = ping(logger, target);
@@ -725,7 +732,7 @@ int check_connectivity(const logger_t* logger, connectivity_check_t *target, str
 
             // set loc_first_failed exactly once, and if we end up not reaching we set it as
             // first_failed
-            if (target->state == STATE_UP && loc_first_failed.tv_sec == 0) {
+            if (target->state == STATE_UP && loc_first_failed.tv_sec == startup_time) {
                 clock_gettime(CLOCK, &loc_first_failed);
             }
         }
@@ -858,7 +865,7 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
             cc->rcv_buffer = malloc(PACKETSIZE * sizeof(char));
 
             // initialize timestamps which store first success; last (latest) reply, ...
-            const struct timespec time_zero = { .tv_nsec = 0, .tv_sec = 0};
+            const struct timespec time_zero = { .tv_nsec = 0, .tv_sec = startup_time};
 
             cc->timestamp_first_failed = time_zero;
             cc->timestamp_first_reply = time_zero;
