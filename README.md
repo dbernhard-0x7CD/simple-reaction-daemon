@@ -177,12 +177,22 @@ See here for the exact format: [https://cplusplus.com/reference/ctime/strftime/]
     authorization = "Token XYZ";
     linedata = "latency,host=%ip, value=%lat_ms %timestamp";
     run_if = "always";
+    backup_path = "/var/log/srd/backup.line";
+    backup_username = "REPLACE-ME";
 }
 ```
 * Notes for `linedata`:
     * Supports [placeholders](#placeholders)
 * Notes for `endpoint`:
     * Supports `%ip` placeholder
+* Notes for `run_if`:
+    * See [conditional run](#conditional-actions---run_if)
+* Notes for `backup_path`:
+    * Path to file where we write if the InfluxDB is not reachable
+* Notes for `backup_username`:
+    * User who owns the file at `backup_path`
+
+
 
 ### Action - **execute arbitrary command as a user**:
 
@@ -208,6 +218,8 @@ Or if he's **up**:
     * For placeholders see [here](#placeholders)
 * You can also set `timeout` to terminate the command after `timeout` seconds if it has not finished yet.
     * The default `timeout` is one day
+* Notes for `run_if`:
+    * See [conditional run](#conditional-actions---run_if)
 
 <br />
 

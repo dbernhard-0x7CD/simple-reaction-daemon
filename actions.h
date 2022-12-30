@@ -127,6 +127,12 @@ typedef struct action_influx_t {
      */
     struct placeholder_t line;
 
+    /* File where we write a line if we fail to insert into influx */
+    const char* backup_path;
+
+    /* File where we write a line if we fail to insert into influx */
+    const char* backup_username;
+
     // socket to send the data
     int conn_socket;
 
@@ -172,6 +178,12 @@ int run_command(const logger_t *logger, const action_cmd_t* cmd, const uint32_t 
 * Logs the given message to the given file by appending.
 */
 int log_to_file(const logger_t* logger, action_log_t* action_log, const char* actual_line);
+
+/* 
+ * Tries to insert the line into the database defined by the action.
+ * Returns 1 on success, else 0;
+ */
+int influx_db(const logger_t* logger, action_influx_t* action, const char* actual_line);
 
 /*
  * Executes the given influx action. Returns 1 on success, else 0.

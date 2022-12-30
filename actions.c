@@ -262,7 +262,7 @@ int log_to_file(const logger_t* logger, action_log_t* action_log, const char* ac
     return 1;
 }
 
-int influx(const logger_t* logger, action_influx_t* action, const char* actual_line) {
+int influx_db(const logger_t* logger, action_influx_t* action, const char* actual_line) {
     ssize_t num_ready;
     ssize_t written_bytes;
     float timeout_left = action->timeout;
@@ -408,6 +408,7 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
                           action->endpoint, action->host, action->port, strlen(body), action->authorization);
 
     written_bytes = 0;
+    // send the header
     do {
         MEASURE_START(measure);
 
@@ -547,4 +548,49 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
     CLOSE(action);
 
     return 0;
+}
+
+int influx(const logger_t* logger, action_influx_t* action, const char* actual_line) {
+    int status = influx_db(logger, action, actual_line);
+
+    // Return if successfull
+    if (status) return 1;
+
+    // Return 0 if no backup path is defined
+    if (action->backup_path == NULL) return 0;
+
+    // check if the file is beeing created
+    int is_new = 0;
+    if (access(action->backup_path, F_OK) != 0) {
+        is_new = 1;
+    }
+
+    FILE *f = fopen(action->backup_path, "a");
+
+    if (f == NULL)
+    {
+        sprint_error(logger, "Unable to open file: %s (Reason: %s)\n", action->backup_path, strerror(errno));
+        return 0;
+    }
+
+    fputs(actual_line, f);
+    fputs("\n", f);
+
+    // set permissions for the file when 
+    // it's newly created
+    if (is_new && action->backup_username != NULL) {
+        struct passwd *user_passwd = getpwnam(action->backup_username);
+
+        int r = chown(action->backup_path, user_passwd->pw_uid, user_passwd->pw_gid);
+
+        if (r < 0) {
+            sprint_error(logger, "Unable to chown log file %s: %s\n", action->backup_path, strerror(errno));
+        }
+    }
+
+    fclose(f);
+
+    sprint_error(logger, "Succesfully written to backup file: %s\n", action->backup_path);
+
+    return 1;
 }

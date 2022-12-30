@@ -293,6 +293,12 @@ int main()
                 if (influx->conn_socket > 0) {
                     close(influx->conn_socket);
                 }
+                if (influx->backup_path) {
+                    free((char *)influx->backup_path);
+                }
+                if (influx->backup_username) {
+                    free((char *)influx->backup_username);
+                }
                 free(ptr->actions[i].object);
             }
             free((char *)ptr->actions[i].name);
@@ -1268,6 +1274,23 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
                         .info = get_replacements(linedata)
                     };
                     action_influx->line = placeholder;
+
+                    // load backup file path
+                    const char* path;
+                    if (config_setting_lookup_string(action, "backup_path", &path))
+                    {
+                        action_influx->backup_path = strdup(path);
+                    } else {
+                        action_influx->backup_path = NULL;
+                    }
+
+                    const char* username;
+                    if (config_setting_lookup_string(action, "backup_username", &username))
+                    {
+                        action_influx->backup_username = strdup(username);
+                    } else {
+                        action_influx->backup_username = NULL;
+                    }
 
                     // load timeout
                     if (!config_setting_lookup_int(action, "timeout", &action_influx->timeout)) {
