@@ -11,7 +11,7 @@
     * test with dependency loop
     * test with missing dependency
     * test with very low bandwidth (needs restart)
-    * GUEST (clients which are logged WHEN they are UP) config file
+    * use timers
 
 <br />
 
