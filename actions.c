@@ -377,7 +377,7 @@ int influx(const logger_t* logger, action_influx_t* action, const char* actual_l
 
                 timeout_left -= took_s;
                 if (timeout_left <= 0) {
-                    sprint_error(logger, "[Influx]: Timeout for %s:%d\n", action->host, action->port);
+                    sprint_error(logger, "[Influx]: Timeout connecting to %s:%d\n", action->host, action->port);
 
                     CLOSE(action);
                     return 0; 
