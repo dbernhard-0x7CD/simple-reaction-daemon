@@ -284,7 +284,7 @@ int influx_db(const logger_t* logger, action_influx_t* action, const char* actua
 
             timeout_left -= resolve_duration;
             if (timeout_left <= 0.0) {
-                sprint_error(logger, "Timeout when resolving %s\n", action->host);
+                sprint_error(logger, "Timeout after %ds when resolving %s\n", action->timeout, action->host);
                 return 0;
             }
 
@@ -349,7 +349,7 @@ int influx_db(const logger_t* logger, action_influx_t* action, const char* actua
                 clock_gettime(CLOCK, &now);
                 format_time(datetime_ph, str_tmp, 32, &now);
 
-                sprint_error(logger, "[Influx]: %s: Timeout when waiting for the connection to be established to %s:%d\n", str_tmp, action->host, action->port);
+                sprint_error(logger, "[Influx]: %s: Timeout after %ds when waiting for the connection to be established to %s:%d\n", str_tmp, action->timeout, action->host, action->port);
                 
                 CLOSE(action);
 
@@ -377,7 +377,7 @@ int influx_db(const logger_t* logger, action_influx_t* action, const char* actua
 
                 timeout_left -= took_s;
                 if (timeout_left <= 0) {
-                    sprint_error(logger, "[Influx]: Timeout connecting to %s:%d\n", action->host, action->port);
+                    sprint_error(logger, "[Influx]: Timeout after %ds when connecting to %s:%d\n", action->timeout, action->host, action->port);
 
                     CLOSE(action);
                     return 0; 
@@ -423,7 +423,7 @@ int influx_db(const logger_t* logger, action_influx_t* action, const char* actua
             }
 
             if (num_ready <= 0) {
-                sprint_error(logger, "[Influx]: Timeout while waiting for %s:%d.\n", action->host, action->port);
+                sprint_error(logger, "[Influx]: Timeout after %ds while waiting for %s:%d.\n", action->timeout, action->host, action->port);
 
                 CLOSE(action);
                 return 0;
