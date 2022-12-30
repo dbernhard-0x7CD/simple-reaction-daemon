@@ -540,14 +540,13 @@ void run_check(check_arguments_t *args)
             // diff is the amount of time passed since the last check
             int32_t diff = calculate_difference_ms(next_check_time, now);
             // calculate next period multiple of diff
-            sprint_debug(logger, "Diff in ms: %d\n", diff);
+
             size_t amount = (size_t) ((diff / 1e3 - 1e-10)/period.tv_sec) + 1;
             struct timespec add = { .tv_sec = period.tv_sec * amount, .tv_nsec = 0};
             next_check_time = timespec_add(next_check_time, add);
 
             int32_t wait_time = calculate_difference_ms(now, next_check_time);
             
-            sprint_debug(logger, "Sleeping for: %d\n", wait_time);
             if (wait_time > 0) {
                 usleep(wait_time * 1000);
                 continue; // as we do not execute actions when there is an error
@@ -701,15 +700,14 @@ void run_check(check_arguments_t *args)
             // diff is the amount of time passed since the last check
             int32_t diff = calculate_difference_ms(next_check_time, now);
             // calculate next period multiple of diff
-            sprint_debug(logger, "Diff in ms: %d\n", diff);
+
             size_t amount = (size_t) ((diff / 1e3 - 1e-10)/period.tv_sec) + 1;
-            sprint_debug(logger, "Amount: %ld\n", amount);
+
             struct timespec add = { .tv_sec = period.tv_sec * amount, .tv_nsec = 0};
             next_check_time = timespec_add(next_check_time, add);
 
             int32_t wait_time = calculate_difference_ms(now, next_check_time);
             
-            sprint_debug(logger, "Sleeping for: %d\n", wait_time);
             if (wait_time > 0) {
                 usleep(wait_time * 1000);
             } else if (wait_time < 0) {
