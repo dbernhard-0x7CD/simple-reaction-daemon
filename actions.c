@@ -228,7 +228,7 @@ int log_to_file(const logger_t* logger, action_log_t* action_log, const char* ac
     }
 
     if (action_log->file == NULL) {
-        sprint_info(logger, "Opening file %s\n", action_log->path);
+        sprint_debug(logger, "Opening file %s\n", action_log->path);
         action_log->file = fopen(action_log->path, "a");
     }
 
