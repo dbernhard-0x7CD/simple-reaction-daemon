@@ -15,7 +15,9 @@
 
 <br />
 
-* 0.0.8 (Released on XX.10.2022)
+* 0.0.8 (Released on XX.12.2022)
+    * Add option to `influx` to log to a backup file in case the database is unavailable
+    * Calculate `%downtime` since startup if no ping ever succeded
     * Wait instead of shutting down when no default gateway was found (may happen if the service is started too early)
     * Fixed missing decimal places for pings greater than 99ms
     * Report targets which we stopped pinging
