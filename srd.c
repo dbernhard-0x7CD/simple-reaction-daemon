@@ -1168,10 +1168,11 @@ int load_config(const char *cfg_path, connectivity_check_t*** conns, int* conns_
                     this_action->object = action_log;
                 }
                 else if (strcmp(action_name, "influx") == 0) {
-                    action_influx_t *action_influx = malloc(sizeof(action_influx_t));
+                    action_influx_t *action_influx = calloc(1, sizeof(action_influx_t));
                     action_influx->conn_socket = -1;
                     action_influx->conn_epoll_read_fd = -1;
                     action_influx->conn_epoll_write_fd = -1;
+                    action_influx->flags = 0;
 
                     // load the host
                     const char* host;
