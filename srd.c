@@ -424,7 +424,7 @@ void run_check(check_arguments_t *args)
 
     const struct timespec period = { .tv_nsec = 0, .tv_sec = check->period };
 
-    struct timespec next_period = timespec_add(now, period);
+    struct timespec next_check_time = now;
 
     connectivity_check_t* dependency = NULL;
     
@@ -444,6 +444,7 @@ void run_check(check_arguments_t *args)
     }
 
     // main loop: check connectivity repeatedly
+    // next_period is the current time of check and needs to be updated before sleeping for the next iteration
     while (running)
     {
         // check if our dependency is available
@@ -457,7 +458,7 @@ void run_check(check_arguments_t *args)
 
                 check->flags |= FLAG_AWAITING_DEPENDENCY;
 
-                next_period = timespec_add(next_period, period);
+                next_check_time = timespec_add(next_check_time, period);
                 sleep(check->period);
                 
                 continue;
@@ -534,14 +535,35 @@ void run_check(check_arguments_t *args)
 
             // it is unknown if we are at fault or the other endpoint
             // so we do not touch the state
-
             clock_gettime(CLOCK, &now);
 
-            int32_t wait_time = calculate_difference_ms(now, next_period);
-            next_period = timespec_add(now, period);
+            // diff is the amount of time passed since the last check
+            int32_t diff = calculate_difference_ms(next_check_time, now);
+            // calculate next period multiple of diff
+            sprint_debug(logger, "Diff in ms: %d\n", diff);
+            size_t amount = (size_t) ((diff / 1e3 - 1e-10)/period.tv_sec) + 1;
+            struct timespec add = { .tv_sec = period.tv_sec * amount, .tv_nsec = 0};
+            next_check_time = timespec_add(next_check_time, add);
 
-            usleep(wait_time * 1000);
-            continue;
+            int32_t wait_time = calculate_difference_ms(now, next_check_time);
+            
+            sprint_debug(logger, "Sleeping for: %d\n", wait_time);
+            if (wait_time > 0) {
+                usleep(wait_time * 1000);
+                continue; // as we do not execute actions when there is an error
+            } else if (wait_time < 0) {
+                sprint_error(logger, "Negative wait time should not be possible\n");
+                continue;
+            }
+            // Print warning if we're behind in schedule
+            if (diff/1e3 > period.tv_sec) {
+                char str_time[32];
+                format_time(datetime_ph, str_time, 32, &now);
+
+                sprint_error(logger, "Behind in schedule by %ld ms at %s. Check your period and your timeouts of the actions.\n", diff - period.tv_sec * 1000, str_time);
+
+                continue;
+            }
         }
 
         // check if any action is required
@@ -676,22 +698,33 @@ void run_check(check_arguments_t *args)
             // calculate time until next check should be performed
             clock_gettime(CLOCK, &now);
 
-            int32_t wait_time = calculate_difference_ms(now, next_period);
+            // diff is the amount of time passed since the last check
+            int32_t diff = calculate_difference_ms(next_check_time, now);
+            // calculate next period multiple of diff
+            sprint_debug(logger, "Diff in ms: %d\n", diff);
+            size_t amount = (size_t) ((diff / 1e3 - 1e-10)/period.tv_sec) + 1;
+            sprint_debug(logger, "Amount: %ld\n", amount);
+            struct timespec add = { .tv_sec = period.tv_sec * amount, .tv_nsec = 0};
+            next_check_time = timespec_add(next_check_time, add);
 
-            if (wait_time < 0) {
+            int32_t wait_time = calculate_difference_ms(now, next_check_time);
+            
+            sprint_debug(logger, "Sleeping for: %d\n", wait_time);
+            if (wait_time > 0) {
+                usleep(wait_time * 1000);
+            } else if (wait_time < 0) {
+                sprint_error(logger, "Negative wait time should not be possible\n");
+                continue;
+            }
+            // Print warning if we're behind in schedule
+            if (diff/1e3 > period.tv_sec) {
                 char str_time[32];
                 format_time(datetime_ph, str_time, 32, &now);
 
-                sprint_error(logger, "Behind in schedule by %d ms at %s. Check your period and your timeouts of the actions.\n", wait_time, str_time);
-
-                next_period = timespec_add(now, period);
+                sprint_error(logger, "Behind in schedule by %ld ms at %s. Check your period and your timeouts of the actions.\n", diff - period.tv_sec * 1000, str_time);
 
                 continue;
             }
-
-            next_period = timespec_add(next_period, period);
-
-            usleep(wait_time * 1000);
         }
     } // end check while(running)
 
