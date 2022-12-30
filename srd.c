@@ -219,7 +219,7 @@ int main()
             usleep(5e5); // 500ms
             if ((connectivity_checks[i]->flags & FLAG_ENDED) == 0) {
                 sprint_debug(logger, "Thread %d is still running: %s %s\n", i, connectivity_checks[i]->name, connectivity_checks[i]->address);
-                pthread_kill(threads[i], SIGKILL);
+                pthread_kill(threads[i], SIGALRM);
             }
         }
     }
