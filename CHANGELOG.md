@@ -12,10 +12,11 @@
     * test with missing dependency
     * test with very low bandwidth (needs restart)
     * use timers
+    * Allow ranges as address
 
 <br />
 
-* 0.0.8 (Released on XX.12.2022)
+* 0.0.8 (Released on 02.01.2023)
     * Add option to `influx` to log to a backup file in case the database is unavailable
     * Calculate `%downtime` since startup if no ping ever succeded
     * Wait instead of shutting down when no default gateway was found (may happen if the service is started too early)
